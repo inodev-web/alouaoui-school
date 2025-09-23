@@ -1,0 +1,251 @@
+delta-platform/
+├── backend/                 # Laravel API
+├── frontend/               # React SPA
+├── docker-compose.yml      # Docker configuration
+└── README.md
+backend/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Api/
+│   │   │   │   ├── Auth/
+│   │   │   │   │   ├── AuthController.php
+│   │   │   │   │   ├── RegisterController.php
+│   │   │   │   │   └── PasswordResetController.php
+│   │   │   │   ├── Student/
+│   │   │   │   │   ├── ProfileController.php
+│   │   │   │   │   ├── CourseController.php
+│   │   │   │   │   ├── ChapterController.php
+│   │   │   │   │   └── LiveSessionController.php
+│   │   │   │   ├── Admin/
+│   │   │   │   │   ├── DashboardController.php
+│   │   │   │   │   ├── StudentManagementController.php
+│   │   │   │   │   ├── TeacherManagementController.php
+│   │   │   │   │   ├── SessionManagementController.php
+│   │   │   │   │   ├── ChapterManagementController.php
+│   │   │   │   │   ├── CheckInController.php
+│   │   │   │   │   └── EventController.php
+│   │   │   │   ├── Teacher/
+│   │   │   │   │   ├── TeacherDashboardController.php
+│   │   │   │   │   └── TeacherSessionController.php
+│   │   │   │   └── Public/
+│   │   │   │       └── ContactController.php
+│   │   │   └── FileUploadController.php
+│   │   ├── Middleware/
+│   │   │   ├── CheckRole.php
+│   │   │   ├── CheckSubscription.php
+│   │   │   └── TrackActivity.php
+│   │   ├── Requests/
+│   │   │   ├── Auth/
+│   │   │   │   ├── LoginRequest.php
+│   │   │   │   └── RegisterRequest.php
+│   │   │   ├── Student/
+│   │   │   │   └── UpdateProfileRequest.php
+│   │   │   └── Admin/
+│   │   │       ├── CreateStudentRequest.php
+│   │   │       ├── CreateTeacherRequest.php
+│   │   │       └── CreateSessionRequest.php
+│   │   └── Resources/
+│   │       ├── StudentResource.php
+│   │       ├── TeacherResource.php
+│   │       ├── CourseResource.php
+│   │       ├── ChapterResource.php
+│   │       └── SessionResource.php
+│   ├── Models/
+│   │   ├── User.php
+│   │   ├── Student.php
+│   │   ├── Teacher.php
+│   │   ├── Course.php
+│   │   ├── Chapter.php
+│   │   ├── Session.php
+│   │   ├── Subscription.php
+│   │   ├── Payment.php
+│   │   ├── LiveSession.php
+│   │   ├── CheckIn.php
+│   │   └── Event.php
+│   ├── Services/
+│   │   ├── AuthService.php
+│   │   ├── SubscriptionService.php
+│   │   ├── PaymentService.php
+│   │   ├── QRCodeService.php
+│   │   ├── StatisticsService.php
+│   │   └── NotificationService.php
+│   ├── Repositories/
+│   │   ├── StudentRepository.php
+│   │   ├── TeacherRepository.php
+│   │   ├── CourseRepository.php
+│   │   └── SessionRepository.php
+│   ├── Events/
+│   │   ├── StudentRegistered.php
+│   │   ├── PaymentCompleted.php
+│   │   └── SessionStarted.php
+│   ├── Listeners/
+│   │   ├── SendWelcomeEmail.php
+│   │   └── UpdateStudentProgress.php
+│   └── Jobs/
+│       ├── GenerateStudentQRCode.php
+│       └── SendSessionReminder.php
+├── database/
+│   ├── migrations/
+│   │   ├── 2024_01_01_000001_create_users_table.php
+│   │   ├── 2024_01_01_000002_create_students_table.php
+│   │   ├── 2024_01_01_000003_create_teachers_table.php
+│   │   ├── 2024_01_01_000004_create_chapters_table.php
+│   │   ├── 2024_01_01_000005_create_courses_table.php
+│   │   ├── 2024_01_01_000006_create_sessions_table.php
+│   │   ├── 2024_01_01_000007_create_subscriptions_table.php
+│   │   ├── 2024_01_01_000008_create_payments_table.php
+│   │   ├── 2024_01_01_000009_create_live_sessions_table.php
+│   │   ├── 2024_01_01_000010_create_check_ins_table.php
+│   │   └── 2024_01_01_000011_create_events_table.php
+│   ├── seeders/
+│   │   ├── DatabaseSeeder.php
+│   │   ├── UserSeeder.php
+│   │   └── ChapterCourseSeeder.php
+│   └── factories/
+│       ├── StudentFactory.php
+│       └── TeacherFactory.php
+├── routes/
+│   ├── api.php
+│   └── web.php
+├── config/
+│   ├── cors.php
+│   └── sanctum.php
+└── storage/
+    └── app/
+        ├── public/
+        │   ├── profiles/
+        │   ├── courses/
+        │   └── documents/
+
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── common/
+│   │   │   ├── Layout/
+│   │   │   │   ├── Header.jsx
+│   │   │   │   ├── Footer.jsx
+│   │   │   │   ├── Sidebar.jsx
+│   │   │   │   └── MobileNav.jsx
+│   │   │   ├── UI/
+│   │   │   │   ├── Button.jsx
+│   │   │   │   ├── Card.jsx
+│   │   │   │   ├── Modal.jsx
+│   │   │   │   ├── Input.jsx
+│   │   │   │   ├── Table.jsx
+│   │   │   │   ├── Tabs.jsx
+│   │   │   │   ├── Badge.jsx
+│   │   │   │   └── LoadingSpinner.jsx
+│   │   │   └── Forms/
+│   │   │       ├── FormInput.jsx
+│   │   │       ├── FormSelect.jsx
+│   │   │       └── FormUpload.jsx
+│   │   ├── auth/
+│   │   │   ├── LoginForm.jsx
+│   │   │   ├── RegisterForm.jsx
+│   │   │   ├── PasswordReset.jsx
+│   │   │   └── RoleSelector.jsx
+│   │   ├── student/
+│   │   │   ├── ProfileCard.jsx
+│   │   │   ├── QRCode.jsx
+│   │   │   ├── CourseCard.jsx
+│   │   │   ├── ChapterList.jsx
+│   │   │   ├── VideoPlayer.jsx
+│   │   │   ├── PDFViewer.jsx
+│   │   │   └── ProgressTracker.jsx
+│   │   ├── admin/
+│   │   │   ├── Dashboard/
+│   │   │   │   ├── KPICards.jsx
+│   │   │   │   ├── SubscriptionChart.jsx
+│   │   │   │   ├── RevenueChart.jsx
+│   │   │   │   └── TeacherRanking.jsx
+│   │   │   ├── Students/
+│   │   │   │   ├── StudentTable.jsx
+│   │   │   │   ├── StudentModal.jsx
+│   │   │   │   └── StudentFilters.jsx
+│   │   │   ├── Teachers/
+│   │   │   │   ├── TeacherTable.jsx
+│   │   │   │   └── TeacherModal.jsx
+│   │   │   ├── Sessions/
+│   │   │   │   ├── SessionForm.jsx
+│   │   │   │   ├── SessionList.jsx
+│   │   │   │   └── TodaysSessions.jsx
+│   │   │   ├── Chapters/
+│   │   │   │   ├── ChapterManager.jsx
+│   │   │   │   └── CourseUpload.jsx
+│   │   │   ├── CheckIn/
+│   │   │   │   ├── QRScanner.jsx
+│   │   │   │   └── StudentInfo.jsx
+│   │   │   └── Events/
+│   │   │       ├── EventSlider.jsx
+│   │   │       └── LiveScheduler.jsx
+│   │   └── public/
+│   │       ├── HeroSection.jsx
+│   │       ├── Features.jsx
+│   │       ├── AboutUs.jsx
+│   │       └── ContactForm.jsx
+│   ├── pages/
+│   │   ├── public/
+│   │   │   ├── HomePage.jsx
+│   │   │   └── ContactPage.jsx
+│   │   ├── auth/
+│   │   │   ├── LoginPage.jsx
+│   │   │   └── RegisterPage.jsx
+│   │   ├── student/
+│   │   │   ├── ProfilePage.jsx
+│   │   │   ├── ChaptersPage.jsx
+│   │   │   ├── CoursePage.jsx
+│   │   │   └── LivesPage.jsx
+│   │   └── admin/
+│   │       ├── DashboardPage.jsx
+│   │       ├── StudentsPage.jsx
+│   │       ├── TeachersPage.jsx
+│   │       ├── SessionsPage.jsx
+│   │       ├── ChaptersAdminPage.jsx
+│   │       ├── CheckInPage.jsx
+│   │       └── EventsPage.jsx
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   ├── useApi.js
+│   │   ├── useForm.js
+│   │   ├── useWebSocket.js
+│   │   └── usePagination.js
+│   ├── services/
+│   │   ├── api/
+│   │   │   ├── auth.service.js
+│   │   │   ├── student.service.js
+│   │   │   ├── teacher.service.js
+│   │   │   ├── course.service.js
+│   │   │   ├── session.service.js
+│   │   │   └── admin.service.js
+│   │   ├── axios.config.js
+│   │   └── websocket.service.js
+│   ├── store/
+│   │   ├── slices/
+│   │   │   ├── authSlice.js
+│   │   │   ├── studentSlice.js
+│   │   │   ├── courseSlice.js
+│   │   │   └── adminSlice.js
+│   │   └── store.js
+│   ├── utils/
+│   │   ├── constants.js
+│   │   ├── helpers.js
+│   │   ├── validators.js
+│   │   └── formatters.js
+│   ├── routes/
+│   │   ├── PrivateRoute.jsx
+│   │   ├── AdminRoute.jsx
+│   │   └── router.jsx
+│   ├── styles/
+│   │   └── globals.css
+│   ├── App.jsx
+│   └── main.jsx
+├── public/
+│   └── assets/
+│       ├── images/
+│       └── icons/
+├── .env
+├── vite.config.js
+├── tailwind.config.js
+├── package.json
+└── eslint.config.js

@@ -1,0 +1,44 @@
+{
+  "name": "alouaoui-school-frontend-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for Alouaoui School platform",
+  "scripts": {
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:chrome": "cypress run --browser chrome",
+    "cy:run:firefox": "cypress run --browser firefox",
+    "cy:run:edge": "cypress run --browser edge",
+    "cy:run:headed": "cypress run --headed",
+    "cy:run:record": "cypress run --record --key YOUR_RECORD_KEY",
+    "test": "cypress run",
+    "test:headless": "cypress run --headless",
+    "test:mobile": "cypress run --config viewportWidth=375,viewportHeight=667",
+    "test:tablet": "cypress run --config viewportWidth=768,viewportHeight=1024",
+    "test:auth": "cypress run --spec 'cypress/e2e/auth.cy.js'",
+    "test:checkout": "cypress run --spec 'cypress/e2e/checkout.cy.js'",
+    "test:video": "cypress run --spec 'cypress/e2e/video-player.cy.js'",
+    "test:scanner": "cypress run --spec 'cypress/e2e/qr-scanner.cy.js'",
+    "test:smoke": "cypress run --env TAGS='@smoke'",
+    "test:regression": "cypress run --env TAGS='@regression'"
+  },
+  "devDependencies": {
+    "cypress": "^13.0.0",
+    "@cypress/xpath": "^2.0.1",
+    "cypress-file-upload": "^5.0.8",
+    "cypress-real-events": "^1.9.1",
+    "cypress-wait-until": "^2.0.1",
+    "cypress-plugin-api": "^2.11.1"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.9"
+  },
+  "keywords": [
+    "cypress",
+    "e2e",
+    "testing",
+    "education",
+    "laravel"
+  ],
+  "author": "Alouaoui School Development Team",
+  "license": "MIT"
+}
