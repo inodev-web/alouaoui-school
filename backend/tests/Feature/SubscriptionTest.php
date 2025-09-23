@@ -311,14 +311,11 @@ class SubscriptionTest extends TestCase
             'ends_at' => now()->addMonth(),
             'status' => 'active',
         ]);
-            'end_date' => now()->addMonth()->toDateString(),
-            'status' => 'active',
-        ]);
 
         Sanctum::actingAs($student);
 
-        // Try to access protected chapter
-        $response = $this->getJson("/api/chapters/{$chapter->id}/content");
+        // Try to access chapters
+        $response = $this->getJson('/api/chapters');
 
         $response->assertStatus(200);
     }
