@@ -3,8 +3,19 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\WithFak        $user = User::create([
+            'name' => 'QR Test User',
+            'email' => 'qrtest@example.com',
+            'phone' => '0555777888',
+            'password' => Hash::make('password123'),
+            'role' => 'student',
+            'year_of_study' => '3AM',
+            'qr_token' => \Illuminate\Support\Str::uuid(),
+        ]);
+
+        $originalQrToken = $user->qr_token; // Store original QR token
+
+        Sanctum::actingAs($user);ts\TestCase;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -227,14 +238,17 @@ class AuthTest extends TestCase
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
-                    'qr_token'
+                    'message',
+                    'data' => [
+                        'qr_token'
+                    ]
                 ]);
 
         // Get updated user from database
-        $updatedUser = User::find($user->id);
-        
+        $user->refresh(); // Refresh the model to get updated data
+
         // Check that QR token has changed
-        $this->assertNotEquals($user->qr_token, $updatedUser->qr_token);
+        $this->assertNotEquals($originalQrToken, $user->qr_token);
     }
 
     /**
@@ -277,10 +291,16 @@ class AuthTest extends TestCase
             
         $profileResponse->assertStatus(401);
 
-        // Try to access with token from device 2 (should work)
+        // Try to access with token from device 2 (should work since device 1 token was invalidated)
         $profileResponse2 = $this->withHeader('Authorization', "Bearer $token2")
             ->getJson('/api/auth/profile');
-            
+
         $profileResponse2->assertStatus(200);
+
+        // Try to access with old token from device 1 (should fail)
+        $profileResponse1 = $this->withHeader('Authorization', "Bearer $token1")
+            ->getJson('/api/auth/profile');
+
+        $profileResponse1->assertStatus(401); // Old token should be invalidated
     }
 }

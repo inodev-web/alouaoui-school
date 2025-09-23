@@ -167,14 +167,26 @@ class SubscriptionTest extends TestCase
             'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
+        // Create teacher for subscription
+        $teacher = \App\Models\Teacher::create([
+            'name' => 'Test Teacher',
+            'email' => 'teacher2@example.com',
+            'phone' => '0555654322',
+            'specialization' => 'Physics',
+            'is_alouaoui_teacher' => true,
+            'is_active' => true,
+        ]);
+
         // Create pending subscription
         $subscription = Subscription::create([
             'user_id' => $student->id,
-            'type' => 'monthly',
-            'payment_method' => 'ccp',
-            'payment_amount' => 2000,
-            'start_date' => now()->toDateString(),
-            'end_date' => now()->addMonth()->toDateString(),
+            'teacher_id' => $teacher->id,
+            'amount' => 2000,
+            'videos_access' => true,
+            'lives_access' => false,
+            'school_entry_access' => false,
+            'starts_at' => now(),
+            'ends_at' => now()->addMonth(),
             'status' => 'pending',
         ]);
 
@@ -217,13 +229,25 @@ class SubscriptionTest extends TestCase
             'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
+        // Create teacher for subscription
+        $teacher = \App\Models\Teacher::create([
+            'name' => 'Test Teacher',
+            'email' => 'teacher3@example.com',
+            'phone' => '0555654323',
+            'specialization' => 'Chemistry',
+            'is_alouaoui_teacher' => true,
+            'is_active' => true,
+        ]);
+
         $subscription = Subscription::create([
             'user_id' => $student->id,
-            'type' => 'monthly',
-            'payment_method' => 'ccp',
-            'payment_amount' => 2000,
-            'start_date' => now()->toDateString(),
-            'end_date' => now()->addMonth()->toDateString(),
+            'teacher_id' => $teacher->id,
+            'amount' => 2000,
+            'videos_access' => true,
+            'lives_access' => false,
+            'school_entry_access' => false,
+            'starts_at' => now(),
+            'ends_at' => now()->addMonth(),
             'status' => 'active',
         ]);
 
@@ -246,20 +270,28 @@ class SubscriptionTest extends TestCase
      */
     public function test_access_with_valid_subscription(): void
     {
+        // Create teacher first
+        $teacher = \App\Models\Teacher::create([
+            'name' => 'Test Teacher',
+            'email' => 'teacher4@example.com',
+            'phone' => '0555654324',
+            'specialization' => 'Biology',
+            'is_alouaoui_teacher' => true,
+            'is_active' => true,
+        ]);
+
         // Create a chapter
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'year_of_study' => '2AM',
-            'is_free' => false,
-            'content_type' => 'video',
-            'video_url' => 'videos/test.m3u8',
+            'teacher_id' => $teacher->id,
+            'year_target' => '2AM',
         ]);
 
         // Create a student with active subscription
         $student = User::create([
             'name' => 'Student User',
-            'email' => 'student@example.com',
+            'email' => 'student4@example.com',
             'phone' => '0555123456',
             'password' => \Illuminate\Support\Facades\Hash::make('password123'),
             'role' => 'student',
@@ -270,10 +302,15 @@ class SubscriptionTest extends TestCase
         // Create active subscription
         $subscription = Subscription::create([
             'user_id' => $student->id,
-            'type' => 'monthly',
-            'payment_method' => 'ccp',
-            'payment_amount' => 2000,
-            'start_date' => now()->toDateString(),
+            'teacher_id' => $teacher->id,
+            'amount' => 2000,
+            'videos_access' => true,
+            'lives_access' => false,
+            'school_entry_access' => false,
+            'starts_at' => now(),
+            'ends_at' => now()->addMonth(),
+            'status' => 'active',
+        ]);
             'end_date' => now()->addMonth()->toDateString(),
             'status' => 'active',
         ]);
