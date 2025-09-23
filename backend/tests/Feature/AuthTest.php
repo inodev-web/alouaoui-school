@@ -223,7 +223,7 @@ class AuthTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $response = $this->postJson('/api/auth/refresh-qr-token');
+        $response = $this->postJson('/api/auth/regenerate-qr');
 
         $response->assertStatus(200)
                 ->assertJsonStructure([
