@@ -1,0 +1,535 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+/* carousel */
+.carousel{
+    height: calc(100vh - 5em);
+    width: 90%;
+    overflow: hidden;
+    overflow-x: hidden;
+    position: relative;
+    border-radius: 1em;
+    margin-top: 2em;
+}
+
+@media screen and (max-width: 768px) {
+    .carousel{
+        height: calc(80vh - 2em);
+        width: 90%;
+        margin-top: 1em;
+        margin-bottom: 1em;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .carousel{
+        height: calc(70vh - 1em);
+        width: 90%;
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+    }
+}
+.carousel .list .item{
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0 0 0 0;
+}
+.carousel .list .item img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.carousel .list .item .content{
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    position: absolute;
+    bottom: 10%;
+    width: 850px;
+    left: 0;
+    padding-right: 30%;
+    box-sizing: border-box;
+    color: #fff;
+    text-shadow: 0 5px 10px #0004;
+}
+.carousel .list .item .author{
+    font-weight: bold;
+    letter-spacing: 10px;
+}
+.carousel .list .item .title,
+.carousel .list .item .topic{
+    font-size: 3em;
+    font-weight: bold;
+    line-height: 1.3em;
+}
+.carousel .list .item .topic{
+    color: #f1683a;
+}
+.carousel .list .item .buttons{
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 20px;
+}
+.carousel .list .item .buttons button{
+    border: none;
+    background: linear-gradient(to right, #f87171, #ec4899);
+    color: white;
+    font-family: inherit;
+    font-weight: 500;
+    border-radius: 9999px;
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.carousel .list .item .buttons button:hover{
+    background: linear-gradient(to right, #ef4444, #db2777);
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+/* thumbail */
+.thumbnail{
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    width: max-content;
+    z-index: 50;
+    display: flex;
+    gap: 20px;
+}
+.thumbnail .item{
+    width: 150px;
+    height: 220px;
+    flex-shrink: 0;
+    position: relative;
+}
+.thumbnail .item img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+}
+.thumbnail .item .content{
+    color: #fff;
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+}
+.thumbnail .item .content .title{
+    font-weight: 500;
+}
+.thumbnail .item .content .description{
+    font-weight: 300;
+}
+/* arrows */
+.arrows{
+    width: 88%;
+    position: absolute;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transform: translateY(2em);
+}
+.arrows button {
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2); /* glass look */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: none;
+    color: #fff;
+    font-size: 3em;
+    font-family: monospace;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .arrows button:hover {
+    background: linear-gradient(to right, #f87171, #ec4899);
+    transform: scale(1.1);
+  }
+  
+
+/* animation */
+.carousel .list .item:nth-child(1){
+    z-index: 1;
+}
+
+/* animation text in first item */
+
+.carousel .list .item:nth-child(1) .content .author,
+.carousel .list .item:nth-child(1) .content .title,
+.carousel .list .item:nth-child(1) .content .topic,
+.carousel .list .item:nth-child(1) .content .des,
+.carousel .list .item:nth-child(1) .content .buttons
+{
+    transform: translateY(50px);
+    filter: blur(20px);
+    opacity: 0;
+    animation: showContent .5s 1s linear 1 forwards;
+}
+@keyframes showContent{
+    to{
+        transform: translateY(0px);
+        filter: blur(0px);
+        opacity: 1;
+    }
+}
+.carousel .list .item:nth-child(1) .content .title{
+    animation-delay: 1.2s!important;
+}
+.carousel .list .item:nth-child(1) .content .topic{
+    animation-delay: 1.4s!important;
+}
+.carousel .list .item:nth-child(1) .content .des{
+    animation-delay: 1.6s!important;
+}
+.carousel .list .item:nth-child(1) .content .buttons{
+    animation-delay: 1.8s!important;
+}
+.des{
+    width: 20em;
+    direction: rtl;
+}
+/* create animation when next click */
+.carousel.next .list .item:nth-child(1) img{
+    width: 150px;
+    height: 220px;
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    border-radius: 30px;
+    animation: showImage .5s linear 1 forwards;
+}
+@keyframes showImage{
+    to{
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+}
+
+.carousel.next .thumbnail .item:nth-last-child(1){
+    overflow: hidden;
+    animation: showThumbnail .5s linear 1 forwards;
+}
+.carousel.prev .list .item img{
+    z-index: 50;
+}
+@keyframes showThumbnail{
+    from{
+        width: 0;
+        opacity: 0;
+    }
+}
+.carousel.next .thumbnail{
+    animation: effectNext .5s linear 1 forwards;
+}
+
+@keyframes effectNext{
+    from{
+        transform: translateX(150px);
+    }
+}
+
+/* running time */
+
+.carousel .time{
+    position: absolute;
+    z-index: 50;
+    width: 0%;
+    height: 3px;
+    background-color: #f1683a;
+    left: 0;
+    top: 0;
+}
+
+.carousel.next .time,
+.carousel.prev .time{
+    animation: runningTime 3s linear 1 forwards;
+}
+@keyframes runningTime{
+    from{ width: 100%}
+    to{width: 0}
+}
+
+
+/* prev click */
+
+.carousel.prev .list .item:nth-child(2){
+    z-index: 2;
+}
+
+.carousel.prev .list .item:nth-child(2) img{
+    animation: outFrame 0.5s linear 1 forwards;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+@keyframes outFrame{
+    to{
+        width: 150px;
+        height: 220px;
+        bottom: 50px;
+        left: 50%;
+        border-radius: 20px;
+    }
+}
+
+.carousel.prev .thumbnail .item:nth-child(1){
+    overflow: hidden;
+    opacity: 0;
+    animation: showThumbnail .5s linear 1 forwards;
+}
+.carousel.next .arrows button,
+.carousel.prev .arrows button{
+    pointer-events: none;
+}
+.carousel.prev .list .item:nth-child(2) .content .author,
+.carousel.prev .list .item:nth-child(2) .content .title,
+.carousel.prev .list .item:nth-child(2) .content .topic,
+.carousel.prev .list .item:nth-child(2) .content .des,
+.carousel.prev .list .item:nth-child(2) .content .buttons
+{
+    animation: contentOut 1.5s linear 1 forwards!important;
+}
+
+@keyframes contentOut{
+    to{
+        transform: translateY(-150px);
+        filter: blur(20px);
+        opacity: 0;
+    }
+}
+@media screen and (max-width: 678px) {
+    .carousel .list .item .content{
+        padding-right: 0;
+        width: 100%;
+        top: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        align-items: center;
+        text-align: center;
+    }
+    .carousel .list .item .content .title{
+        font-size: 2em;
+        line-height: 1.2;
+    }
+    .carousel .list .item .content .topic{
+        font-size: 1.5em;
+    }
+    .carousel .list .item .content .des{
+        font-size: 0.9em;
+        line-height: 1.4;
+        margin-bottom: 15px;
+        width: 100%;
+        max-width: 90%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .carousel .list .item .buttons{
+        justify-content: center;
+    }
+    .carousel .list .item .buttons button{
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    .carousel .list .item .content .author{
+        font-size: 0.8em;
+        letter-spacing: 5px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .carousel .list .item .content{
+        top: 10%;
+        max-width: 95%;
+        left: 50%;
+        transform: translateX(-50%);
+        align-items: center;
+        text-align: center;
+    }
+    .carousel .list .item .content .title{
+        font-size: 1.5em;
+    }
+    .carousel .list .item .content .topic{
+        font-size: 1.2em;
+    }
+    .carousel .list .item .content .des{
+        font-size: 0.8em;
+        margin-bottom: 10px;
+        width: 100%;
+        max-width: 90%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .carousel .list .item .buttons{
+        justify-content: center;
+    }
+    .carousel .list .item .buttons button{
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+    .carousel .list .item .content .author{
+        font-size: 0.7em;
+        letter-spacing: 3px;
+    }
+    /* Thumbnail adjustments for mobile */
+    .thumbnail{
+        bottom: 20px;
+        gap: 10px;
+    }
+    .thumbnail .item{
+        width: 100px;
+        height: 150px;
+    }
+    .thumbnail .item .content{
+        bottom: 5px;
+        left: 5px;
+        right: 5px;
+    }
+    .thumbnail .item .content .title{
+        font-size: 0.8em;
+    }
+    .thumbnail .item .content .description{
+        font-size: 0.7em;
+    }
+}
+
+/* Beautiful Custom Scrollbar */
+.scrollbar-none {
+    scrollbar-width: thin;
+    scrollbar-color: #ec4899 #f1f5f9;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollbar-none::-webkit-scrollbar-track {
+    background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+    border-radius: 10px;
+    margin: 8px 0;
+}
+
+.scrollbar-none::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ec4899, #be185d);
+    border-radius: 10px;
+    border: 2px solid #f8fafc;
+    transition: all 0.3s ease;
+}
+
+.scrollbar-none::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #db2777, #9f1239);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.scrollbar-none::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #be185d, #831843);
+    transform: scale(0.95);
+}
+/* Video Player Styles */
+video {
+    transition: all 0.3s ease;
+}
+
+video:hover {
+    transform: scale(1.02);
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
