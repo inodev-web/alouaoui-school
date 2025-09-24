@@ -169,6 +169,110 @@ class PaymentController extends Controller
     }
 
     /**
+     * Get all payments with optional filtering (Admin only)
+     */
+    public function index(Request $request): JsonResponse
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $perPage = $request->get('per_page', 15);
+        $query = Payment::query();
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        $payments = $query->with(['user:id,name,email'])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json([
+            'data' => $payments->items(),
+            'meta' => [
+                'current_page' => $payments->currentPage(),
+                'last_page' => $payments->lastPage(),
+                'per_page' => $payments->perPage(),
+                'total' => $payments->total(),
+            ]
+        ]);
+    }
+
+    /**
+     * Approve payment (Admin only)
+     */
+    public function approve(Request $request, Payment $payment): JsonResponse
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($payment->status !== 'pending') {
+            return response()->json([
+                'message' => 'Only pending payments can be approved'
+            ], 422);
+        }
+
+        $payment->update([
+            'status' => 'completed',
+            'processed_by' => $request->user()->id,
+            'processed_at' => now(),
+        ]);
+
+        // Send notification to user (optional)
+        // $payment->user->notify(new PaymentApprovedNotification($payment));
+
+        return response()->json([
+            'message' => 'Payment approved successfully',
+            'data' => $payment
+        ]);
+    }
+
+    /**
+     * Reject payment (Admin only)
+     */
+    public function reject(Request $request, Payment $payment): JsonResponse
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($payment->status !== 'pending') {
+            return response()->json([
+                'message' => 'Only pending payments can be rejected'
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'reason' => 'sometimes|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $payment->update([
+            'status' => 'failed',
+            'processed_by' => $request->user()->id,
+            'processed_at' => now(),
+            'rejection_reason' => $request->reason,
+        ]);
+
+        return response()->json([
+            'message' => 'Payment rejected successfully',
+            'data' => $payment
+        ]);
+    }
+
+    /**
      * Get payment statistics (Admin only)
      */
     public function statistics(Request $request): JsonResponse

@@ -17,15 +17,16 @@ class Subscription extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'student_id',
+        'user_id',
         'teacher_id',
-        'start_date',
-        'end_date',
-        'active',
+        'amount',
         'videos_access',
         'lives_access',
         'school_entry_access',
-        'payment_type',
+        'starts_at',
+        'ends_at',
+        'status',
+        'rejection_reason',
     ];
 
     /**
@@ -34,9 +35,9 @@ class Subscription extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'active' => 'boolean',
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
+        'amount' => 'decimal:2',
         'videos_access' => 'boolean',
         'lives_access' => 'boolean',
         'school_entry_access' => 'boolean',
@@ -50,9 +51,17 @@ class Subscription extends Model
     /**
      * Subscription belongs to user (student)
      */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Subscription belongs to user (student) - alias for backward compatibility
+     */
     public function student(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'student_id');
+        return $this->user();
     }
 
     /**
@@ -68,9 +77,9 @@ class Subscription extends Model
      */
     public function isActive(): bool
     {
-        return $this->active
-            && $this->start_date <= now()
-            && $this->end_date >= now();
+        return $this->status === 'active'
+            && $this->starts_at <= now()
+            && $this->ends_at >= now();
     }
 
     /**
@@ -78,7 +87,7 @@ class Subscription extends Model
      */
     public function isExpired(): bool
     {
-        return $this->end_date < now();
+        return $this->ends_at < now() || $this->status === 'expired';
     }
 
     /**
@@ -90,6 +99,6 @@ class Subscription extends Model
             return 0;
         }
 
-        return now()->diffInDays($this->end_date);
+        return now()->diffInDays($this->ends_at);
     }
 }

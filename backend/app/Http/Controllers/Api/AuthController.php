@@ -37,7 +37,7 @@ class AuthController extends Controller
 
         // Générer un QR token unique
         $qrToken = $this->generateUniqueQrToken();
-        
+
         // Récupérer ou générer device UUID
         $deviceUuid = $request->device_uuid ?? Str::uuid()->toString();
 

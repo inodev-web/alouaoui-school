@@ -83,7 +83,7 @@ class User extends Authenticatable
      */
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(Subscription::class, 'student_id');
+        return $this->hasMany(Subscription::class, 'user_id');
     }
 
     /**
@@ -91,7 +91,7 @@ class User extends Authenticatable
      */
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class, 'student_id');
+        return $this->hasMany(Payment::class, 'user_id');
     }
 
     /**

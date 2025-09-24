@@ -18,7 +18,7 @@ class EnsureSingleDevice
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -28,7 +28,7 @@ class EnsureSingleDevice
 
         // Get device UUID from request header
         $deviceUuid = $request->header('X-Device-UUID');
-        
+
         if (!$deviceUuid) {
             return response()->json([
                 'success' => false,
@@ -39,16 +39,16 @@ class EnsureSingleDevice
 
         // Check if user has an active session on another device
         $currentToken = $user->currentAccessToken();
-        
+
         if ($currentToken) {
             // Get device UUID from token's meta or name
             $tokenDeviceUuid = $currentToken->name; // We'll store device UUID as token name
-            
+
             // If device UUID doesn't match current token's device UUID
             if ($tokenDeviceUuid !== $deviceUuid) {
                 // Revoke all existing tokens for this user
                 $user->tokens()->delete();
-                
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Session active détectée sur un autre appareil. Reconnectez-vous.',
@@ -63,13 +63,13 @@ class EnsureSingleDevice
             ->where('name', $deviceUuid)
             ->where('tokenable_id', '!=', $user->id)
             ->first();
-            
+
         if ($existingToken) {
             // Revoke the conflicting token
             DB::table('personal_access_tokens')
                 ->where('id', $existingToken->id)
                 ->delete();
-                
+
             \Log::info("Device UUID conflict resolved: Device {$deviceUuid} was transferred from user {$existingToken->tokenable_id} to user {$user->id}");
         }
 

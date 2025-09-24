@@ -75,7 +75,7 @@ class DailyStatsJob implements ShouldQueue
             Log::error("Daily stats calculation failed: " . $e->getMessage(), [
                 'date' => $this->date->format('Y-m-d')
             ]);
-            
+
             throw $e;
         }
     }
@@ -291,7 +291,7 @@ class DailyStatsJob implements ShouldQueue
         // Rough estimation: each video ~100MB, each PDF ~5MB
         $videoCount = Course::whereNotNull('video_ref')->count();
         $pdfCount = Course::whereNotNull('pdf_summary')->count();
-        
+
         $estimatedMB = ($videoCount * 100) + ($pdfCount * 5);
         return round($estimatedMB / 1024, 2); // Convert to GB
     }
@@ -302,10 +302,10 @@ class DailyStatsJob implements ShouldQueue
     protected function storeStatistics(array $stats): void
     {
         $dateString = $this->date->format('Y-m-d');
-        
+
         // Store in cache for quick access (30 days)
         Cache::put("daily_stats:{$dateString}", $stats, now()->addDays(30));
-        
+
         // Store in database (you might want to create a daily_stats table)
         // DailyStats::updateOrCreate(
         //     ['date' => $dateString],
@@ -314,7 +314,7 @@ class DailyStatsJob implements ShouldQueue
 
         // Store latest stats in cache for dashboard
         Cache::put('latest_daily_stats', $stats, now()->addHours(25));
-        
+
         Log::info("Statistics stored for date: {$dateString}");
     }
 
@@ -327,7 +327,7 @@ class DailyStatsJob implements ShouldQueue
             'date' => $this->date->format('Y-m-d'),
             'exception' => $exception->getMessage()
         ]);
-        
+
         // Store partial stats if available
         try {
             $partialStats = [
@@ -336,7 +336,7 @@ class DailyStatsJob implements ShouldQueue
                 'error' => $exception->getMessage(),
                 'generated_at' => now()->toISOString()
             ];
-            
+
             Cache::put("daily_stats_failed:{$this->date->format('Y-m-d')}", $partialStats, now()->addDays(7));
         } catch (Exception $e) {
             Log::error("Failed to store failed stats: " . $e->getMessage());

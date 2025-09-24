@@ -16,17 +16,17 @@ class Payment extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'student_id',
-        'teacher_id',
+        'user_id',
         'amount',
-        'method',
-        'payment_context',
+        'currency',
+        'payment_method',
         'status',
-        'grants_school_entry',
-        'payment_details',
+        'reference',
         'transaction_id',
-        'processor_reference',
-        'confirmed_at',
+        'description',
+        'metadata',
+        'processed_by',
+        'processed_at',
     ];
 
     /**
@@ -36,48 +36,50 @@ class Payment extends Model
      */
     protected $casts = [
         'amount' => 'decimal:2',
-        'grants_school_entry' => 'boolean',
-        'payment_details' => 'array',
-        'confirmed_at' => 'datetime',
+        'metadata' => 'array',
+        'processed_at' => 'datetime',
     ];
 
     /**
      * The available payment methods
      */
-    public const METHODS = ['online', 'cash'];
+    public const METHODS = ['cash', 'online', 'card', 'transfer'];
 
     /**
      * The available payment statuses
      */
-    public const STATUSES = ['pending', 'confirmed', 'failed'];
-
-    /**
-     * The available payment contexts
-     */
-    public const CONTEXTS = ['subscription', 'session', 'school_entry'];
+    public const STATUSES = ['pending', 'completed', 'failed', 'cancelled'];
 
     /**
      * Payment belongs to user (student)
      */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Payment belongs to user (student) - alias for backward compatibility
+     */
     public function student(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'student_id');
+        return $this->user();
     }
 
     /**
-     * Payment belongs to teacher
+     * Payment belongs to the user who processed it
      */
-    public function teacher(): BelongsTo
+    public function processor(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class);
+        return $this->belongsTo(User::class, 'processed_by');
     }
 
     /**
-     * Check if payment is confirmed
+     * Check if payment is completed
      */
-    public function isConfirmed(): bool
+    public function isCompleted(): bool
     {
-        return $this->status === 'confirmed';
+        return $this->status === 'completed';
     }
 
     /**
@@ -97,13 +99,21 @@ class Payment extends Model
     }
 
     /**
-     * Mark payment as confirmed
+     * Check if payment is cancelled
      */
-    public function markAsConfirmed(): bool
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    /**
+     * Mark payment as completed
+     */
+    public function markAsCompleted(): bool
     {
         return $this->update([
-            'status' => 'confirmed',
-            'confirmed_at' => now(),
+            'status' => 'completed',
+            'processed_at' => now(),
         ]);
     }
 
@@ -113,5 +123,13 @@ class Payment extends Model
     public function markAsFailed(): bool
     {
         return $this->update(['status' => 'failed']);
+    }
+
+    /**
+     * Mark payment as cancelled
+     */
+    public function markAsCancelled(): bool
+    {
+        return $this->update(['status' => 'cancelled']);
     }
 }

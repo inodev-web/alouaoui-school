@@ -31,8 +31,13 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('logout-all');
-        Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
-        Route::put('/profile', [AuthController::class, 'updateProfile'])->name('update-profile');
+
+        // Profile routes with device validation
+        Route::middleware('ensure.single.device')->group(function () {
+            Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
+            Route::put('/profile', [AuthController::class, 'updateProfile'])->name('update-profile');
+        });
+
         Route::put('/change-password', [AuthController::class, 'changePassword'])->name('change-password');
         Route::post('/regenerate-qr', [AuthController::class, 'regenerateQrToken'])->name('regenerate-qr');
         Route::post('/check-device', [AuthController::class, 'checkDevice'])->name('check-device');
@@ -52,7 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Routes requiring single device enforcement
     Route::middleware('ensure.single.device')->group(function () {
-        
+
         // Teacher management (Admin only)
         Route::prefix('teachers')->name('teachers.')->group(function () {
             Route::get('/active', [TeacherController::class, 'active'])->name('active'); // Public list
@@ -90,7 +95,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
             // Admin only routes
             Route::middleware('abilities:admin')->group(function () {
+                Route::get('/', [PaymentController::class, 'index'])->name('index');
                 Route::post('/cash', [PaymentController::class, 'addCash'])->name('add-cash');
+                Route::put('/{payment}/approve', [PaymentController::class, 'approve'])->name('approve');
+                Route::put('/{payment}/reject', [PaymentController::class, 'reject'])->name('reject');
                 Route::patch('/{payment}/cancel', [PaymentController::class, 'cancel'])->name('cancel');
                 Route::get('/admin/statistics', [PaymentController::class, 'statistics'])->name('statistics');
             });
@@ -124,13 +132,34 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('courses')->name('courses.')->group(function () {
             Route::get('/', [CourseController::class, 'index'])->name('index');
             Route::get('/{course}', [CourseController::class, 'show'])->name('show');
-            
+
+            // Admin only routes for course management
+            Route::middleware('abilities:admin')->group(function () {
+                Route::post('/', [CourseController::class, 'store'])->name('store');
+                Route::put('/{course}', [CourseController::class, 'update'])->name('update');
+                Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
+            });
+
             // Routes requiring subscription for video access
             Route::middleware('ensure.subscription')->group(function () {
                 Route::post('/{course}/stream-token', [CourseController::class, 'streamToken'])->name('stream-token');
             });
-            
+
             Route::post('/{course}/report-issue', [CourseController::class, 'reportIssue'])->name('report-issue');
+        });
+
+        // Video management routes (alias for courses)
+        Route::prefix('videos')->name('videos.')->group(function () {
+            Route::get('/', [CourseController::class, 'index'])->name('index');
+            Route::get('/search', [CourseController::class, 'search'])->name('search');
+            Route::get('/{course}', [CourseController::class, 'show'])->name('show');
+
+            // Admin only routes
+            Route::middleware('abilities:admin')->group(function () {
+                Route::post('/', [CourseController::class, 'store'])->name('store');
+                Route::put('/{course}', [CourseController::class, 'update'])->name('update');
+                Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
+            });
         });
 
         // Statistiques de streaming (admin only)

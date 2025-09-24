@@ -17,10 +17,15 @@ class Teacher extends Model
      */
     protected $fillable = [
         'name',
+        'email',
+        'phone',
+        'specialization',
+        'bio',
+        'is_alouaoui_teacher',
+        'is_active',
         'module',
         'year',
         'is_online_publisher',
-        'is_alouaoui_teacher',
         'allows_online_payment',
         'price_subscription',
         'percent_school',
@@ -33,6 +38,7 @@ class Teacher extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'is_active' => 'boolean',
         'is_online_publisher' => 'boolean',
         'is_alouaoui_teacher' => 'boolean',
         'allows_online_payment' => 'boolean',

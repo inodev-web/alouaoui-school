@@ -3,19 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFak        $user = User::create([
-            'name' => 'QR Test User',
-            'email' => 'qrtest@example.com',
-            'phone' => '0555777888',
-            'password' => Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '3AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
-        ]);
-
-        $originalQrToken = $user->qr_token; // Store original QR token
-
-        Sanctum::actingAs($user);ts\TestCase;
+use Tests\TestCase;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
@@ -167,11 +155,15 @@ class AuthTest extends TestCase
             'role' => 'student',
             'year_of_study' => '2AM',
             'qr_token' => \Illuminate\Support\Str::uuid(),
+            'device_uuid' => 'test-device-profile',
         ]);
 
-        Sanctum::actingAs($user);
+        $token = $user->createToken('test-device-profile', ['student'])->plainTextToken;
 
-        $response = $this->getJson('/api/auth/profile');
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer $token",
+            'X-Device-UUID' => 'test-device-profile'
+        ])->getJson('/api/auth/profile');
 
         $response->assertStatus(200)
                 ->assertJson([
@@ -197,11 +189,15 @@ class AuthTest extends TestCase
             'role' => 'student',
             'year_of_study' => '2AM',
             'qr_token' => \Illuminate\Support\Str::uuid(),
+            'device_uuid' => 'test-device-update',
         ]);
 
-        Sanctum::actingAs($user);
+        $token = $user->createToken('test-device-update', ['student'])->plainTextToken;
 
-        $response = $this->putJson('/api/auth/profile', [
+        $response = $this->withHeaders([
+            'Authorization' => "Bearer $token",
+            'X-Device-UUID' => 'test-device-update'
+        ])->putJson('/api/auth/profile', [
             'name' => 'Updated User',
             'phone' => '0555123457',
             'year_of_study' => '3AM',
@@ -223,14 +219,16 @@ class AuthTest extends TestCase
     public function test_qr_token_generation(): void
     {
         $user = User::create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'phone' => '0555123456',
+            'name' => 'QR Test User',
+            'email' => 'qrtest@example.com',
+            'phone' => '0555777888',
             'password' => Hash::make('password123'),
             'role' => 'student',
-            'year_of_study' => '2AM',
+            'year_of_study' => '3AM',
             'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
+
+        $originalQrToken = $user->qr_token; // Store original QR token
 
         Sanctum::actingAs($user);
 
@@ -252,11 +250,10 @@ class AuthTest extends TestCase
     }
 
     /**
-     * Test single device enforcement - login from new device invalidates old sessions.
+     * Test device session management.
      */
-    public function test_single_device_enforcement(): void
+    public function test_device_session_management(): void
     {
-        // Create user
         $user = User::create([
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -269,38 +266,46 @@ class AuthTest extends TestCase
 
         // Login with device 1
         $response1 = $this->postJson('/api/auth/login', [
-            'email' => 'test@example.com',
+            'login' => 'test@example.com',
             'password' => 'password123',
-            'device_uuid' => 'device-1'
+            'device_uuid' => 'device-1',
+            'single_device' => true
         ]);
 
-        $token1 = $response1->json('token');
-        
-        // Login with device 2
+        $token1 = $response1->json('data.token');
+
+        // Login with device 2 (should invalidate device 1)
         $response2 = $this->postJson('/api/auth/login', [
-            'email' => 'test@example.com',
+            'login' => 'test@example.com',
             'password' => 'password123',
-            'device_uuid' => 'device-2'
+            'device_uuid' => 'device-2',
+            'single_device' => true
         ]);
-        
-        $token2 = $response2->json('token');
 
-        // Try to access with token from device 1 (should fail)
-        $profileResponse = $this->withHeader('Authorization', "Bearer $token1")
-            ->getJson('/api/auth/profile');
-            
-        $profileResponse->assertStatus(401);
+        $token2 = $response2->json('data.token');
 
-        // Try to access with token from device 2 (should work since device 1 token was invalidated)
-        $profileResponse2 = $this->withHeader('Authorization', "Bearer $token2")
-            ->getJson('/api/auth/profile');
+        // Try to access with token from device 1 (should fail because device 2 login invalidated it)
+        $profileResponse = $this->withHeaders([
+            'Authorization' => "Bearer $token1",
+            'X-Device-UUID' => 'device-1'
+        ])->getJson('/api/auth/profile');
+
+        $profileResponse->assertStatus(401); // Token should be invalid after device 2 login        // Try to access with token from device 2 (should work)
+        $profileResponse2 = $this->withHeaders([
+            'Authorization' => "Bearer $token2",
+            'X-Device-UUID' => 'device-2'
+        ])->getJson('/api/auth/profile');
 
         $profileResponse2->assertStatus(200);
 
-        // Try to access with old token from device 1 (should fail)
-        $profileResponse1 = $this->withHeader('Authorization', "Bearer $token1")
-            ->getJson('/api/auth/profile');
+        // Try to access with old token from device 1 again (should still fail)
+        $profileResponse1 = $this->withHeaders([
+            'Authorization' => "Bearer $token1",
+            'X-Device-UUID' => 'device-1'
+        ])->getJson('/api/auth/profile');
 
-        $profileResponse1->assertStatus(401); // Old token should be invalidated
+        // Should get 409 (device conflict) because middleware detects device mismatch
+        $profileResponse1->assertStatus(409)
+                         ->assertJsonPath('error_code', 'DEVICE_CONFLICT');
     }
 }

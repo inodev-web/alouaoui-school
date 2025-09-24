@@ -17,10 +17,10 @@ class ChapterController extends Controller
 
     public function __construct(AccessControlService $accessControlService)
     {
-        $this->accessControlService = $accessControlService;
+        $this->accessControl = $accessControlService;
     }
 
-    
+
     /**
      * Display a listing of chapters
      */

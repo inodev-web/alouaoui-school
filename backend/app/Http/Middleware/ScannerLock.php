@@ -18,7 +18,7 @@ class ScannerLock
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -59,7 +59,7 @@ class ScannerLock
                     if ($existingLock) {
                         $lockData = json_decode($existingLock, true);
                         $lockedAt = \Carbon\Carbon::parse($lockData['locked_at']);
-                        
+
                         // If lock is older than TTL + 5 seconds, force release it
                         if ($lockedAt->addSeconds($lockTtl + 5)->isPast()) {
                             Redis::del($lockKey);
@@ -104,7 +104,7 @@ class ScannerLock
             }
 
             \Log::error("Scanner lock middleware error: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors du verrouillage du scanner',
@@ -133,7 +133,7 @@ class ScannerLock
     private function handleWithCache(Request $request, Closure $next, string $lockKey, int $lockTtl): Response
     {
         $user = Auth::user();
-        
+
         try {
             // Check if lock exists in cache
             if (\Cache::has($lockKey)) {
@@ -163,9 +163,9 @@ class ScannerLock
         } catch (\Exception $e) {
             // Cleanup on exception
             \Cache::forget($lockKey);
-            
+
             \Log::error("Scanner cache lock error: " . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors du verrouillage du scanner (cache)',
@@ -181,7 +181,7 @@ class ScannerLock
     {
         // Final cleanup attempt if lock key is still in request
         $lockKey = $request->get('scanner_lock_key');
-        
+
         if ($lockKey) {
             try {
                 if ($this->isRedisAvailable()) {

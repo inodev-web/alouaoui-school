@@ -75,7 +75,7 @@ class WebhookPaymentJob implements ShouldQueue
                 'webhook_data' => $this->webhookData,
                 'provider' => $this->provider
             ]);
-            
+
             throw $e;
         }
     }
@@ -126,7 +126,7 @@ class WebhookPaymentJob implements ShouldQueue
         // Implement Satim-specific signature validation
         $signature = $this->webhookData['signature'] ?? '';
         $secret = config('payment.satim.webhook_secret');
-        
+
         // Satim signature validation logic here
         if (empty($signature)) {
             throw new Exception('Missing Satim webhook signature');
@@ -140,7 +140,7 @@ class WebhookPaymentJob implements ShouldQueue
     {
         $signature = $this->webhookData['signature'] ?? '';
         $secret = config('payment.chargily.webhook_secret');
-        
+
         // Chargily signature validation logic here
         if (empty($signature)) {
             throw new Exception('Missing Chargily webhook signature');
@@ -285,7 +285,7 @@ class WebhookPaymentJob implements ShouldQueue
         $user = User::find($details['user_id']);
         if ($user) {
             $user->increment('balance', $details['amount']);
-            
+
             Log::info("User balance updated", [
                 'user_id' => $user->id,
                 'amount_added' => $details['amount'],
@@ -306,7 +306,7 @@ class WebhookPaymentJob implements ShouldQueue
     protected function handleFailedPayment(Payment $payment, array $details): void
     {
         $payment->update(['status' => 'failed']);
-        
+
         Log::warning("Payment failed", [
             'payment_id' => $payment->id,
             'user_id' => $details['user_id'],
@@ -320,7 +320,7 @@ class WebhookPaymentJob implements ShouldQueue
     protected function handlePendingPayment(Payment $payment, array $details): void
     {
         $payment->update(['status' => 'pending']);
-        
+
         Log::info("Payment pending", [
             'payment_id' => $payment->id,
             'user_id' => $details['user_id']
@@ -339,7 +339,7 @@ class WebhookPaymentJob implements ShouldQueue
         foreach ($pendingSubscriptions as $subscription) {
             // Check if user has enough balance for this subscription
             $chapterPrice = $subscription->chapter->price ?? 0;
-            
+
             if ($user->balance >= $chapterPrice) {
                 $user->decrement('balance', $chapterPrice);
                 $subscription->update([
@@ -366,7 +366,7 @@ class WebhookPaymentJob implements ShouldQueue
             'webhook_data' => $this->webhookData,
             'provider' => $this->provider
         ]);
-        
+
         // Optionally, store failed webhook for manual review
         // FailedWebhook::create([
         //     'provider' => $this->provider,

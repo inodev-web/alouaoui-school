@@ -28,7 +28,7 @@ class EnsureSubscription
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -51,7 +51,7 @@ class EnsureSubscription
 
         // Extract chapter ID from route parameters
         $chapterId = $this->extractChapterId($request);
-        
+
         if (!$chapterId) {
             return response()->json([
                 'success' => false,
@@ -62,7 +62,7 @@ class EnsureSubscription
 
         // Get the chapter
         $chapter = Chapter::find($chapterId);
-        
+
         if (!$chapter) {
             return response()->json([
                 'success' => false,
@@ -113,7 +113,7 @@ class EnsureSubscription
         // Check if subscription is still valid
         if ($subscription->expires_at <= now()) {
             $subscription->update(['is_active' => false]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Votre abonnement a expiré',
@@ -142,7 +142,7 @@ class EnsureSubscription
     private function extractChapterId(Request $request): ?int
     {
         // Try different route parameter names
-        $chapterId = $request->route('chapter') 
+        $chapterId = $request->route('chapter')
                   ?? $request->route('chapterId')
                   ?? $request->route('chapter_id');
 
@@ -157,7 +157,7 @@ class EnsureSubscription
             if (is_object($courseId)) {
                 $courseId = $courseId->id;
             }
-            
+
             $course = Course::find($courseId);
             if ($course) {
                 return $course->chapter_id;

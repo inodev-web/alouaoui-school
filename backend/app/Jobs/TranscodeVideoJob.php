@@ -74,10 +74,10 @@ class TranscodeVideoJob implements ShouldQueue
 
         } catch (Exception $e) {
             Log::error("Video transcoding failed for course {$this->course->id}: " . $e->getMessage());
-            
+
             // Update course status to failed
             $this->course->update(['transcoding_status' => 'failed']);
-            
+
             throw $e;
         }
     }
@@ -88,7 +88,7 @@ class TranscodeVideoJob implements ShouldQueue
     protected function downloadVideoLocally(): string
     {
         $tempDir = storage_path('app/temp/transcoding');
-        
+
         if (!is_dir($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
@@ -109,7 +109,7 @@ class TranscodeVideoJob implements ShouldQueue
     protected function transcodeToHLS(string $inputPath): string
     {
         $outputDir = storage_path('app/temp/hls/course_' . $this->course->id);
-        
+
         if (!is_dir($outputDir)) {
             mkdir($outputDir, 0755, true);
         }
@@ -150,14 +150,14 @@ class TranscodeVideoJob implements ShouldQueue
     protected function uploadHLSToS3(string $hlsDirectory): string
     {
         $s3Path = 'videos/hls/course_' . $this->course->id;
-        
+
         // Upload all HLS files (segments and playlists)
         $files = glob($hlsDirectory . '/*');
-        
+
         foreach ($files as $file) {
             $fileName = basename($file);
             $s3FilePath = $s3Path . '/' . $fileName;
-            
+
             Storage::disk('s3')->put($s3FilePath, file_get_contents($file));
         }
 
@@ -191,10 +191,10 @@ class TranscodeVideoJob implements ShouldQueue
     public function failed(Exception $exception): void
     {
         Log::error("TranscodeVideoJob failed permanently for course {$this->course->id}: " . $exception->getMessage());
-        
+
         // Update course status to failed
         $this->course->update(['transcoding_status' => 'failed']);
-        
+
         // Optionally, send notification to admin
         // Notification::route('mail', config('app.admin_email'))
         //     ->notify(new VideoTranscodingFailedNotification($this->course, $exception));

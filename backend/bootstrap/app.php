@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // Register our custom middlewares
         $middleware->alias([
+            'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
             'ensure.single.device' => \App\Http\Middleware\EnsureSingleDevice::class,
             'ensure.subscription' => \App\Http\Middleware\EnsureSubscription::class,
             'scanner.lock' => \App\Http\Middleware\ScannerLock::class,
