@@ -1,0 +1,22 @@
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { AdminSidebar } from '@/components/admin/admin-sidebar';
+import { AdminHeader } from '@/components/admin/admin-header';
+
+const AdminLayout = () => {
+  return (
+    <div className="flex h-screen bg-background dark:bg-gray-900">
+      <AdminSidebar />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AdminHeader />
+        
+        <main className="flex-1 overflow-y-auto p-6 bg-background dark:bg-gray-900">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default AdminLayout;
