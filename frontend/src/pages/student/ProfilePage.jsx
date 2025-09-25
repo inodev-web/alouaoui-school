@@ -126,53 +126,53 @@ const StudentProfilePage = () => {
             </div>
           </div>
 
-          <div className="space-y-4">
-            {enrolledClasses.map((course) => (
-              <div key={course.id} className="border border-gray-200 rounded-lg p-4 md:p-6 hover:shadow-md transition-shadow duration-300 bg-white">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  {/* Course Info */}
-                  <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 rtl:sm:space-x-reverse mb-3 gap-2">
-                      <h3 className="text-lg md:text-xl font-semibold text-gray-900">{course.title}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit ${getStatusColor(course.status)}`}>
-                        {getStatusText(course.status)}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-3 text-sm md:text-base">{course.instructor}</p>
-                    
-                    {/* Course Stats */}
-                    <div className="flex flex-wrap items-center gap-4 rtl:gap-4 text-sm text-gray-500">
-                      <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                        <Star className="w-4 h-4 text-yellow-400" />
-                        <span>{course.rating}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                        <Users className="w-4 h-4" />
-                        <span>{course.students} طالب</span>
-                      </div>
-                      <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                        <BookOpen className="w-4 h-4" />
-                        <span>{course.totalLessons} درس</span>
-                      </div>
-                    </div>
-                  </div>
+           <div className="space-y-4">
+             {enrolledClasses.map((course) => (
+               <div key={course.id} className="border border-gray-200 rounded-lg p-4 md:p-6 hover:shadow-md transition-shadow duration-300 bg-white">
+                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                   {/* Course Info */}
+                   <div className="flex-1">
+                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 rtl:sm:space-x-reverse mb-3 gap-2">
+                       <h3 className="text-lg md:text-xl font-semibold text-gray-900 text-center sm:text-right">{course.title}</h3>
+                       <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit mx-auto sm:mx-0 ${getStatusColor(course.status)}`}>
+                         {getStatusText(course.status)}
+                       </span>
+                     </div>
+                     <p className="text-gray-600 mb-3 text-sm md:text-base text-center sm:text-right">{course.instructor}</p>
+                     
+                     {/* Course Stats */}
+                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 rtl:gap-4 text-sm text-gray-500">
+                       <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                         <Star className="w-4 h-4 text-yellow-400" />
+                         <span>{course.rating}</span>
+                       </div>
+                       <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                         <Users className="w-4 h-4" />
+                         <span>{course.students} طالب</span>
+                       </div>
+                       <div className="flex items-center space-x-1 rtl:space-x-reverse">
+                         <BookOpen className="w-4 h-4" />
+                         <span>{course.totalLessons} درس</span>
+                       </div>
+                     </div>
+                   </div>
 
-                  {/* Next Class Info */}
-                  <div className="text-right">
-                    <div className="flex items-center justify-start space-x-2 rtl:space-x-reverse text-sm text-gray-600 mb-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span>
-                        {course.nextClass ? `الدرس التالي: ${formatDate(course.nextClass)}` : 'تم إكمال الدورة'}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {course.completedLessons} من {course.totalLessons} درس مكتمل
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                   {/* Next Class Info */}
+                   <div className="text-center sm:text-right">
+                     <div className="flex items-center justify-center sm:justify-start space-x-2 rtl:space-x-reverse text-sm text-gray-600 mb-2">
+                       <Calendar className="w-4 h-4 text-gray-400" />
+                       <span>
+                         {course.nextClass ? `الدرس التالي: ${formatDate(course.nextClass)}` : 'تم إكمال الدورة'}
+                       </span>
+                     </div>
+                     <div className="text-xs text-gray-500">
+                       {course.completedLessons} من {course.totalLessons} درس مكتمل
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             ))}
+           </div>
 
           {/* Empty State (if no courses) */}
           {enrolledClasses.length === 0 && (

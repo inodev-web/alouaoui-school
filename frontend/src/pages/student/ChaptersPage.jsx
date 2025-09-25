@@ -17,7 +17,7 @@ const StudentChaptersPage = () => {
           id: 1,
           title: "الحركة في خط مستقيم",
           description: "دراسة المفاهيم الأساسية للحركة: الإزاحة، السرعة، والتسارع.",
-          duration: "45 دقيقة",
+          duration: "1",
           summary: "تعريف الحركة، معادلات الحركة، الرسوم البيانية للحركة، والسقوط الحر.",
           exercises: "12 مسألة محلولة ومجموعة تمارين متدرجة الصعوبة"
         },
@@ -25,7 +25,7 @@ const StudentChaptersPage = () => {
           id: 2,
           title: "قوانين نيوتن للحركة",
           description: "القوانين الثلاثة الأساسية التي تحكم حركة الأجسام.",
-          duration: "50 دقيقة",
+          duration: "س 2",
           summary: "القانون الأول (القصور الذاتي)، القانون الثاني (F=ma)، والقانون الثالث (الفعل ورد الفعل).",
           exercises: "15 تطبيق عملي مع أمثلة من الحياة اليومية"
         },
@@ -33,7 +33,7 @@ const StudentChaptersPage = () => {
           id: 3,
           title: "الشغل والطاقة",
           description: "العلاقة بين القوة والمسافة وتحويل أشكال الطاقة.",
-          duration: "40 دقيقة",
+          duration: "1",
           summary: "تعريف الشغل، الطاقة الحركية والكامنة، مبدأ حفظ الطاقة.",
           exercises: "10 مسائل تطبيقية مع حلول مفصلة"
         }
@@ -50,7 +50,7 @@ const StudentChaptersPage = () => {
           id: 4,
           title: "الكهرباء الساكنة",
           description: "دراسة الشحنات الكهربائية في حالة السكون والقوى بينها.",
-          duration: "55 دقيقة",
+          duration: "س 1",
           summary: "قانون كولوم، المجال الكهربائي، الجهد الكهربائي، والسعة الكهربائية.",
           exercises: "18 تمرين مع تجارب محاكاة تفاعلية"
         },
@@ -58,7 +58,7 @@ const StudentChaptersPage = () => {
           id: 5,
           title: "التيار الكهربائي والدوائر",
           description: "حركة الشحنات الكهربائية وتحليل الدوائر الكهربائية.",
-          duration: "60 دقيقة",
+          duration: "س 1",
           summary: "قانون أوم، قوانين كيرشوف، المقاومة، والقدرة الكهربائية.",
           exercises: "20 مسألة دوائر كهربائية مع رسوم توضيحية"
         },
@@ -66,7 +66,7 @@ const StudentChaptersPage = () => {
           id: 6,
           title: "المغناطيسية",
           description: "الحقول المغناطيسية وتأثيرها على الشحنات المتحركة.",
-          duration: "45 دقيقة",
+          duration: "2",
           summary: "المغانط الطبيعية، المجال المغناطيسي، قانون أمبير، والحث الكهرومغناطيسي.",
           exercises: "14 تطبيق عملي مع تجارب مختبرية"
         }
@@ -83,7 +83,7 @@ const StudentChaptersPage = () => {
           id: 7,
           title: "انتشار الضوء",
           description: "الخصائص الأساسية للضوء وقوانين الانعكاس والانكسار.",
-          duration: "50 دقيقة",
+          duration: "س 1",
           summary: "طبيعة الضوء، الانعكاس المنتظم والمنتشر، قانون سنل للانكسار.",
           exercises: "16 مسألة بصرية مع رسوم هندسية دقيقة"
         },
@@ -91,7 +91,7 @@ const StudentChaptersPage = () => {
           id: 8,
           title: "العدسات والمرايا",
           description: "تكوين الصور باستخدام العدسات والمرايا المختلفة.",
-          duration: "55 دقيقة",
+          duration: "2",
           summary: "العدسات المحدبة والمقعرة، المرايا الكروية، معادلة العدسة الرقيقة.",
           exercises: "22 تمرين تكوين صور مع جداول ورسوم بيانية"
         }
@@ -108,7 +108,7 @@ const StudentChaptersPage = () => {
           id: 9,
           title: "الحرارة ودرجة الحرارة",
           description: "الفرق بين الحرارة ودرجة الحرارة وطرق انتقال الحرارة.",
-          duration: "40 دقيقة",
+          duration: "1",
           summary: "وحدات قياس الحرارة، التوصيل والحمل والإشعاع، التمدد الحراري.",
           exercises: "11 مسألة حرارية مع جداول الخصائص الحرارية"
         },
@@ -116,7 +116,7 @@ const StudentChaptersPage = () => {
           id: 10,
           title: "الغازات والقوانين الحرارية",
           description: "سلوك الغازات تحت ظروف مختلفة من الضغط والحرارة.",
-          duration: "50 دقيقة",
+          duration: "س 1",
           summary: "قانون بويل، قانون شارل، قانون الغاز المثالي، النظرية الحركية للغازات.",
           exercises: "17 تطبيق عملي مع رسوم بيانية تفاعلية"
         }
@@ -133,7 +133,7 @@ const StudentChaptersPage = () => {
           id: 11,
           title: "بنية الذرة",
           description: "النماذج الذرية وتطورها عبر التاريخ حتى النموذج الحديث.",
-          duration: "45 دقيقة",
+          duration: "س 0.75",
           summary: "نموذج رذرفورد، نموذج بور، المدارات الإلكترونية، الأطياف الذرية.",
           exercises: "13 مسألة طيفية مع رسوم توضيحية للمدارات"
         },
@@ -141,7 +141,7 @@ const StudentChaptersPage = () => {
           id: 12,
           title: "النشاط الإشعاعي",
           description: "دراسة تفكك الأنوية المشعة وأنواع الإشعاعات النووية.",
-          duration: "40 دقيقة",
+          duration: "س 0.67",
           summary: "أنواع الإشعاع (ألفا، بيتا، جاما)، قانون التفكك الإشعاعي، عمر النصف.",
           exercises: "9 تطبيقات حسابية مع أمثلة طبية وتقنية"
         }
@@ -158,7 +158,7 @@ const StudentChaptersPage = () => {
           id: 13,
           title: "الموجات الميكانيكية",
           description: "الخصائص الأساسية للموجات وانتشارها في الأوساط المادية.",
-          duration: "50 دقيقة",
+          duration: "س 0.83",
           summary: "أنواع الموجات، الطول الموجي، التردد، سرعة الموجة، مبدأ الانعكاس.",
           exercises: "15 مسألة موجية مع محاكاة تفاعلية"
         },
@@ -166,7 +166,7 @@ const StudentChaptersPage = () => {
           id: 14,
           title: "الصوت والسمع",
           description: "دراسة الموجات الصوتية وخصائصها وتطبيقاتها العملية.",
-          duration: "45 دقيقة",
+          duration: "س 0.75",
           summary: "انتشار الصوت، شدة الصوت، تأثير دوبلر، الرنين الصوتي.",
           exercises: "12 تجربة صوتية مع قياسات عملية"
         }
@@ -256,18 +256,18 @@ const StudentChaptersPage = () => {
 
       {/* Courses Dialog */}
       {selectedChapter && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 scrollbar-hidden">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] mt-16 overflow-y-auto">
             {/* Dialog Header */}
             <div className="sticky top-0 bg-gradient-to-r from-red-400 to-pink-500 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="text-white ml-3">
+                  <div className="text-white ml-3 hidden md:block">
                     {selectedChapter.icon}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-white">{selectedChapter.title}</h2>
-                    <p className="text-red-100">{selectedChapter.description}</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-white">{selectedChapter.title}</h2>
+                    <p className="text-red-100 hidden md:block">{selectedChapter.description}</p>
                   </div>
                 </div>
                 <button
@@ -284,55 +284,44 @@ const StudentChaptersPage = () => {
               <h3 className="text-xl font-bold text-gray-800 mb-4 text-right">قائمة الدروس</h3>
               <div className="space-y-4">
                 {selectedChapter.courses.map((course, index) => (
-                  <div
-                    key={course.id}
-                    className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-r from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm ml-3">
-                          {index + 1}
+                    <div
+                      key={course.id}
+                      className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-gradient-to-r from-red-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm ml-3 hidden md:flex">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-bold text-gray-800 text-right">{course.title}</h4>
+                            <p className="text-gray-600 text-sm mt-1 text-right">{course.description}</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-lg font-bold text-gray-800 text-right">{course.title}</h4>
-                          <p className="text-gray-600 text-sm mt-1 text-right">{course.description}</p>
+                        <div className="flex items-center text-gray-500 text-sm">
+                          <Clock className="w-4 h-4 ml-1" />
+                          <span>{course.duration}</span>
                         </div>
-                      </div>
-                      <div className="flex items-center text-gray-500 text-sm">
-                        <Clock className="w-4 h-4 ml-1" />
-                        <span>{course.duration}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-                      <div className="bg-blue-50 rounded-lg p-4">
-                        <div className="flex items-center mb-2">
-                          <Play className="w-4 h-4 text-blue-600 ml-2" />
-                          <h5 className="font-semibold text-blue-800 text-right">ملخص الفيديو</h5>
-                        </div>
-                        <p className="text-blue-700 text-sm text-right">{course.summary}</p>
                       </div>
 
-                      <div className="bg-green-50 rounded-lg p-4">
-                        <div className="flex items-center mb-2">
-                          <FileText className="w-4 h-4 text-green-600 ml-2" />
-                          <h5 className="font-semibold text-green-800 text-right">التمارين</h5>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                        <div className="bg-blue-50 rounded-lg p-4">
+                          <div className="flex items-center mb-2">
+                            <Play className="w-4 h-4 text-blue-600 ml-2" />
+                            <h5 className="font-semibold text-blue-800 text-right">ملخص الفيديو</h5>
+                          </div>
+                          <p className="text-blue-700 text-sm text-right">{course.summary}</p>
                         </div>
-                        <p className="text-green-700 text-sm text-right">{course.exercises}</p>
+
+                        <div className="bg-green-50 rounded-lg p-4">
+                          <div className="flex items-center mb-2">
+                            <FileText className="w-4 h-4 text-green-600 ml-2" />
+                            <h5 className="font-semibold text-green-800 text-right">التمارين</h5>
+                          </div>
+                          <p className="text-green-700 text-sm text-right">{course.exercises}</p>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex justify-start mt-4 space-x-3">
-                      <button className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-colors">
-                        <FileText className="w-4 h-4 ml-1" />
-                        ملخص PDF
-                      </button>
-                      <button className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-colors">
-                        <FileText className="w-4 h-4 ml-1" />
-                        تمارين PDF
-                      </button>
-                    </div>
-                  </div>
                 ))}
               </div>
             </div>
