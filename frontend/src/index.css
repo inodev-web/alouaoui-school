@@ -39,40 +39,6 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
 }
 
 /* carousel */
@@ -125,7 +91,6 @@
     padding-right: 30%;
     box-sizing: border-box;
     color: #fff;
-    text-shadow: 0 5px 10px #0004;
 }
 .carousel .list .item .author{
     font-weight: bold;
@@ -136,6 +101,7 @@
     font-size: 3em;
     font-weight: bold;
     line-height: 1.3em;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.7), 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 .carousel .list .item .topic{
     color: #f1683a;
@@ -156,7 +122,8 @@
     font-size: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 .carousel .list .item .buttons button:hover{
     background: linear-gradient(to right, #ef4444, #db2777);
@@ -273,6 +240,7 @@
 .des{
     width: 20em;
     direction: rtl;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 /* create animation when next click */
 .carousel.next .list .item:nth-child(1) img{
@@ -283,6 +251,15 @@
     left: 50%;
     border-radius: 30px;
     animation: showImage .5s linear 1 forwards;
+}
+
+@media screen and (max-width: 480px) {
+    .carousel.next .list .item:nth-child(1) img{
+        width: 100px;
+        height: 150px;
+        bottom: 20px;
+        border-radius: 20px;
+    }
 }
 @keyframes showImage{
     to{
@@ -351,6 +328,15 @@
     bottom: 0;
     left: 0;
 }
+
+@media screen and (max-width: 480px) {
+    .carousel.prev .list .item:nth-child(2) img{
+        animation: outFrame 0.5s linear 1 forwards;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+    }
+}
 @keyframes outFrame{
     to{
         width: 150px;
@@ -358,6 +344,18 @@
         bottom: 50px;
         left: 50%;
         border-radius: 20px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    @keyframes outFrame{
+        to{
+            width: 100px;
+            height: 150px;
+            bottom: 20px;
+            left: 50%;
+            border-radius: 20px;
+        }
     }
 }
 
@@ -397,16 +395,19 @@
         text-align: center;
     }
     .carousel .list .item .content .title{
-        font-size: 2em;
+        font-size: 2.5em;
         line-height: 1.2;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
     .carousel .list .item .content .topic{
-        font-size: 1.5em;
+        font-size: 2em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
     .carousel .list .item .content .des{
-        font-size: 0.9em;
+        font-size: 1.2em;
         line-height: 1.4;
         margin-bottom: 15px;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
         width: 100%;
         max-width: 90%;
         margin-left: auto;
@@ -435,15 +436,18 @@
         text-align: center;
     }
     .carousel .list .item .content .title{
-        font-size: 1.5em;
+        font-size: 2em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
     }
     .carousel .list .item .content .topic{
-        font-size: 1.2em;
+        font-size: 1.8em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
     }
     .carousel .list .item .content .des{
-        font-size: 0.8em;
+        font-size: 1.1em;
         margin-bottom: 10px;
         width: 100%;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 1);
         max-width: 90%;
         margin-left: auto;
         margin-right: auto;
@@ -452,8 +456,8 @@
         justify-content: center;
     }
     .carousel .list .item .buttons button{
-        padding: 8px 16px;
-        font-size: 12px;
+        padding: 10px 16px;
+        font-size: 16px;
     }
     .carousel .list .item .content .author{
         font-size: 0.7em;

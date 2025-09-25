@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Testimonials = () => {
     // Video player states
@@ -11,6 +11,9 @@ const Testimonials = () => {
     const [showControls, setShowControls] = useState(true);
     const videoRef = useRef(null);
     const containerRef = useRef(null);
+    
+    // Animation states
+    const [isPaused, setIsPaused] = useState(false);
   
     // Video player effects
     useEffect(() => {
@@ -159,8 +162,24 @@ const Testimonials = () => {
       }
     ];
 
+    // Duplicate testimonials for seamless loop
+    const duplicatedTestimonials = [...testimonials, ...testimonials];
+
     return (
         <div className="bg-gradient-to-r from-red-400 to-pink-500 min-h-screen py-12">
+            <style jsx>{`
+                @keyframes scroll {
+                    0% {
+                        transform: translateX(0);
+                    }
+                    100% {
+                        transform: translateX(-50%);
+                    }
+                }
+                .paused {
+                    animation-play-state: paused !important;
+                }
+            `}</style>
             <div className='relative flex flex-col items-center justify-center'>
                 <div className="text-center col-span-2">
                     <h2 className="text-2xl md:text-4xl font-bold text-white mb-4">اراء و نتائج الطلاب</h2>
@@ -247,56 +266,68 @@ const Testimonials = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Constantly Moving Testimonials */}
+                    <div className="w-[98.5vw]">
+                        <div className="relative overflow-hidden">
+                            {/* Moving Container */}
+                            <div 
+                                className={`flex space-x-6 ${isPaused ? 'paused' : ''}`}
+                                style={{
+                                    animation: 'scroll 30s linear infinite',
+                                    width: 'calc(200% + 3rem)'
+                                }}
+                                onMouseEnter={() => setIsPaused(true)}
+                                onMouseLeave={() => setIsPaused(false)}
+                            >
+                                {duplicatedTestimonials.map((testimonial, index) => (
+                                    <div
+                                        key={`${testimonial.id}-${index}`}
+                                        className="flex-shrink-0 w-96"
+                                    >
+                                        {/* Testimonial Card with 3/5 aspect ratio */}
+                                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 shadow-2xl overflow-hidden" style={{ aspectRatio: '5/3' }}>
+                                            <div className="flex h-full">
+                                                {/* Left Side - Picture */}
+                                                <div className="w-3/5 relative">
+                                                    <img
+                                                        src={testimonial.image}
+                                                        alt={testimonial.name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    {/* Overlay with name and rating */}
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                                                        <h4 className="text-white font-bold text-xl mb-2">{testimonial.name}</h4>
+                                                        <div className="flex text-yellow-400">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                                </svg>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Right Side - Speech */}
+                                                <div className="w-2/5 p-8 flex flex-col justify-center">
+                                                    <div className="text-right">
+                                                        <div className="text-6xl text-white/20 mb-4">"</div>
+                                                        <p className="text-white/90 text-lg leading-relaxed mb-6 font-medium">
+                                                            {testimonial.opinion}
+                                                        </p>
+                                                        <div className="text-right text-white/60 text-sm">
+                                                            طالب في منصة الأستاذ العلاوي
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <style jsx>{`
-                    .flip-card {
-                        background-color: transparent;
-                        width: 64px;
-                        height: 80px;
-                        perspective: 1000px;
-                    }
-                    
-                    @media (min-width: 768px) {
-                        .flip-card {
-                            width: 128px;
-                            height: 160px;
-                        }
-                    }
-                    
-                    .flip-card-inner {
-                        position: relative;
-                        width: 100%;
-                        height: 100%;
-                        text-align: center;
-                        transition: transform 0.6s;
-                        transform-style: preserve-3d;
-                    }
-                    
-                    .flip-card:hover .flip-card-inner {
-                        transform: rotateY(180deg);
-                    }
-                    
-                    .flip-card-front, .flip-card-back {
-                        position: absolute;
-                        width: 100%;
-                        height: 100%;
-                        -webkit-backface-visibility: hidden;
-                        backface-visibility: hidden;
-                    }
-                    
-                    .flip-card-back {
-                        transform: rotateY(180deg);
-                    }
-                    
-                    video {
-                        transition: all 0.3s ease;
-                    }
-                    
-                    video:hover {
-                        transform: scale(1.02);
-                    }
-                `}</style>
             </div>
         </div>
     );

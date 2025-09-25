@@ -7,7 +7,7 @@ export default function FeaturesSection() {
       title: "الدروس",
       desc: "شروحات مبسطة ومفصلة لمختلف دروس الفيزياء",
       icon: BookOpen,
-      gradient: "from-blue-100 to-indigo-200",
+      gradient: "from-blue-200 to-indigo-300",
       iconColor: "text-blue-600",
       borderColor: "border-blue-200",
       hoverGradient: "hover:from-blue-200 hover:to-indigo-300",
@@ -18,7 +18,7 @@ export default function FeaturesSection() {
       title: "اللايف", 
       desc: "الدروس مباشرة مع الأستاذ لطرح الأسئلة والتفاعل",
       icon: Video,
-      gradient: "from-red-100 to-pink-200",
+      gradient: "from-red-200 to-pink-300",
       iconColor: "text-red-600",
       borderColor: "border-red-200",
       hoverGradient: "hover:from-red-200 hover:to-pink-300",
@@ -29,7 +29,7 @@ export default function FeaturesSection() {
       title: "التمارين",
       desc: "تمارين محلولة وخطوات توضيحية لفهم أفضل واسرع",
       icon: PenTool,
-      gradient: "from-green-100 to-emerald-200",
+      gradient: "from-green-200 to-emerald-300",
       iconColor: "text-green-600",
       borderColor: "border-green-200",
       hoverGradient: "hover:from-green-200 hover:to-emerald-300",
@@ -82,19 +82,18 @@ export default function FeaturesSection() {
                     {feature.desc}
                   </p>
 
-                  {/* Stats */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-600">
-                        {feature.courses} {feature.courses === 'Live' ? 'Sessions' : 'Items'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600 font-medium">Active</span>
-                    </div>
-                  </div>
+                  {/* CTA Button */}
+                  <button className={`
+                    w-full py-3 px-6 rounded-2xl font-semibold text-sm
+                    bg-white/80 backdrop-blur-sm border-2 ${feature.borderColor}
+                    ${feature.iconColor} hover:bg-white hover:scale-105
+                    transform transition-all duration-300 ease-in-out
+                    shadow-lg hover:shadow-xl group-hover:shadow-2xl
+                    flex items-center justify-center gap-2
+                  `}>
+                    <Play className="w-4 h-4" />
+                    اكتشف المزيد
+                  </button>
                 </div>
 
                 {/* Decorative Elements */}

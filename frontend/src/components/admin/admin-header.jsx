@@ -3,7 +3,6 @@
 import { Bell, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,8 +26,6 @@ export function AdminHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        <ThemeToggle />
-        
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full text-xs flex items-center justify-center text-primary-foreground">

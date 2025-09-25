@@ -58,9 +58,9 @@ export function AdminSidebar() {
   const location = useLocation();
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
-      <div className="flex h-16 items-center px-6 border-b border-gray-200 dark:border-gray-700">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+    <div className="flex h-full w-64 flex-col bg-gray-50 border-r border-gray-200">
+      <div className="flex h-16 items-center px-6 border-b border-gray-200">
+        <h1 className="text-xl font-bold text-gray-900">
           EduAdmin
         </h1>
       </div>
@@ -75,8 +75,8 @@ export function AdminSidebar() {
               className={cn(
                 "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
                 isActive
-                  ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -86,10 +86,10 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 p-3">
+      <div className="border-t border-gray-200 p-3">
         <Link
           to="/admin/settings"
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-left"
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors text-left"
         >
           <Settings className="h-5 w-5" />
           Settings

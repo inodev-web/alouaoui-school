@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ["class"],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -64,15 +63,34 @@ export default {
   				ring: 'hsl(var(--sidebar-ring))'
   			}
   		},
-  		keyframes: {
-  			appleFall: {
-  				'0%': {
-  					transform: 'translateY(-7em) translateX(12em) rotate(0deg)'
-  				},
-  				'100%': {
-  					transform: 'translateY(-2.5em) translateX(12em) rotate(60deg)'
-  				}
-  			},
+		keyframes: {
+			appleFall: {
+				'0%': {
+					transform: 'translateY(-7em) translateX(50%)  rotate(0deg)',
+					  right: '45%',
+				},
+				'100%': {
+					transform: 'translateY(-2.5em) translateX(50%) rotate(60deg)',
+					  right: '45%',
+				}
+			},
+			appleFallMobile: {
+				'0%': {
+					transform: 'translateY(-5em) translateX(50%) rotate(0deg)',
+					right: '45%',
+					display: 'none',
+				},
+				'40%': {
+					transform: 'translateY(-5em) translateX(50%) rotate(0deg)',
+					right: '45%',
+					display: 'none',
+				},
+				'100%': {
+					transform: 'translateY(-1.5em) translateX(50%) rotate(60deg)',
+					right: '45%',
+					display: 'block',
+				}
+			},
   			bounceFormula: {
   				'0%, 20%, 100%': {
   					transform: 'translateY(0)'
@@ -118,14 +136,15 @@ export default {
   				}
   			}
   		},
-  		animation: {
-  			appleFall: 'appleFall 1.5s ease-in-out',
-  			bounceFormula: 'bounceFormula 4s ease-in-out infinite',
-  			slideInLeft: 'slideInLeft 0.8s ease-out',
-  			slideInRight: 'slideInRight 0.8s ease-out',
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
-  		}
+		animation: {
+			appleFall: 'appleFall 1.5s ease-in-out',
+			appleFallMobile: 'appleFallMobile 2s ease-in-out',
+			bounceFormula: 'bounceFormula 4s ease-in-out infinite',
+			slideInLeft: 'slideInLeft 0.8s ease-out',
+			slideInRight: 'slideInRight 0.8s ease-out',
+			'accordion-down': 'accordion-down 0.2s ease-out',
+			'accordion-up': 'accordion-up 0.2s ease-out'
+		}
   	}
   },
   plugins: [require("tailwindcss-animate")],

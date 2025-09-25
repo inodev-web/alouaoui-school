@@ -81,21 +81,21 @@ export function QRScanner() {
 
         {/* Last Scanned Student */}
         {scannedStudent && (
-          <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+          <Card className="border-green-200 bg-green-50">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-green-800 dark:text-green-200">Last Scanned Student</CardTitle>
+              <CardTitle className="text-sm text-green-800">Last Scanned Student</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-green-600" />
-                  <span className="font-medium text-green-800 dark:text-green-200">{scannedStudent.name}</span>
+                  <span className="font-medium text-green-800">{scannedStudent.name}</span>
                 </div>
                 <Badge variant="outline" className="border-green-600 text-green-700">
                   {scannedStudent.subscriptionStatus}
                 </Badge>
               </div>
-              <div className="text-sm text-green-700 dark:text-green-300">
+              <div className="text-sm text-green-700">
                 <div className="flex items-center gap-2">
                   <Phone className="h-3 w-3" />
                   {scannedStudent.phone}
