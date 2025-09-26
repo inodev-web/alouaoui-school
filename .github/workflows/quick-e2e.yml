@@ -1,0 +1,80 @@
+name: 🚀 Quick E2E Tests (Fast Feedback)
+
+on:
+  push:
+    branches: [ develop, feature/* ]
+    paths:
+      - 'frontend/src/**'
+      - 'frontend/cypress/e2e/**'
+  
+  # Tests rapides pour les PRs
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  quick-e2e:
+    name: ⚡ Quick E2E Tests
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    
+    strategy:
+      matrix:
+        test-suite: [login, events] # Tests critiques seulement
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: mbstring, dom, fileinfo
+          tools: composer
+
+      - name: 📦 Install dependencies
+        working-directory: ./frontend
+        run: |
+          npm ci --prefer-offline --no-audit
+          npx cypress install --force
+
+      - name: 🚀 Start mock backend
+        working-directory: ./backend
+        run: |
+          composer install --no-dev --optimize-autoloader --quiet
+          cp .env.example .env
+          php artisan key:generate --quiet
+          touch database/database.sqlite
+          php artisan migrate --force --quiet
+          php artisan serve --host=0.0.0.0 --port=8000 &
+          sleep 5
+
+      - name: 🧪 Run critical E2E tests
+        working-directory: ./frontend
+        run: |
+          npx cypress run \
+            --spec "cypress/e2e/${{ matrix.test-suite }}.cy.js" \
+            --browser chrome \
+            --reporter spec \
+            --config "video=false,screenshotOnRunFailure=false" \
+            --env "CI=true"
+
+      - name: 📊 Quick results
+        if: always()
+        run: |
+          echo "### ⚡ Quick E2E Results" >> $GITHUB_STEP_SUMMARY
+          echo "**Test:** ${{ matrix.test-suite }}" >> $GITHUB_STEP_SUMMARY
+          if [ $? -eq 0 ]; then
+            echo "**Status:** ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi

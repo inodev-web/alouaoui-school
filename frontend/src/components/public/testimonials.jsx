@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, SkipBack, SkipForward, ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { api, endpoints } from '../../services/axios.config';
 
 const Testimonials = () => {
     // Video player states
@@ -14,6 +15,11 @@ const Testimonials = () => {
     
     // Animation states
     const [isPaused, setIsPaused] = useState(false);
+    
+    // API states
+    const [testimonials, setTestimonials] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
   
     // Video player effects
     useEffect(() => {
@@ -98,69 +104,31 @@ const Testimonials = () => {
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    // Sample testimonial data
-    const testimonials = [
-      {
-        id: 1,
-        name: "أحمد محمد",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "الدروس ممتازة جداً، ساعدتني في فهم الكيمياء بطريقة سهلة وممتعة. أنصح بها بشدة!"
-      },
-      {
-        id: 2,
-        name: "فاطمة علي",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "أفضل معلم كيمياء! الشرح واضح والنتائج ممتازة. حصلت على أعلى الدرجات بفضله."
-      },
-      {
-        id: 3,
-        name: "محمد حسن",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "طريقة التدريس رائعة، جعلتني أحب الكيمياء. النتائج تتحدث عن نفسها!"
-      },
-      {
-        id: 4,
-        name: "نور الدين",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "شرح ممتاز ومبسط، ساعدني في اجتياز الامتحان بدرجة عالية. شكراً جزيلاً!"
-      },
-      {
-        id: 5,
-        name: "سارة أحمد",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "دروس رائعة ومفيدة جداً. المعلم يشرح بطريقة سهلة ومفهومة للجميع."
-      },
-      {
-        id: 6,
-        name: "يوسف محمود",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "أفضل استثمار في التعليم! النتائج واضحة والتحسن ملحوظ من أول درس."
-      },
-      {
-        id: 7,
-        name: "مريم خالد",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "دروس تفاعلية وممتعة، جعلتني أفهم الكيمياء بطريقة مختلفة تماماً."
-      },
-      {
-        id: 8,
-        name: "عبدالله سالم",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "شرح مميز وطريقة تدريس احترافية. أنصح جميع الطلاب بهذه الدروس."
-      },
-      {
-        id: 9,
-        name: "هند محمد",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "دروس رائعة ساعدتني في تحسين درجاتي بشكل كبير. شكراً للمجهود الرائع!"
-      },
-      {
-        id: 10,
-        name: "خالد أحمد",
-        image: "https://i.pinimg.com/736x/fe/28/bb/fe28bbab33cc4b934770afee1f2dbc72.jpg",
-        opinion: "أفضل معلم كيمياء في المنطقة! النتائج تتحدث عن نفسها والطلاب راضون جداً."
-      }
-    ];
+    // Fetch testimonials from API
+    const fetchTestimonials = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get(endpoints.testimonials.list);
+            
+            if (response.success) {
+                setTestimonials(response.data);
+                setError(null);
+            } else {
+                setError('Erreur lors du chargement des témoignages');
+            }
+        } catch (err) {
+            console.error('Error fetching testimonials:', err);
+            setError('Impossible de charger les témoignages');
+            // Fallback data in case of error
+            setTestimonials([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTestimonials();
+    }, []);
 
     // Duplicate testimonials for seamless loop
     const duplicatedTestimonials = [...testimonials, ...testimonials];
@@ -267,20 +235,31 @@ const Testimonials = () => {
                         </div>
                     </div>
 
-                    {/* Constantly Moving Testimonials */}
+                    {/* Testimonials Section */}
                     <div className="w-[98.5vw]">
-                        <div className="relative overflow-hidden">
-                            {/* Moving Container */}
-                            <div 
-                                className={`flex space-x-6 ${isPaused ? 'paused' : ''}`}
-                                style={{
-                                    animation: 'scroll 30s linear infinite',
-                                    width: 'calc(200% + 3rem)'
-                                }}
-                                onMouseEnter={() => setIsPaused(true)}
-                                onMouseLeave={() => setIsPaused(false)}
-                            >
-                                {duplicatedTestimonials.map((testimonial, index) => (
+                        {loading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="w-8 h-8 animate-spin text-white" />
+                                <span className="text-white ml-3">تحميل الآراء...</span>
+                            </div>
+                        ) : error ? (
+                            <div className="flex items-center justify-center py-12">
+                                <AlertCircle className="w-6 h-6 text-red-200" />
+                                <span className="text-red-200 ml-3">{error}</span>
+                            </div>
+                        ) : testimonials.length > 0 ? (
+                            <div className="relative overflow-hidden">
+                                {/* Moving Container */}
+                                <div 
+                                    className={`flex space-x-6 ${isPaused ? 'paused' : ''}`}
+                                    style={{
+                                        animation: 'scroll 30s linear infinite',
+                                        width: 'calc(200% + 3rem)'
+                                    }}
+                                    onMouseEnter={() => setIsPaused(true)}
+                                    onMouseLeave={() => setIsPaused(false)}
+                                >
+                                    {[...testimonials, ...testimonials].map((testimonial, index) => (
                                     <div
                                         key={`${testimonial.id}-${index}`}
                                         className="flex-shrink-0 w-96"
@@ -299,7 +278,7 @@ const Testimonials = () => {
                                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
                                                         <h4 className="text-white font-bold text-xl mb-2">{testimonial.name}</h4>
                                                         <div className="flex text-yellow-400">
-                                                            {[...Array(5)].map((_, i) => (
+                                                            {[...Array(Math.floor(testimonial.rating || 5))].map((_, i) => (
                                                                 <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
                                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                                                 </svg>
@@ -324,8 +303,13 @@ const Testimonials = () => {
                                         </div>
                                     </div>
                                 ))}
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="flex items-center justify-center py-12">
+                                <span className="text-white">لا توجد آراء متاحة حالياً</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -300,6 +301,92 @@ class AuthController extends Controller
                 'registered_device' => $user->device_uuid,
                 'current_device' => $request->device_uuid,
             ]
+        ]);
+    }
+
+    /**
+     * Send password reset email
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Generate reset token
+        $token = Str::random(64);
+        
+        // Store token in password_resets table (Laravel default)
+        \DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => now()
+            ]
+        );
+
+        // Send email with reset link (you'll need to configure mail)
+        $user = User::where('email', $request->email)->first();
+        
+        // For now, return the token (in production, send via email)
+        return response()->json([
+            'message' => 'Un lien de réinitialisation a été envoyé à votre email',
+            'reset_token' => $token, // Remove this in production
+            'email' => $request->email
+        ]);
+    }
+
+    /**
+     * Reset password with token
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email|exists:users,email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Check if token exists and is not expired (1 hour)
+        $passwordReset = \DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('created_at', '>', now()->subHour())
+            ->first();
+
+        if (!$passwordReset || !Hash::check($request->token, $passwordReset->token)) {
+            return response()->json([
+                'message' => 'Token invalide ou expiré'
+            ], 422);
+        }
+
+        // Update user password
+        $user = User::where('email', $request->email)->first();
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        // Delete the reset token
+        \DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        // Revoke all existing tokens for security
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Mot de passe réinitialisé avec succès'
         ]);
     }
 

@@ -68,12 +68,13 @@ class Teacher extends Model
     }
 
     /**
-     * Teacher has many payments
+     * Teacher has many payments (through subscriptions)
+     * Note: Payments table doesn't have teacher_id, only user_id
      */
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class);
-    }
+    // public function payments(): HasMany
+    // {
+    //     return $this->hasMany(Payment::class);
+    // }
 
     /**
      * Teacher has many sessions

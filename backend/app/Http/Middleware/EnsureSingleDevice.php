@@ -42,10 +42,11 @@ class EnsureSingleDevice
 
         if ($currentToken) {
             // Get device UUID from token's meta or name
-            $tokenDeviceUuid = $currentToken->name; // We'll store device UUID as token name
+            // Handle TransientToken (used in testing) which doesn't have a name property
+            $tokenDeviceUuid = property_exists($currentToken, 'name') ? $currentToken->name : null;
 
             // If device UUID doesn't match current token's device UUID
-            if ($tokenDeviceUuid !== $deviceUuid) {
+            if ($tokenDeviceUuid && $tokenDeviceUuid !== $deviceUuid) {
                 // Revoke all existing tokens for this user
                 $user->tokens()->delete();
 
@@ -74,7 +75,8 @@ class EnsureSingleDevice
         }
 
         // Update current token's device info if needed
-        if ($currentToken && $currentToken->name !== $deviceUuid) {
+        $currentTokenName = property_exists($currentToken, 'name') ? $currentToken->name : null;
+        if ($currentToken && $currentTokenName !== $deviceUuid && method_exists($currentToken, 'update')) {
             $currentToken->update([
                 'name' => $deviceUuid,
                 'updated_at' => now()

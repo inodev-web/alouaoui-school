@@ -1,0 +1,535 @@
+name: 🧪 E2E Tests - Cypress CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+
+  # Permet de lancer manuellement les tests
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite à exécuter'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - auth
+          - dashboard
+          - events
+          - profile
+          - chapters
+      browser:
+        description: 'Navigateur pour les tests'
+        required: false
+        default: 'chrome'
+        type: choice
+        options:
+          - chrome
+          - firefox
+          - edge
+
+jobs:
+  # ================================
+  # JOB 1: Setup & Validation
+  # ================================
+  setup:
+    name: 🔍 Setup & Validation
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Detect changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            tests:
+              - 'frontend/cypress/**'
+
+      - name: 📊 Set test matrix
+        id: set-matrix
+        run: |
+          if [[ "${{ github.event.inputs.test_suite }}" != "" ]]; then
+            case "${{ github.event.inputs.test_suite }}" in
+              "auth") echo "matrix=[\"login\", \"forgot-password\"]" >> $GITHUB_OUTPUT ;;
+              "dashboard") echo "matrix=[\"student-dashboard\"]" >> $GITHUB_OUTPUT ;;
+              "events") echo "matrix=[\"events\"]" >> $GITHUB_OUTPUT ;;
+              "profile") echo "matrix=[\"profile\"]" >> $GITHUB_OUTPUT ;;
+              "chapters") echo "matrix=[\"chapters\"]" >> $GITHUB_OUTPUT ;;
+              *) echo "matrix=[\"login\", \"forgot-password\", \"student-dashboard\", \"events\", \"profile\", \"chapters\"]" >> $GITHUB_OUTPUT ;;
+            esac
+          else
+            echo "matrix=[\"login\", \"forgot-password\", \"student-dashboard\", \"events\", \"profile\", \"chapters\"]" >> $GITHUB_OUTPUT
+          fi
+
+  # ================================
+  # JOB 2: Backend Tests & Setup
+  # ================================
+  backend-tests:
+    name: 🛠️ Backend Laravel Tests
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: alouaoui_school_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: mbstring, dom, fileinfo, mysql, zip
+          coverage: xdebug
+
+      - name: 📦 Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-
+
+      - name: 🔧 Install Composer dependencies
+        working-directory: ./backend
+        run: |
+          composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+
+      - name: 📋 Copy environment file
+        working-directory: ./backend
+        run: |
+          cp .env.example .env.testing
+          php artisan key:generate --env=testing
+
+      - name: ⚙️ Configure testing database
+        working-directory: ./backend
+        run: |
+          cat >> .env.testing << EOF
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=alouaoui_school_test
+          DB_USERNAME=root
+          DB_PASSWORD=password
+          
+          SANCTUM_STATEFUL_DOMAINS=localhost:5173
+          SESSION_DRIVER=array
+          CACHE_DRIVER=array
+          QUEUE_CONNECTION=sync
+          EOF
+
+      - name: 🗄️ Run database migrations
+        working-directory: ./backend
+        run: |
+          php artisan migrate:fresh --seed --env=testing --force
+
+      - name: 🧪 Run Laravel tests
+        working-directory: ./backend
+        run: |
+          php artisan test --env=testing --coverage-clover=coverage.xml
+
+      - name: ☁️ Upload backend coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+      - name: 🚀 Start Laravel server for E2E
+        working-directory: ./backend
+        run: |
+          php artisan serve --host=0.0.0.0 --port=8000 --env=testing &
+          sleep 5
+          curl -f http://localhost:8000/api/health || exit 1
+        
+      - name: 💾 Save backend artifacts
+        run: |
+          mkdir -p /tmp/backend-logs
+          cp backend/storage/logs/*.log /tmp/backend-logs/ || true
+
+      - name: 📤 Upload backend logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: backend-logs
+          path: /tmp/backend-logs
+          retention-days: 7
+
+  # ================================
+  # JOB 3: E2E Tests Matrix
+  # ================================
+  e2e-tests:
+    name: 🔬 E2E Tests (${{ matrix.test-suite }})
+    runs-on: ubuntu-latest
+    needs: [setup, backend-tests]
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite: ${{ fromJson(needs.setup.outputs.matrix) }}
+        browser: [chrome, firefox]
+        
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 🐘 Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: mbstring, dom, fileinfo, mysql
+
+      - name: 🗄️ Setup MySQL
+        run: |
+          sudo systemctl start mysql
+          mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS alouaoui_school_test;"
+          mysql -u root -proot -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
+
+      - name: 📦 Cache frontend dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            frontend/node_modules
+            ~/.cache/Cypress
+          key: npm-cypress-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            npm-cypress-
+
+      - name: 🔧 Install frontend dependencies
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npx cypress install
+
+      - name: 🔧 Setup backend for E2E
+        working-directory: ./backend
+        run: |
+          composer install --no-dev --optimize-autoloader
+          cp .env.example .env.testing
+          php artisan key:generate --env=testing
+          cat >> .env.testing << EOF
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=alouaoui_school_test
+          DB_USERNAME=root
+          DB_PASSWORD=password
+          SANCTUM_STATEFUL_DOMAINS=localhost:5173
+          SESSION_DRIVER=array
+          CACHE_DRIVER=array
+          QUEUE_CONNECTION=sync
+          EOF
+          php artisan migrate:fresh --seed --env=testing --force
+
+      - name: 🚀 Start backend server
+        working-directory: ./backend
+        run: |
+          php artisan serve --host=0.0.0.0 --port=8000 --env=testing &
+          echo $! > backend.pid
+          sleep 10
+          curl -f http://localhost:8000/api/health || (echo "Backend health check failed" && exit 1)
+
+      - name: 🚀 Start frontend server
+        working-directory: ./frontend
+        run: |
+          npm run build
+          npm run preview -- --host 0.0.0.0 --port 5173 &
+          echo $! > frontend.pid
+          sleep 10
+          curl -f http://localhost:5173 || (echo "Frontend health check failed" && exit 1)
+
+      - name: 🔍 Verify services are running
+        run: |
+          echo "Backend status:" && curl -s http://localhost:8000/api/health || echo "Backend not responding"
+          echo "Frontend status:" && curl -s -I http://localhost:5173 || echo "Frontend not responding"
+          netstat -tlnp | grep -E ':(8000|5173)'
+
+      - name: 🧪 Run Cypress E2E Tests
+        working-directory: ./frontend
+        run: |
+          # Choisir le bon navigateur
+          BROWSER="${{ matrix.browser }}"
+          if [[ "${{ github.event.inputs.browser }}" != "" ]]; then
+            BROWSER="${{ github.event.inputs.browser }}"
+          fi
+          
+          # Créer les répertoires pour les rapports
+          mkdir -p cypress/reports cypress/screenshots cypress/videos
+          
+          # Exécuter les tests spécifiques
+          npx cypress run \
+            --spec "cypress/e2e/${{ matrix.test-suite }}.cy.js" \
+            --browser "$BROWSER" \
+            --reporter mochawesome \
+            --reporter-options "reportDir=cypress/reports,overwrite=false,html=true,json=true,timestamp=mmddyyyy_HHMMss" \
+            --record false \
+            --config "screenshotOnRunFailure=true,video=true,videoCompression=32" \
+            --env "CI=true,ENVIRONMENT=testing"
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📊 Generate test summary
+        if: always()
+        working-directory: ./frontend
+        run: |
+          echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Suite:** ${{ matrix.test-suite }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Browser:** ${{ matrix.browser }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Testing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Compter les résultats si les fichiers existent
+          if [ -d "cypress/reports" ]; then
+            PASSED=$(find cypress/reports -name "*.json" -exec jq '.stats.passes // 0' {} \; | awk '{s+=$1} END {print s}')
+            FAILED=$(find cypress/reports -name "*.json" -exec jq '.stats.failures // 0' {} \; | awk '{s+=$1} END {print s}')
+            TOTAL=$((PASSED + FAILED))
+            
+            echo "**Tests Passed:** ${PASSED:-0}" >> $GITHUB_STEP_SUMMARY
+            echo "**Tests Failed:** ${FAILED:-0}" >> $GITHUB_STEP_SUMMARY
+            echo "**Total Tests:** ${TOTAL:-0}" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${FAILED:-0}" -gt 0 ]; then
+              echo "❌ **Status:** FAILED" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ **Status:** PASSED" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ **Status:** No test reports generated" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📤 Upload Cypress screenshots
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: cypress-screenshots-${{ matrix.test-suite }}-${{ matrix.browser }}
+          path: frontend/cypress/screenshots
+          retention-days: 7
+
+      - name: 📹 Upload Cypress videos
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: cypress-videos-${{ matrix.test-suite }}-${{ matrix.browser }}
+          path: frontend/cypress/videos
+          retention-days: 7
+
+      - name: 📊 Upload test reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: cypress-reports-${{ matrix.test-suite }}-${{ matrix.browser }}
+          path: frontend/cypress/reports
+          retention-days: 14
+
+      - name: 🧹 Cleanup processes
+        if: always()
+        run: |
+          if [ -f backend/backend.pid ]; then
+            kill $(cat backend/backend.pid) || true
+          fi
+          if [ -f frontend/frontend.pid ]; then
+            kill $(cat frontend/frontend.pid) || true
+          fi
+          pkill -f "php artisan serve" || true
+          pkill -f "vite" || true
+
+  # ================================
+  # JOB 4: Collect & Report Results
+  # ================================
+  report-results:
+    name: 📋 Collect & Report Results
+    runs-on: ubuntu-latest
+    needs: [e2e-tests]
+    if: always()
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./artifacts
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Install mochawesome-merge
+        run: |
+          npm install -g mochawesome-merge mochawesome-report-generator
+
+      - name: 📊 Merge test reports
+        run: |
+          mkdir -p ./merged-reports
+          
+          # Fusionner tous les rapports JSON
+          find ./artifacts -name "*.json" -path "*/cypress/reports/*" | head -20 | \
+          xargs mochawesome-merge > ./merged-reports/merged-report.json || \
+          echo '{"stats":{"passes":0,"failures":0,"tests":0}}' > ./merged-reports/merged-report.json
+          
+          # Générer le rapport HTML final
+          mochawesome-report-generator ./merged-reports/merged-report.json \
+            --reportDir ./merged-reports \
+            --reportTitle "Alouaoui School - E2E Test Results" \
+            --reportPageTitle "E2E Tests Report" \
+            --inline
+
+      - name: 📊 Generate comprehensive summary
+        run: |
+          echo "# 🧪 E2E Tests - Comprehensive Results Report" > test-summary.md
+          echo "" >> test-summary.md
+          echo "**Workflow:** ${{ github.workflow }}" >> test-summary.md
+          echo "**Run ID:** ${{ github.run_id }}" >> test-summary.md
+          echo "**Branch:** ${{ github.ref_name }}" >> test-summary.md
+          echo "**Commit:** ${{ github.sha }}" >> test-summary.md
+          echo "**Triggered by:** ${{ github.actor }}" >> test-summary.md
+          echo "**Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          # Analyser les résultats
+          if [ -f "./merged-reports/merged-report.json" ]; then
+            TOTAL_TESTS=$(jq '.stats.tests // 0' ./merged-reports/merged-report.json)
+            PASSED_TESTS=$(jq '.stats.passes // 0' ./merged-reports/merged-report.json)
+            FAILED_TESTS=$(jq '.stats.failures // 0' ./merged-reports/merged-report.json)
+            SKIPPED_TESTS=$(jq '.stats.pending // 0' ./merged-reports/merged-report.json)
+            DURATION=$(jq '.stats.duration // 0' ./merged-reports/merged-report.json)
+            
+            echo "## 📊 Test Statistics" >> test-summary.md
+            echo "" >> test-summary.md
+            echo "| Metric | Value |" >> test-summary.md
+            echo "|--------|-------|" >> test-summary.md
+            echo "| **Total Tests** | $TOTAL_TESTS |" >> test-summary.md
+            echo "| **Passed** | ✅ $PASSED_TESTS |" >> test-summary.md
+            echo "| **Failed** | ❌ $FAILED_TESTS |" >> test-summary.md
+            echo "| **Skipped** | ⏭️ $SKIPPED_TESTS |" >> test-summary.md
+            echo "| **Duration** | ${DURATION}ms |" >> test-summary.md
+            echo "" >> test-summary.md
+            
+            # Calculer le taux de réussite
+            if [ "$TOTAL_TESTS" -gt 0 ]; then
+              SUCCESS_RATE=$((PASSED_TESTS * 100 / TOTAL_TESTS))
+              echo "| **Success Rate** | $SUCCESS_RATE% |" >> test-summary.md
+            fi
+          else
+            echo "⚠️ No test results found" >> test-summary.md
+          fi
+          
+          echo "" >> test-summary.md
+          echo "## 📁 Artifacts Generated" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          # Lister les artefacts
+          find ./artifacts -type f | while read file; do
+            echo "- \`${file#./artifacts/}\`" >> test-summary.md
+          done
+          
+          echo "" >> test-summary.md
+          echo "## 🔗 Useful Links" >> test-summary.md
+          echo "" >> test-summary.md
+          echo "- [Full HTML Report](./merged-reports/merged-report.html)" >> test-summary.md
+          echo "- [GitHub Actions Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> test-summary.md
+          echo "- [Repository](${{ github.server_url }}/${{ github.repository }})" >> test-summary.md
+
+      - name: 📤 Upload merged reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: 📊-final-test-reports
+          path: |
+            ./merged-reports
+            ./test-summary.md
+          retention-days: 30
+
+      - name: 📋 Add to Job Summary
+        run: |
+          cat test-summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: 💬 Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('test-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+  # ================================
+  # JOB 5: Deployment (if all tests pass)
+  # ================================
+  deploy:
+    name: 🚀 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, report-results]
+    if: github.ref == 'refs/heads/main' && success()
+    environment: staging
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: ✅ All tests passed - Ready for deployment
+        run: |
+          echo "🎉 All E2E tests passed successfully!"
+          echo "✅ Backend Laravel: Functional"
+          echo "✅ Frontend React: Synchronized"
+          echo "✅ E2E Coverage: Complete"
+          echo ""
+          echo "🚀 Ready for staging deployment..."
+          
+      # Ici vous pouvez ajouter vos étapes de déploiement spécifiques
+      # Par exemple: déploiement sur Vercel, Netlify, AWS, etc.
+      
+      - name: 📊 Deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Staging" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**All E2E tests:** ✅ Passed" >> $GITHUB_STEP_SUMMARY

@@ -9,8 +9,10 @@ import AdminLayout from '../components/common/Layout/AdminLayout'
 const HomePage = lazy(() => import('../pages/public/HomePage'))
 const LoginPage = lazy(() => import('../pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'))
+const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'))
 
 // Student pages
+const StudentDashboardPage = lazy(() => import('../pages/student/DashboardPage'))
 const StudentProfilePage = lazy(() => import('../pages/student/ProfilePage'))
 const StudentChaptersPage = lazy(() => import('../pages/student/ChaptersPage'))
 const StudentCoursePage = lazy(() => import('../pages/student/CoursePage'))
@@ -50,6 +52,10 @@ const router = createBrowserRouter([
     path: '/register',
     element: <RegisterPage />,
   },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />,
+  },
 
   // Student routes (protected)
   {
@@ -60,6 +66,10 @@ const router = createBrowserRouter([
       </PrivateRoute>
     ),
     children: [
+      {
+        index: true,
+        element: <StudentDashboardPage />,
+      },
       {
         path: 'profile',
         element: <StudentProfilePage />,

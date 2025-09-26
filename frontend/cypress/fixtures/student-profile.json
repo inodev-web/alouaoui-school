@@ -1,0 +1,87 @@
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Jean Dupont",
+    "email": "jean.dupont@example.com",
+    "phone": "06 12 34 56 78",
+    "date_of_birth": "2005-03-15",
+    "school": "Lycée Al-Khawarizmi",
+    "education_level": "Terminale S",
+    "profile_picture": "/images/profiles/student-avatar.jpg",
+    "subscription": {
+      "status": "active",
+      "plan": "premium",
+      "start_date": "2024-09-01T00:00:00.000Z",
+      "end_date": "2025-08-31T23:59:59.000Z",
+      "auto_renewal": true
+    },
+    "preferences": {
+      "language": "fr",
+      "theme": "light",
+      "notifications": {
+        "email": true,
+        "sms": false,
+        "push": true,
+        "marketing": false
+      },
+      "study_reminders": true,
+      "progress_reports": "weekly"
+    },
+    "academic_info": {
+      "specialization": "Sciences Mathématiques",
+      "target_exam": "Baccalauréat 2025",
+      "mathematics_level": "Avancé",
+      "strong_subjects": ["Algèbre", "Géométrie", "Analyse"],
+      "weak_subjects": ["Probabilités", "Statistiques"],
+      "study_hours_per_week": 15,
+      "preferred_study_time": "evening"
+    },
+    "progress": {
+      "completed_chapters": 24,
+      "total_chapters": 36,
+      "completion_percentage": 67,
+      "average_score": 16.5,
+      "streak_days": 12,
+      "total_study_hours": 180,
+      "badges_earned": ["Assidu", "Perfectionniste", "Rapide"]
+    },
+    "recent_activity": [
+      {
+        "date": "2025-01-20T14:30:00.000Z",
+        "action": "completed_exercise",
+        "details": "Exercice: Dérivées et primitives",
+        "score": 18
+      },
+      {
+        "date": "2025-01-19T16:15:00.000Z",
+        "action": "attended_live",
+        "details": "Session Live: Préparation Bac Blanc",
+        "duration": 90
+      },
+      {
+        "date": "2025-01-18T10:45:00.000Z",
+        "action": "watched_chapter",
+        "details": "Chapitre 12: Fonctions logarithmes",
+        "progress": 100
+      }
+    ],
+    "settings": {
+      "privacy": {
+        "profile_visibility": "friends",
+        "show_progress": true,
+        "show_achievements": true
+      },
+      "security": {
+        "two_factor_enabled": false,
+        "login_notifications": true,
+        "password_last_changed": "2024-12-15T08:30:00.000Z"
+      },
+      "data": {
+        "download_data": true,
+        "delete_account": false,
+        "data_retention": "keep_forever"
+      }
+    }
+  }
+}

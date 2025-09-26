@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
 class AuthTest extends TestCase
@@ -290,7 +292,9 @@ class AuthTest extends TestCase
             'X-Device-UUID' => 'device-1'
         ])->getJson('/api/auth/profile');
 
-        $profileResponse->assertStatus(401); // Token should be invalid after device 2 login        // Try to access with token from device 2 (should work)
+        $profileResponse->assertStatus(401); // Token should be invalid after device 2 login
+        
+        // Try to access with token from device 2 (should work)
         $profileResponse2 = $this->withHeaders([
             'Authorization' => "Bearer $token2",
             'X-Device-UUID' => 'device-2'
@@ -298,14 +302,151 @@ class AuthTest extends TestCase
 
         $profileResponse2->assertStatus(200);
 
+        // Clear authentication cache to ensure fresh token validation
+        $this->app->forgetInstance('auth');
+        $this->app['auth']->forgetGuards();
+        
         // Try to access with old token from device 1 again (should still fail)
         $profileResponse1 = $this->withHeaders([
             'Authorization' => "Bearer $token1",
             'X-Device-UUID' => 'device-1'
         ])->getJson('/api/auth/profile');
 
-        // Should get 409 (device conflict) because middleware detects device mismatch
-        $profileResponse1->assertStatus(409)
-                         ->assertJsonPath('error_code', 'DEVICE_CONFLICT');
+        // Should get 401 (unauthorized) because token was deleted when user logged in from device 2
+        $profileResponse1->assertStatus(401);
+    }
+
+    /**
+     * Test forgot password functionality
+     */
+    public function test_forgot_password_with_valid_email(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'test@example.com',
+        ]);
+
+        $response = $this->postJson('/api/auth/forgot-password', [
+            'email' => 'test@example.com',
+        ]);
+
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'message',
+                    'reset_token', // En production, ceci ne serait pas exposé
+                    'email'
+                ]);
+
+        // Vérifier qu'un token a été créé dans la base
+        $this->assertDatabaseHas('password_reset_tokens', [
+            'email' => 'test@example.com',
+        ]);
+    }
+
+    /**
+     * Test forgot password with invalid email
+     */
+    public function test_forgot_password_with_invalid_email(): void
+    {
+        $response = $this->postJson('/api/auth/forgot-password', [
+            'email' => 'nonexistent@example.com',
+        ]);
+
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['email']);
+    }
+
+    /**
+     * Test reset password with valid token
+     */
+    public function test_reset_password_with_valid_token(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'test@example.com',
+            'password' => Hash::make('old_password'),
+        ]);
+
+        // Créer un token de reset
+        $token = \Illuminate\Support\Str::random(64);
+        \DB::table('password_reset_tokens')->insert([
+            'email' => 'test@example.com',
+            'token' => Hash::make($token),
+            'created_at' => now(),
+        ]);
+
+        $response = $this->postJson('/api/auth/reset-password', [
+            'email' => 'test@example.com',
+            'token' => $token,
+            'password' => 'new_password123',
+            'password_confirmation' => 'new_password123',
+        ]);
+
+        $response->assertStatus(200)
+                ->assertJson([
+                    'message' => 'Mot de passe réinitialisé avec succès'
+                ]);
+
+        // Vérifier que le mot de passe a été changé
+        $user->refresh();
+        $this->assertTrue(Hash::check('new_password123', $user->password));
+
+        // Vérifier que le token a été supprimé
+        $this->assertDatabaseMissing('password_reset_tokens', [
+            'email' => 'test@example.com',
+        ]);
+
+        // Vérifier que tous les tokens d'auth ont été révoqués
+        $this->assertEquals(0, $user->tokens()->count());
+    }
+
+    /**
+     * Test reset password with invalid token
+     */
+    public function test_reset_password_with_invalid_token(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'test@example.com',
+        ]);
+
+        $response = $this->postJson('/api/auth/reset-password', [
+            'email' => 'test@example.com',
+            'token' => 'invalid_token',
+            'password' => 'new_password123',
+            'password_confirmation' => 'new_password123',
+        ]);
+
+        $response->assertStatus(422)
+                ->assertJson([
+                    'message' => 'Token invalide ou expiré'
+                ]);
+    }
+
+    /**
+     * Test reset password with expired token
+     */
+    public function test_reset_password_with_expired_token(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'test@example.com',
+        ]);
+
+        // Créer un token expiré (plus d'une heure)
+        $token = \Illuminate\Support\Str::random(64);
+        \DB::table('password_reset_tokens')->insert([
+            'email' => 'test@example.com',
+            'token' => Hash::make($token),
+            'created_at' => now()->subHours(2), // Expiré
+        ]);
+
+        $response = $this->postJson('/api/auth/reset-password', [
+            'email' => 'test@example.com',
+            'token' => $token,
+            'password' => 'new_password123',
+            'password_confirmation' => 'new_password123',
+        ]);
+
+        $response->assertStatus(422)
+                ->assertJson([
+                    'message' => 'Token invalide ou expiré'
+                ]);
     }
 }
