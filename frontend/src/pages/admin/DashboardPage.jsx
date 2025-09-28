@@ -10,17 +10,17 @@ import { Users, GraduationCap, DollarSign, Clock, AlertTriangle, TrendingUp } fr
 
 export default function AdminDashboardPage() {
   return (
-    <div>
+    <div dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your educational platform.
+          <h1 className="text-3xl font-bold text-foreground text-right">لوحة التحكم</h1>
+          <p className="text-muted-foreground text-right">
+            مرحباً بك مرة أخرى! إليك ما يحدث في منصتك التعليمية.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <CalendarDateRangePicker />
-          <Button>Download Report</Button>
+          <Button>تحميل التقرير</Button>
         </div>
       </div>
 
@@ -28,51 +28,51 @@ export default function AdminDashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                <CardTitle className="text-sm font-medium text-right">إجمالي الطلاب</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">1,234</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-500">+12%</span> from last month
+                <div className="text-2xl font-bold text-right">1,234</div>
+                <p className="text-xs text-muted-foreground text-right">
+                  <span className="text-green-500">+12%</span> من الشهر الماضي
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Teachers</CardTitle>
+                <CardTitle className="text-sm font-medium text-right">إجمالي المعلمين</CardTitle>
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">45</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-500">+3</span> new this month
+                <div className="text-2xl font-bold text-right">45</div>
+                <p className="text-xs text-muted-foreground text-right">
+                  <span className="text-green-500">+3</span> جديد هذا الشهر
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium text-right">الإيرادات</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$12,345</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-500">+8%</span> from last month
+                <div className="text-2xl font-bold text-right">$12,345</div>
+                <p className="text-xs text-muted-foreground text-right">
+                  <span className="text-green-500">+8%</span> من الشهر الماضي
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+                <CardTitle className="text-sm font-medium text-right">الجلسات النشطة</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">89</div>
-                <p className="text-xs text-muted-foreground">Currently ongoing</p>
+                <div className="text-2xl font-bold text-right">89</div>
+                <p className="text-xs text-muted-foreground text-right">جارية حالياً</p>
               </CardContent>
             </Card>
           </div>
@@ -81,18 +81,18 @@ export default function AdminDashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
             <Card className="col-span-4">
               <CardHeader>
-                <CardTitle>Subscriptions Overview</CardTitle>
-                <CardDescription>Monthly subscription trends and revenue</CardDescription>
+                <CardTitle className="text-right">نظرة عامة على الاشتراكات</CardTitle>
+                <CardDescription className="text-right">اتجاهات الاشتراكات الشهرية والإيرادات</CardDescription>
               </CardHeader>
-              <CardContent className="pl-2">
+              <CardContent className="pr-2">
                 <Overview />
               </CardContent>
             </Card>
 
             <Card className="col-span-3">
               <CardHeader>
-                <CardTitle>Top Teachers</CardTitle>
-                <CardDescription>By student count this month</CardDescription>
+                <CardTitle className="text-right">أفضل المعلمين</CardTitle>
+                <CardDescription className="text-right">حسب عدد الطلاب هذا الشهر</CardDescription>
               </CardHeader>
               <CardContent>
                 <TopTeachers />
@@ -104,11 +104,11 @@ export default function AdminDashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 mb-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-right">
                   <AlertTriangle className="h-5 w-5 text-orange-500" />
-                  Guest Entries (Ma3fi Cases)
+                  الدخول كضيف (حالات معفي)
                 </CardTitle>
-                <CardDescription>Monthly guest entries with primary causes</CardDescription>
+                <CardDescription className="text-right">دخول الضيوف الشهري مع الأسباب الرئيسية</CardDescription>
               </CardHeader>
               <CardContent>
                 <GuestEntriesChart />
@@ -117,35 +117,35 @@ export default function AdminDashboardPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-right">
                   <TrendingUp className="h-5 w-5 text-green-500" />
-                  Performance Metrics
+                  مؤشرات الأداء
                 </CardTitle>
-                <CardDescription>Key performance indicators</CardDescription>
+                <CardDescription className="text-right">مؤشرات الأداء الرئيسية</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Average Session Duration</span>
-                  <span className="text-sm text-muted-foreground">1.8 hours</span>
+                  <span className="text-sm font-medium text-right">متوسط مدة الجلسة</span>
+                  <span className="text-sm text-muted-foreground">1.8 ساعة</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Student Retention Rate</span>
+                  <span className="text-sm font-medium text-right">معدل الاحتفاظ بالطلاب</span>
                   <span className="text-sm text-green-500">94.2%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Teacher Satisfaction</span>
+                  <span className="text-sm font-medium text-right">رضا المعلمين</span>
                   <span className="text-sm text-green-500">4.8/5.0</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Monthly Growth</span>
+                  <span className="text-sm font-medium text-right">النمو الشهري</span>
                   <span className="text-sm text-green-500">+12.5%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">System Uptime</span>
+                  <span className="text-sm font-medium text-right">وقت تشغيل النظام</span>
                   <span className="text-sm text-green-500">99.8%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Guest Entry Rate</span>
+                  <span className="text-sm font-medium text-right">معدل الدخول كضيف</span>
                   <span className="text-sm text-orange-500">2.1%</span>
                 </div>
               </CardContent>
@@ -156,8 +156,8 @@ export default function AdminDashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Recent Sessions</CardTitle>
-                <CardDescription>Latest session activities and revenue breakdown</CardDescription>
+                <CardTitle className="text-right">الجلسات الأخيرة</CardTitle>
+                <CardDescription className="text-right">أحدث أنشطة الجلسات وتفصيل الإيرادات</CardDescription>
               </div>
               <SessionDetailsModal />
             </CardHeader>

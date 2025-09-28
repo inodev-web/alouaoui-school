@@ -18,37 +18,37 @@ const cn = (...classes) => {
 
 const navigation = [
   {
-    name: "Dashboard",
+    name: "لوحة التحكم",
     href: "/admin",
     icon: LayoutDashboard,
   },
   {
-    name: "Students",
+    name: "الطلاب",
     href: "/admin/students",
     icon: Users,
   },
   {
-    name: "Teachers",
+    name: "المعلمين",
     href: "/admin/teachers",
     icon: GraduationCap,
   },
   {
-    name: "Sessions",
+    name: "الجلسات",
     href: "/admin/sessions",
     icon: Calendar,
   },
   {
-    name: "Chapters",
+    name: "الفصول",
     href: "/admin/chapters",
     icon: BookOpen,
   },
   {
-    name: "Check-In",
+    name: "تسجيل الحضور",
     href: "/admin/check-in",
     icon: QrCode,
   },
   {
-    name: "Events",
+    name: "الأحداث",
     href: "/admin/events",
     icon: CalendarDays,
   },
@@ -58,10 +58,10 @@ export function AdminSidebar() {
   const location = useLocation();
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gray-50 border-r border-gray-200">
+    <div className="flex h-full w-64 flex-col bg-gray-50 border-r border-gray-200" dir="rtl">
       <div className="flex h-16 items-center px-6 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-900">
-          EduAdmin
+        <h1 className="text-xl font-bold text-gray-900 text-right">
+          لوحة الإدارة
         </h1>
       </div>
 
@@ -73,7 +73,7 @@ export function AdminSidebar() {
               key={item.name}
               to={item.href}
               className={cn(
-                "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left",
+                "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-right",
                 isActive
                   ? "bg-blue-100 text-blue-700"
                   : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
@@ -89,10 +89,10 @@ export function AdminSidebar() {
       <div className="border-t border-gray-200 p-3">
         <Link
           to="/admin/settings"
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors text-left"
+          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors text-right"
         >
           <Settings className="h-5 w-5" />
-          Settings
+          الإعدادات
         </Link>
       </div>
     </div>

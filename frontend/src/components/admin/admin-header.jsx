@@ -14,13 +14,13 @@ import {
 
 export function AdminHeader() {
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
+    <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6" dir="rtl">
       <div className="flex items-center gap-4 flex-1">
         <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search students, teachers, sessions..."
-            className="pl-10 bg-background"
+            placeholder="البحث عن الطلاب، المعلمين، الجلسات..."
+            className="pr-10 bg-background text-right"
           />
         </div>
       </div>
@@ -28,7 +28,7 @@ export function AdminHeader() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full text-xs flex items-center justify-center text-primary-foreground">
+          <span className="absolute -top-1 -left-1 h-3 w-3 bg-primary rounded-full text-xs flex items-center justify-center text-primary-foreground">
             3
           </span>
         </Button>
@@ -39,13 +39,13 @@ export function AdminHeader() {
               <User className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Admin Account</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-56" dir="rtl">
+            <DropdownMenuLabel>حساب المدير</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>الملف الشخصي</DropdownMenuItem>
+            <DropdownMenuItem>الإعدادات</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Sign out</DropdownMenuItem>
+            <DropdownMenuItem>تسجيل الخروج</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

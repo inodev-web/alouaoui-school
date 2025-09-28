@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Video, BookOpen, PenTool, Users, Play, CheckCircle } from 'lucide-react';
 
 export default function FeaturesSection() {
@@ -83,17 +84,22 @@ export default function FeaturesSection() {
                   </p>
 
                   {/* CTA Button */}
-                  <button className={`
-                    w-full py-3 px-6 rounded-2xl font-semibold text-sm
-                    bg-white/80 backdrop-blur-sm border-2 ${feature.borderColor}
-                    ${feature.iconColor} hover:bg-white hover:scale-105
-                    transform transition-all duration-300 ease-in-out
-                    shadow-lg hover:shadow-xl group-hover:shadow-2xl
-                    flex items-center justify-center gap-2
-                  `}>
+                  <Link 
+                    to={feature.title === "الدروس" ? "/student/courses" : 
+                        feature.title === "اللايف" ? "/student/lives" : 
+                        "/student/exercises"}
+                    className={`
+                      w-full py-3 px-6 rounded-2xl font-semibold text-sm
+                      bg-white/80 backdrop-blur-sm border-2 ${feature.borderColor}
+                      ${feature.iconColor} hover:bg-white hover:scale-105
+                      transform transition-all duration-300 ease-in-out
+                      shadow-lg hover:shadow-xl group-hover:shadow-2xl
+                      flex items-center justify-center gap-2
+                    `}
+                  >
                     <Play className="w-4 h-4" />
                     اكتشف المزيد
-                  </button>
+                  </Link>
                 </div>
 
                 {/* Decorative Elements */}

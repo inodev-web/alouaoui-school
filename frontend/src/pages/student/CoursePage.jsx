@@ -29,7 +29,7 @@ const StudentCoursePage = () => {
   ]
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto mt-16 lg:mt-20">
       {/* Course Header */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex gap-4">

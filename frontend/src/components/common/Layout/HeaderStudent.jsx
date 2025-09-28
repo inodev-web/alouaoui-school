@@ -17,10 +17,9 @@ const Navbar = () => {
           </div>
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center space-x-8 rtl:space-x-reverse">
-            <a href="#contact" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">تواصل معي</a>
-            <a href="#results" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">نتائج و اراء</a>
-            <a href="#about" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">عني</a>
-            <a href="#courses" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">الاحداث</a>
+            <Link to="/student/profile" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">حسابي</Link>
+            <Link to="/student/lives" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">لايف</Link>
+            <Link to="/student/chapters" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">الدروس</Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -47,10 +46,9 @@ const Navbar = () => {
         {/* Mobile Menu */}
         <div className={`lg:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="py-4 space-y-4 bg-gray-50 rounded-lg mb-4">
-            <a href="#courses" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">الاحداث</a>
-            <a href="#about" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">عني</a>
-            <a href="#results" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">نتائج و اراء</a>
-            <a href="#contact" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">تواصل معي</a>
+            <Link to="/student/chapters" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">الدروس</Link>
+            <Link to="/student/lives" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">لايف</Link>
+            <Link to="/student/profile" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">حسابي</Link>
             <div className="px-4 pt-2">
               <Link to="/register" className="block w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 text-center">
                  سجل الان

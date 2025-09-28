@@ -191,7 +191,7 @@ const StudentChaptersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-400 to-pink-500 p-6" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-red-400 to-pink-500 p-6 mt-16 lg:mt-20" dir="rtl">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

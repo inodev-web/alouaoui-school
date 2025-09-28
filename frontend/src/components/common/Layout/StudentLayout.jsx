@@ -1,12 +1,12 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Header from './Header';
+import HeaderStudent from './HeaderStudent';
 import Footer from './Footer';
 
 const StudentLayout = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <HeaderStudent />
       <main className="flex-1 bg-gray-50">
         <div className="">
           <Outlet />

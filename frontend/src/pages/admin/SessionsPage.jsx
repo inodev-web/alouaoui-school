@@ -7,11 +7,11 @@ import { Calendar, Clock, Users, DollarSign } from "lucide-react"
 
 export default function AdminSessionsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Sessions</h1>
-          <p className="text-muted-foreground">Schedule and manage teaching sessions</p>
+          <h1 className="text-3xl font-bold text-foreground text-right">الجلسات</h1>
+          <p className="text-muted-foreground text-right">جدولة وإدارة جلسات التدريس</p>
         </div>
         <AddSessionModal />
       </div>
@@ -20,45 +20,45 @@ export default function AdminSessionsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium text-right">جلسات اليوم</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">Scheduled for today</p>
+            <div className="text-2xl font-bold text-right">12</div>
+            <p className="text-xs text-muted-foreground text-right">مجدولة لليوم</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium text-right">الجلسات النشطة</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">Currently ongoing</p>
+            <div className="text-2xl font-bold text-right">3</div>
+            <p className="text-xs text-muted-foreground text-right">جارية حالياً</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+            <CardTitle className="text-sm font-medium text-right">إجمالي الطلاب</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-muted-foreground">In today's sessions</p>
+            <div className="text-2xl font-bold text-right">156</div>
+            <p className="text-xs text-muted-foreground text-right">في جلسات اليوم</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-right">إيرادات اليوم</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1,240</div>
-            <p className="text-xs text-muted-foreground">From scheduled sessions</p>
+            <div className="text-2xl font-bold text-right">$1,240</div>
+            <p className="text-xs text-muted-foreground text-right">من الجلسات المجدولة</p>
           </CardContent>
         </Card>
       </div>
@@ -71,8 +71,8 @@ export default function AdminSessionsPage() {
       {/* All Sessions */}
       <Card>
         <CardHeader>
-          <CardTitle>All Sessions</CardTitle>
-          <CardDescription>View and manage all scheduled sessions</CardDescription>
+          <CardTitle className="text-right">جميع الجلسات</CardTitle>
+          <CardDescription className="text-right">عرض وإدارة جميع الجلسات المجدولة</CardDescription>
         </CardHeader>
         <CardContent>
           <SessionsFilters />

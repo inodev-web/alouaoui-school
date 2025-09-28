@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function AdminCheckInPage() {
   return (
-    <div>
+    <div dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Check-In System</h1>
-          <p className="text-muted-foreground">Scan QR codes and manage student attendance</p>
+          <h1 className="text-3xl font-bold text-foreground text-right">نظام تسجيل الحضور</h1>
+          <p className="text-muted-foreground text-right">مسح رموز QR وإدارة حضور الطلاب</p>
         </div>
       </div>
 
@@ -24,8 +24,8 @@ export default function AdminCheckInPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>QR Code Scanner</CardTitle>
-                  <CardDescription>Scan student QR codes for quick check-in</CardDescription>
+                  <CardTitle className="text-right">ماسح رمز QR</CardTitle>
+                  <CardDescription className="text-right">مسح رموز QR للطلاب لتسجيل الحضور السريع</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <QRScanner />
@@ -35,8 +35,8 @@ export default function AdminCheckInPage() {
               {/* Quick Search */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Quick Search</CardTitle>
-                  <CardDescription>Search for teachers or modules manually</CardDescription>
+                  <CardTitle className="text-right">البحث السريع</CardTitle>
+                  <CardDescription className="text-right">البحث عن المعلمين أو الوحدات يدوياً</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <QuickSearch />
@@ -48,8 +48,8 @@ export default function AdminCheckInPage() {
             <div>
               <Card>
                 <CardHeader>
-                  <CardTitle>Teacher Status</CardTitle>
-                  <CardDescription>Current subscription status and payment options</CardDescription>
+                  <CardTitle className="text-right">حالة المعلمين</CardTitle>
+                  <CardDescription className="text-right">حالة الاشتراك الحالية وخيارات الدفع</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <TeacherCards />

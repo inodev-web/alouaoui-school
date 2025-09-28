@@ -69,7 +69,7 @@ const StudentProfilePage = () => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen font-sans">
+    <div dir="rtl" className="min-h-screen font-sans mt-16 lg:mt-20">
       
       {/* ## قسم الترويسة والملف الشخصي ## */}
       <div className="bg-gradient-to-br from-red-400 to-pink-500 text-white p-8 md:p-12 shadow-lg">
