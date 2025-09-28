@@ -171,6 +171,7 @@ Ce document détaille l'implémentation complète du système de gestion de l'É
 
 ## 🎯 Contrôleurs API
  
+ 
 ### 1. **AuthController** - Authentification
 **Fichier**: `app/Http/Controllers/Api/AuthController.php`
 

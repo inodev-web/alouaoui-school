@@ -1,0 +1,134 @@
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 2,
+      "name": "Student Test User",
+      "email": "student@test.com",
+      "role": "student",
+      "year_of_study": "Bac"
+    },
+    "subscription": {
+      "id": 1,
+      "status": "active",
+      "teacher_name": "Prof. Alouaoui",
+      "teacher_id": 1,
+      "starts_at": "2025-01-01T00:00:00.000Z",
+      "expires_at": "2025-12-31T23:59:59.000Z",
+      "days_remaining": 45,
+      "payment_status": "paid"
+    },
+    "stats": {
+      "chapters_available": 24,
+      "chapters_completed": 15,
+      "videos_watched": 18,
+      "videos_total": 30,
+      "sessions_attended": 8,
+      "sessions_total": 12,
+      "progress_percentage": 62,
+      "total_watch_time": 1250,
+      "average_score": 87.5
+    },
+    "recent_activity": [
+      {
+        "id": 1,
+        "type": "video_watched",
+        "description": "Vidéo \"Chapitre 5: Les Fonctions\" visionnée",
+        "created_at": "2025-01-20T14:30:00.000Z",
+        "metadata": {
+          "chapter_id": 5,
+          "video_duration": 45,
+          "completion_rate": 100
+        }
+      },
+      {
+        "id": 2,
+        "type": "session_attended",
+        "description": "Session live \"Révision Équations\" suivie",
+        "created_at": "2025-01-19T16:00:00.000Z",
+        "metadata": {
+          "session_id": 12,
+          "duration": 90,
+          "attendance_rate": 95
+        }
+      },
+      {
+        "id": 3,
+        "type": "chapter_completed",
+        "description": "Chapitre 4 \"Géométrie\" terminé avec succès",
+        "created_at": "2025-01-18T20:15:00.000Z",
+        "metadata": {
+          "chapter_id": 4,
+          "score": 92,
+          "completion_time": 180
+        }
+      }
+    ],
+    "upcoming_sessions": [
+      {
+        "id": 15,
+        "teacher_id": 1,
+        "teacher_name": "Prof. Alouaoui",
+        "title": "Session de Révision - Analyse",
+        "description": "Révision complète du chapitre Analyse avant l'examen",
+        "session_date": "2025-01-25",
+        "start_time": "14:00",
+        "end_time": "15:30",
+        "status": "confirmed",
+        "max_participants": 50,
+        "current_participants": 23,
+        "meeting_link": "https://meet.example.com/session-15"
+      },
+      {
+        "id": 16,
+        "teacher_id": 1,
+        "teacher_name": "Prof. Alouaoui",
+        "title": "Cours Live - Probabilités",
+        "description": "Introduction aux probabilités et statistiques",
+        "session_date": "2025-01-27",
+        "start_time": "10:00",
+        "end_time": "11:30",
+        "status": "scheduled",
+        "max_participants": 50,
+        "current_participants": 18,
+        "meeting_link": "https://meet.example.com/session-16"
+      }
+    ],
+    "performance_summary": {
+      "current_streak": 7,
+      "longest_streak": 12,
+      "total_points": 2450,
+      "rank_in_class": 3,
+      "total_students": 89,
+      "improvement_areas": [
+        "Géométrie analytique",
+        "Fonctions logarithmiques"
+      ],
+      "strengths": [
+        "Algèbre",
+        "Trigonométrie",
+        "Analyse"
+      ]
+    },
+    "notifications": [
+      {
+        "id": 1,
+        "type": "session_reminder",
+        "title": "Session dans 2 jours",
+        "message": "N'oubliez pas la session de révision du 25 janvier",
+        "created_at": "2025-01-23T09:00:00.000Z",
+        "read": false,
+        "priority": "medium"
+      },
+      {
+        "id": 2,
+        "type": "new_content",
+        "title": "Nouveau chapitre disponible",
+        "message": "Le chapitre 6 sur les Intégrales est maintenant accessible",
+        "created_at": "2025-01-22T12:00:00.000Z",
+        "read": false,
+        "priority": "low"
+      }
+    ]
+  }
+}

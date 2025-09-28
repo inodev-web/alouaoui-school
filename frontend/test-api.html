@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Backend</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test API Backend - Alouaoui School</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="runTests()">🔄 Lancer tous les tests</button>
+    <button onclick="testPublicStats()">📊 Test Stats Publiques</button>
+    <button onclick="testEventsSlider()">🎞️ Test Events Slider</button>
+    <button onclick="testForgotPassword()">🔑 Test Forgot Password</button>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000/api';
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(title, status, data, error = null) {
+            const div = document.createElement('div');
+            div.className = `test-result ${status}`;
+            
+            let content = `<h3>${title}</h3><p>Status: ${status.toUpperCase()}</p>`;
+            
+            if (data) {
+                content += `<details><summary>Données reçues</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;
+            }
+            
+            if (error) {
+                content += `<details><summary>Erreur</summary><pre>${error}</pre></details>`;
+            }
+            
+            div.innerHTML = content;
+            resultsDiv.appendChild(div);
+        }
+
+        async function testPublicStats() {
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/public`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('📊 Stats Publiques', 'success', data);
+                } else {
+                    const errorText = await response.text();
+                    addResult('📊 Stats Publiques', 'error', null, `${response.status}: ${errorText}`);
+                }
+            } catch (error) {
+                addResult('📊 Stats Publiques', 'error', null, error.message);
+            }
+        }
+
+        async function testEventsSlider() {
+            try {
+                const response = await fetch(`${API_BASE}/events/slider`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('🎞️ Events Slider', 'success', data);
+                } else {
+                    const errorText = await response.text();
+                    addResult('🎞️ Events Slider', 'error', null, `${response.status}: ${errorText}`);
+                }
+            } catch (error) {
+                addResult('🎞️ Events Slider', 'error', null, error.message);
+            }
+        }
+
+        async function testForgotPassword() {
+            try {
+                // Test avec un email fictif (ne pas utiliser un vrai email)
+                const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult('🔑 Forgot Password', 'success', data);
+                } else {
+                    // Même si ça échoue avec un email inexistant, c'est normal
+                    // L'important c'est que l'endpoint répond sans "page expired"
+                    if (data.message && !data.message.includes('expired')) {
+                        addResult('🔑 Forgot Password', 'success', data, 'Endpoint fonctionne (échec attendu avec email fictif)');
+                    } else {
+                        addResult('🔑 Forgot Password', 'error', data, `${response.status}: Erreur inattendue`);
+                    }
+                }
+            } catch (error) {
+                addResult('🔑 Forgot Password', 'error', null, error.message);
+            }
+        }
+
+        async function runTests() {
+            resultsDiv.innerHTML = '<div class="test-result pending"><h3>🏃‍♂️ Exécution des tests...</h3></div>';
+            
+            await testPublicStats();
+            await testEventsSlider();
+            await testForgotPassword();
+            
+            // Test résumé
+            const results = Array.from(resultsDiv.children);
+            const successCount = results.filter(r => r.classList.contains('success')).length - 1; // -1 pour ignorer le message "en cours"
+            const totalTests = results.length - 1;
+            
+            addResult(`📈 Résumé`, totalTests === successCount ? 'success' : 'error', {
+                tests_passed: successCount,
+                total_tests: totalTests,
+                success_rate: `${Math.round((successCount/totalTests) * 100)}%`
+            });
+        }
+
+        // Lancer les tests au chargement de la page
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\Admin\CheckinController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\StreamController;
+use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\TestimonialController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +29,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register');
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset-password');
 
     // Protected auth routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -166,8 +171,54 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('abilities:admin')->group(function () {
             Route::get('/streaming/stats', [CourseController::class, 'streamingStats'])->name('streaming.stats');
         });
+
+        // Event management routes
+        Route::prefix('events')->name('events.')->group(function () {
+            // Routes requiring authentication
+            Route::get('/{event}/check-access', [EventController::class, 'checkAccess'])->name('check-access');
+            Route::get('/{event}', [EventController::class, 'show'])->name('show');
+
+            // Admin only routes (Alouaoui only)
+            Route::middleware('abilities:admin')->group(function () {
+                Route::get('/', [EventController::class, 'index'])->name('index');
+                Route::post('/', [EventController::class, 'store'])->name('store');
+                Route::put('/{event}', [EventController::class, 'update'])->name('update');
+                Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
+                Route::patch('/{event}/toggle-status', [EventController::class, 'toggleStatus'])->name('toggle-status');
+                Route::post('/reorder', [EventController::class, 'reorder'])->name('reorder');
+            });
+        });
+
+        // Dashboard routes
+        Route::prefix('dashboard')->name('dashboard.')->group(function () {
+            Route::get('/student', [DashboardController::class, 'studentDashboard'])->name('student');
+            
+            // Admin dashboard
+            Route::middleware('abilities:admin')->group(function () {
+                Route::get('/admin', [DashboardController::class, 'adminDashboard'])->name('admin');
+            });
+        });
+
+        // Testimonial management
+        Route::prefix('testimonials')->name('testimonials.')->group(function () {
+            // Admin only routes
+            Route::middleware('abilities:admin')->group(function () {
+                Route::get('/admin', [TestimonialController::class, 'adminIndex'])->name('admin.index');
+                Route::post('/', [TestimonialController::class, 'store'])->name('store');
+                Route::get('/{testimonial}', [TestimonialController::class, 'show'])->name('show');
+                Route::put('/{testimonial}', [TestimonialController::class, 'update'])->name('update');
+                Route::delete('/{testimonial}', [TestimonialController::class, 'destroy'])->name('destroy');
+                Route::patch('/{testimonial}/toggle-status', [TestimonialController::class, 'toggleStatus'])->name('toggle-status');
+                Route::post('/reorder', [TestimonialController::class, 'reorder'])->name('reorder');
+            });
+        });
     });
 });
+
+// Public routes (no authentication required)
+Route::get('/dashboard/public', [DashboardController::class, 'publicStats'])->name('dashboard.public');
+Route::get('/events/slider', [EventController::class, 'slider'])->name('events.slider');
+Route::get('/testimonials', [TestimonialController::class, 'index'])->name('testimonials.public');
 
 // Routes de streaming (validation par token, pas par auth) avec vérification d'abonnement
 Route::prefix('stream')->name('stream.')->group(function () {
