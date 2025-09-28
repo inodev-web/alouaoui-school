@@ -85,9 +85,9 @@ export default function FeaturesSection() {
 
                   {/* CTA Button */}
                   <Link 
-                    to={feature.title === "الدروس" ? "/student/courses" : 
+                    to={feature.title === "الدروس" ? "/student/chapters" : 
                         feature.title === "اللايف" ? "/student/lives" : 
-                        "/student/exercises"}
+                        "/student/chapters"}
                     className={`
                       w-full py-3 px-6 rounded-2xl font-semibold text-sm
                       bg-white/80 backdrop-blur-sm border-2 ${feature.borderColor}

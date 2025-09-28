@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Play, FileText, Download, BookOpen, Clock, User, Star, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Play, FileText, Download, BookOpen, Clock, User, Star, AlertCircle, RefreshCw } from 'lucide-react'
 import VideoPlayer from '../../components/student/VideoPlayer'
 import { api, endpoints } from '../../services/axios.config'
 
@@ -53,8 +53,8 @@ const StudentCoursePage = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">تحميل بيانات الدرس...</p>
+          <img src="../../public/loading.gif" alt="loading" />
+          <p className="text-red-600">تحميل بيانات الدرس...</p>
         </div>
       </div>
     )
