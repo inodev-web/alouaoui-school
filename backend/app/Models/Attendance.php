@@ -17,6 +17,7 @@ class Attendance extends Model
      */
     protected $fillable = [
         'student_id',
+        'user_uuid',
         'teacher_id',
         'session_id',
         'date',
@@ -46,6 +47,11 @@ class Attendance extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function studentByUuid(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
     /**

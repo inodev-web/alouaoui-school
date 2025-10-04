@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BookOpen, Eye, EyeOff, Phone, Lock } from 'lucide-react'
+import authService from '../../services/api/auth.service'
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -9,31 +10,86 @@ const LoginPage = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+
+  const validateForm = () => {
+    const newErrors = {}
+    
+    if (!formData.phone?.trim()) {
+      newErrors.phone = 'رقم الهاتف مطلوب'
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
+      newErrors.phone = 'رقم الهاتف يجب أن يتكون من 10 أرقام'
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'كلمة المرور مطلوبة'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+    
     setIsLoading(true)
     
     try {
-      // TODO: Implement login logic
-      console.log('Login attempt:', formData)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      // For now, redirect to student dashboard
-      navigate('/student/profile')
+      const response = await authService.login(formData.phone, formData.password)
+      console.log('Login response:', response)
+      
+      if (response.token) {
+        // Stockage explicite du token
+        localStorage.setItem('token', response.token)
+        localStorage.setItem('user', JSON.stringify(response.user))
+        navigate('/student/profile')
+      } else {
+        console.error('No token received in response:', response)
+        throw new Error('لم يتم استلام رمز المصادقة')
+      }
     } catch (error) {
       console.error('Login error:', error)
+      
+      if (error.cause?.details?.errors) {
+        // Erreurs de validation Laravel
+        const validationErrors = error.cause.details.errors
+        setErrors({
+          ...errors,
+          ...Object.keys(validationErrors).reduce((acc, key) => {
+            acc[key] = validationErrors[key][0] // Prendre le premier message d'erreur
+            return acc
+          }, {})
+        })
+      } else {
+        // Erreur générale
+        setErrors({
+          ...errors,
+          submit: error.message || 'حدث خطأ أثناء تسجيل الدخول'
+        })
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleChange = (e) => {
+    const { name, value } = e.target
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     })
+
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      })
+    }
   }
 
   return (
@@ -57,6 +113,13 @@ const LoginPage = () => {
         {/* Login Form */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-white/20">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Error Message */}
+            {errors.submit && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="text-sm text-red-700 text-right">{errors.submit}</div>
+              </div>
+            )}
+
             {/* Phone Field */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2 text-right">
@@ -71,12 +134,18 @@ const LoginPage = () => {
                   name="phone"
                   type="tel"
                   required
-                  className="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200"
-                  placeholder="أدخل رقم هاتفك"
-                  value={formData.phone}
+                  pattern="[0-9]{10}"
+                  className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="أدخل رقم هاتفك (10 أرقام)"
+                  value={formData.phone || ''}
                   onChange={handleChange}
                 />
               </div>
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-600 text-right">{errors.phone}</p>
+              )}
             </div>
 
             {/* Password Field */}
@@ -93,9 +162,12 @@ const LoginPage = () => {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  className="block w-full pr-10 pl-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200"
+                  minLength="6"
+                  className={`block w-full pr-10 pl-12 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="أدخل كلمة المرور"
-                  value={formData.password}
+                  value={formData.password || ''}
                   onChange={handleChange}
                 />
                 <button
@@ -110,6 +182,9 @@ const LoginPage = () => {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 text-right">{errors.password}</p>
+              )}
             </div>
 
             {/* Remember Me & Forgot Password */}

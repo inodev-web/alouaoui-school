@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Jobs\WebhookPaymentJob;
+use Illuminate\Support\Facades\Schema;
 
 class PaymentController extends Controller
 {
@@ -30,7 +31,9 @@ class PaymentController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
+            // accept either legacy numeric user_id or new user_uuid
+            'user_id' => 'sometimes|exists:users,id',
+            'user_uuid' => 'sometimes|exists:users,uuid',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'sometimes|string|max:500',
             'reference' => 'sometimes|string|max:100',
@@ -43,8 +46,7 @@ class PaymentController extends Controller
             ], 422);
         }
 
-        $payment = Payment::create([
-            'user_id' => $request->user_id,
+        $paymentData = [
             'amount' => $request->amount,
             'currency' => 'DZD',
             'payment_method' => 'cash',
@@ -53,7 +55,24 @@ class PaymentController extends Controller
             'description' => $request->description ?? 'Cash payment',
             'processed_by' => $request->user()->id,
             'processed_at' => now()
-        ]);
+        ];
+
+        // Use user_uuid if payments table has the column and a user_uuid is provided or can be resolved
+        if (Schema::hasColumn('payments', 'user_uuid') && $request->filled('user_uuid')) {
+            $paymentData['user_uuid'] = $request->user_uuid;
+        } elseif (Schema::hasColumn('payments', 'user_uuid') && $request->filled('user_id')) {
+            // attempt to resolve user_uuid from users table
+            $user = User::find($request->user_id);
+            if ($user && $user->uuid) {
+                $paymentData['user_uuid'] = $user->uuid;
+            } else {
+                $paymentData['user_id'] = $request->user_id;
+            }
+        } else {
+            $paymentData['user_id'] = $request->user_id;
+        }
+
+        $payment = Payment::create($paymentData);
 
         // Load user relation for response
         $payment->load('user:id,name,email,phone');
@@ -92,11 +111,18 @@ class PaymentController extends Controller
         $query = Payment::query();
 
         if ($user->role !== 'admin') {
-            $query->where('user_id', $user->id);
+            if (Schema::hasColumn('payments', 'user_uuid') && $user->uuid) {
+                $query->where('user_uuid', $user->uuid);
+            } else {
+                $query->where('user_id', $user->id);
+            }
         }
 
         if ($request->has('user_id') && $user->role === 'admin') {
             $query->where('user_id', $request->user_id);
+        }
+        if ($request->has('user_uuid') && $user->role === 'admin' && Schema::hasColumn('payments', 'user_uuid')) {
+            $query->where('user_uuid', $request->user_uuid);
         }
 
         if ($request->has('status')) {

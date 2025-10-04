@@ -19,15 +19,31 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'email',
+        'firstname',
+        'lastname',
+        'birth_date',
+        'address',
+        'school_name',
         'phone',
         'password',
-        'role',
         'year_of_study',
+        'role',
         'device_uuid',
         'qr_token',
+        'uuid',
     ];
+
+    /**
+     * Disable auto-incrementing for UUID primary key (migration later will switch PK).
+     * This tells Eloquent to treat the primary key as a non-incrementing string.
+     */
+    public $incrementing = false;
+
+    /**
+     * The data type of the primary key.
+     * Using string because we'll use UUIDs as PK.
+     */
+    protected $keyType = 'string';
 
     /**
      * The attributes that should be hidden for serialization.
@@ -47,9 +63,24 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'birth_date' => 'date',
             'password' => 'hashed',
+            'uuid' => 'string',
         ];
+    }
+
+    /**
+     * Boot model to generate uuid on create if missing
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
     }
 
     /**

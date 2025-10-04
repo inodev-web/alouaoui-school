@@ -18,6 +18,7 @@ class Subscription extends Model
      */
     protected $fillable = [
         'user_id',
+        'user_uuid',
         'teacher_id',
         'amount',
         'videos_access',

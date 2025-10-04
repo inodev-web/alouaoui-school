@@ -13,13 +13,18 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('firstname');
+            $table->string('lastname');
+            $table->date('birth_date');
+            $table->string('address');
+            $table->string('school_name');
             $table->string('phone')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('year_of_study', [
+                '1AM', '2AM', '3AM', '4AM',
+                '1AS', '2AS', '3AS'
+            ])->nullable(false);
             $table->enum('role', ['admin', 'student'])->default('student');
-            $table->enum('year_of_study', ['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS'])->nullable();
             $table->string('device_uuid')->nullable();
             $table->uuid('qr_token')->unique();
             $table->rememberToken();

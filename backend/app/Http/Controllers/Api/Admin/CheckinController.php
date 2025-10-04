@@ -11,6 +11,7 @@ use App\Services\AccessControlService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class CheckinController extends Controller
@@ -46,9 +47,25 @@ class CheckinController extends Controller
         }
 
         // Trouver l'étudiant par QR token
-        $student = User::where('qr_token', $request->qr_token)
-            ->where('role', 'student')
-            ->first();
+        $qr = $request->qr_token;
+        $student = null;
+
+        // Support QR codes generated from the student numeric id like: StudentID-123
+        if (is_string($qr) && strpos($qr, 'StudentID-') === 0) {
+            $idPart = substr($qr, strlen('StudentID-'));
+            if (ctype_digit($idPart)) {
+                $student = User::where('id', (int) $idPart)
+                    ->where('role', 'student')
+                    ->first();
+            }
+        }
+
+        // Fallback: lookup by stored qr_token UUID
+        if (!$student) {
+            $student = User::where('qr_token', $qr)
+                ->where('role', 'student')
+                ->first();
+        }
 
         if (!$student) {
             return response()->json([
@@ -313,7 +330,9 @@ class CheckinController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
+            // accept either legacy numeric user_id or new user_uuid
+            'user_id' => 'sometimes|exists:users,id',
+            'user_uuid' => 'sometimes|exists:users,uuid',
             'teacher_id' => 'required|exists:teachers,id',
             'session_date' => 'required|date',
             'reason' => 'sometimes|string|max:500',
@@ -326,7 +345,11 @@ class CheckinController extends Controller
             ], 422);
         }
 
-        $student = User::findOrFail($request->user_id);
+        if ($request->filled('user_uuid')) {
+            $student = User::where('uuid', $request->user_uuid)->firstOrFail();
+        } else {
+            $student = User::findOrFail($request->user_id);
+        }
         $teacher = Teacher::findOrFail($request->teacher_id);
 
         if ($student->role !== 'student') {
@@ -346,10 +369,13 @@ class CheckinController extends Controller
         ]);
 
         // Vérifier si déjà présent
-        $existingAttendance = Attendance::where([
-            'user_id' => $student->id,
-            'session_id' => $session->id,
-        ])->first();
+        $existingAttendanceQuery = Attendance::where('session_id', $session->id);
+        if (Schema::hasColumn('attendances', 'user_uuid') && $student->uuid) {
+            $existingAttendanceQuery->where('user_uuid', $student->uuid);
+        } else {
+            $existingAttendanceQuery->where('user_id', $student->id);
+        }
+        $existingAttendance = $existingAttendanceQuery->first();
 
         if ($existingAttendance) {
             return response()->json([
@@ -358,13 +384,25 @@ class CheckinController extends Controller
         }
 
         // Créer la présence
-        $attendance = Attendance::create([
-            'user_id' => $student->id,
+        $attendanceData = [
             'session_id' => $session->id,
             'status' => 'present',
-            'checked_in_by' => $request->user()->id,
             'notes' => 'Manual check-in' . ($request->reason ? ': ' . $request->reason : ''),
-        ]);
+        ];
+
+        if (Schema::hasColumn('attendances', 'user_uuid') && $student->uuid) {
+            $attendanceData['user_uuid'] = $student->uuid;
+        } else {
+            $attendanceData['user_id'] = $student->id;
+        }
+
+        if (Schema::hasColumn('attendances', 'checked_in_by_uuid') && $request->user()->uuid) {
+            $attendanceData['checked_in_by_uuid'] = $request->user()->uuid;
+        } else {
+            $attendanceData['checked_in_by'] = $request->user()->id;
+        }
+
+        $attendance = Attendance::create($attendanceData);
 
         return response()->json([
             'message' => 'Student manually checked in successfully',

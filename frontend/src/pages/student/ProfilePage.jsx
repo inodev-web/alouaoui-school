@@ -1,19 +1,46 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import AuthService from '../../services/api/auth.service';
 // استخدام أيقونات من مكتبة lucide-react
 import { Phone, Camera, BookOpen, Clock, Users, Star, Play, Calendar } from 'lucide-react';
 
 // --- المكون الرئيسي لصفحة تعريف الطالب ---
 const StudentProfilePage = () => {
-  // --- بيانات افتراضية ---
-  const student = {
-    name: 'أمينة بن علي',
-    id: 'S-20251109',
-    phone: '+213 555 123 456',
-    grade: '3 ثانوي',
-    gradeLevel: 'highschool',
-    profilePic: 'https://i.pinimg.com/736x/2d/a6/7e/2da67e0882ff0aa1d407d33c9b937e0d.jpg',
-    qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=StudentID-${'S-20251109'}`,
-  };
+  // --- Récupérer l'utilisateur connecté depuis le service d'auth ---
+  const storedUser = AuthService.getCurrentUser() || null;
+  const [currentUser, setCurrentUser] = useState(storedUser || null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // If we don't have a filled user in localStorage, try to fetch the profile
+    const shouldFetch = !storedUser || !storedUser.firstname || !storedUser.lastname || !storedUser.qr_token;
+    if (shouldFetch) {
+      setLoading(true);
+      AuthService.getProfile()
+        .then((profile) => {
+          if (profile) setCurrentUser(profile);
+        })
+        .catch((e) => {
+          // keep storedUser or show placeholders
+          console.warn('Failed to load profile for ProfilePage:', e);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, []);
+  const student = (() => {
+    const u = currentUser || {};
+    return {
+      // Concaténer firstname/lastname si disponibles, sinon utiliser name ou téléphone
+      name: `${u.firstname || ''} ${u.lastname || ''}`.trim() || u.name || `طالب ${u.id || ''}`,
+      id: u.id ? `S-${String(u.id).padStart(6, '0')}` : 'S-000000',
+      phone: u.phone || '+213 000 000 000',
+      grade: u.year_of_study || 'غير محدد',
+      gradeLevel: 'student',
+      profilePic: u.profilePic || 'https://i.pinimg.com/736x/2d/a6/7e/2da67e0882ff0aa1d407d33c9b937e0d.jpg',
+  // Generate QR from the user's public UUID if available, otherwise fall back to numeric id
+  qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${u.uuid ? `StudentID-${u.uuid}` : (u.id ? `StudentID-${u.id}` : 'unknown')}`,
+  idShort: u.uuid ? `S-${String(u.uuid).slice(0,8)}` : (u.id ? `S-${String(u.id).padStart(6, '0')}` : 'S-000000'),
+    };
+  })();
 
   // بيانات الدورات المسجلة
   const enrolledClasses = [
@@ -70,6 +97,9 @@ const StudentProfilePage = () => {
 
   return (
     <div dir="rtl" className="min-h-screen font-sans mt-16 lg:mt-20">
+      {loading && (
+        <div className="max-w-6xl mx-auto p-6 text-center text-gray-600">جارٍ تحميل بيانات الملف الشخصي ...</div>
+      )}
       
       {/* ## قسم الترويسة والملف الشخصي ## */}
       <div className="bg-gradient-to-br from-red-400 to-pink-500 text-white p-8 md:p-12 shadow-lg">

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SubscriptionController extends Controller
 {
@@ -79,9 +80,8 @@ class SubscriptionController extends Controller
 
         DB::beginTransaction();
         try {
-            // Créer l'abonnement
-            $subscription = Subscription::create([
-                'user_id' => $user->id,
+            // Créer l'abonnement (utilise user_uuid si la colonne existe)
+            $subscriptionData = [
                 'teacher_id' => $teacher->id,
                 'amount' => $request->amount,
                 'videos_access' => $videosAccess,
@@ -90,11 +90,18 @@ class SubscriptionController extends Controller
                 'starts_at' => now(),
                 'ends_at' => now()->addMonths($request->duration_months),
                 'status' => $request->payment_method === 'cash' ? 'active' : 'pending',
-            ]);
+            ];
+
+            if (Schema::hasColumn('subscriptions', 'user_uuid') && $user->uuid) {
+                $subscriptionData['user_uuid'] = $user->uuid;
+            } else {
+                $subscriptionData['user_id'] = $user->id;
+            }
+
+            $subscription = Subscription::create($subscriptionData);
 
             // Créer le paiement correspondant
-            $payment = Payment::create([
-                'user_id' => $user->id,
+            $paymentData = [
                 'amount' => $request->amount,
                 'currency' => 'DZD',
                 'payment_method' => $request->payment_method,
@@ -103,7 +110,15 @@ class SubscriptionController extends Controller
                 'description' => "Subscription for teacher: {$teacher->name}",
                 'metadata' => ['subscription_id' => $subscription->id],
                 'processed_at' => $request->payment_method === 'cash' ? now() : null,
-            ]);
+            ];
+
+            if (Schema::hasColumn('payments', 'user_uuid') && $user->uuid) {
+                $paymentData['user_uuid'] = $user->uuid;
+            } else {
+                $paymentData['user_id'] = $user->id;
+            }
+
+            $payment = Payment::create($paymentData);
 
             DB::commit();
 

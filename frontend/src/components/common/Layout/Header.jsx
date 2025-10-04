@@ -1,9 +1,31 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, BookOpen} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, BookOpen, LogOut } from 'lucide-react';
+import AuthService from '../../../services/api/auth.service';
+import { useDispatch } from 'react-redux';
+import { logout as logoutAction } from '../../../store/slices/authSlice';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const isLoggedIn = !!localStorage.getItem('token');
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+    } catch {
+      // ignore errors from API, proceed to local cleanup
+      console.warn('Logout request failed, clearing local session');
+    }
+
+    // clear redux state
+    try { dispatch(logoutAction()); } catch { /* noop */ }
+
+    // navigate to login
+    navigate('/login');
+  };
 
   return (
     <nav className=" bg-white shadow-lg fixed w-full top-0 z-[100]">
@@ -21,6 +43,13 @@ const Navbar = () => {
             <a href="#results" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">نتائج و اراء</a>
             <a href="#about" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">عني</a>
             <a href="#courses" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">الاحداث</a>
+
+            {isLoggedIn && (
+              <button onClick={handleLogout} className="flex items-center space-x-2 rtl:space-x-reverse text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">تسجيل الخروج</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -56,6 +85,14 @@ const Navbar = () => {
                  سجل الان
               </Link>
             </div>
+            {isLoggedIn && (
+              <div className="px-4">
+                <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 py-3 rounded-full font-medium hover:bg-gray-50">
+                  <LogOut className="w-4 h-4" />
+                  تسجيل الخروج
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
