@@ -112,7 +112,7 @@
     "setupFilesAfterEnv": [
       "<rootDir>/src/setupTests.js"
     ],
-    "moduleNameMapping": {
+    "moduleNameMapper": {
       "\\.(css|less|scss|sass)$": "identity-obj-proxy",
       "^@/(.*)$": "<rootDir>/src/$1"
     },
@@ -146,5 +146,9 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  }
+  ,
+  "overrides": {
+    "glob": "10.4.5"
   }
 }
