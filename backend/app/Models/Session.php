@@ -17,7 +17,7 @@ class Session extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'teacher_id',
+        'teacher_uuid',
         'title',
         'description',
         'type',
@@ -62,7 +62,7 @@ class Session extends Model
      */
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class);
+        return $this->belongsTo(Teacher::class, 'teacher_uuid', 'uuid');
     }
 
     /**

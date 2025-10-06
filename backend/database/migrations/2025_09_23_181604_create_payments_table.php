@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->uuid('user_uuid');
             $table->decimal('amount', 10, 2);
             $table->string('currency', 3)->default('DZD');
             $table->enum('payment_method', ['cash', 'online', 'card', 'transfer'])->default('cash');
@@ -22,12 +22,16 @@ return new class extends Migration
             $table->string('transaction_id')->nullable();
             $table->text('description')->nullable();
             $table->json('metadata')->nullable();
-            $table->foreignId('processed_by')->nullable()->constrained('users');
+            $table->uuid('processed_by_uuid')->nullable();
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
 
+            // Foreign key constraints
+            $table->foreign('user_uuid')->references('uuid')->on('users')->onDelete('cascade');
+            $table->foreign('processed_by_uuid')->references('uuid')->on('users')->onDelete('set null');
+
             // Index pour améliorer les performances
-            $table->index(['user_id', 'status']);
+            $table->index(['user_uuid', 'status']);
             $table->index(['status', 'created_at']);
             $table->index(['transaction_id']);
             $table->index(['reference']);

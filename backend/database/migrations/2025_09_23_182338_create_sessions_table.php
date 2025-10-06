@@ -13,16 +13,26 @@ return new class extends Migration
     {
         Schema::create('sessions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
-            $table->date('session_date');
-            $table->time('start_time')->nullable();
-            $table->time('end_time')->nullable();
-            $table->foreignId('created_by')->nullable()->constrained('users');
+            $table->uuid('teacher_uuid');
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->enum('type', ['subscription', 'free', 'paid'])->default('subscription');
+            $table->decimal('price', 8, 2)->nullable();
+            $table->enum('year_target', ['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS']);
+            $table->datetime('start_time');
+            $table->datetime('end_time');
+            $table->enum('status', ['scheduled', 'live', 'completed', 'cancelled'])->default('scheduled');
+            $table->string('meeting_link')->nullable();
+            $table->integer('max_participants')->nullable();
             $table->timestamps();
 
+            // Foreign key constraints
+            $table->foreign('teacher_uuid')->references('uuid')->on('teachers')->onDelete('cascade');
+
             // Index pour améliorer les performances
-            $table->unique(['teacher_id', 'session_date']);
-            $table->index('session_date');
+            $table->index(['teacher_uuid', 'start_time']);
+            $table->index(['status', 'start_time']);
+            $table->index('year_target');
         });
     }
 

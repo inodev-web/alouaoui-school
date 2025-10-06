@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
+            $table->uuid('user_uuid');
+            $table->uuid('teacher_uuid');
             $table->decimal('amount', 10, 2);
             $table->boolean('videos_access')->default(false);
             $table->boolean('lives_access')->default(false);
@@ -22,11 +22,16 @@ return new class extends Migration
             $table->datetime('starts_at');
             $table->datetime('ends_at');
             $table->enum('status', ['pending', 'active', 'expired', 'cancelled'])->default('pending');
+            $table->text('rejection_reason')->nullable();
             $table->timestamps();
 
+            // Foreign key constraints
+            $table->foreign('user_uuid')->references('uuid')->on('users')->onDelete('cascade');
+            $table->foreign('teacher_uuid')->references('uuid')->on('teachers')->onDelete('cascade');
+
             // Index pour améliorer les performances
-            $table->index(['user_id', 'status']);
-            $table->index(['teacher_id', 'status']);
+            $table->index(['user_uuid', 'status']);
+            $table->index(['teacher_uuid', 'status']);
             $table->index(['starts_at', 'ends_at']);
             $table->index(['status', 'ends_at']);
         });

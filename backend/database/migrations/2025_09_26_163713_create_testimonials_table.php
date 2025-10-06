@@ -13,16 +13,7 @@ return new class extends Migration
     {
         Schema::create('testimonials', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->text('opinion');
-            $table->string('image')->nullable();
-            $table->decimal('rating', 2, 1)->default(5.0);
-            $table->boolean('is_active')->default(true);
-            $table->integer('order')->default(1);
             $table->timestamps();
-            $table->softDeletes();
-
-            $table->index(['is_active', 'order']);
         });
     }
 

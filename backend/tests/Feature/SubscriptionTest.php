@@ -21,41 +21,81 @@ class SubscriptionTest extends TestCase
     }
 
     /**
-     * Test subscription creation.
+     * Helper method to create a teacher entity
      */
-    public function test_create_subscription(): void
+    protected function createTeacher(array $attributes = []): \App\Models\Teacher
     {
-        $user = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
+        return \App\Models\Teacher::create(array_merge([
+            'name' => 'Test Teacher',
+            'email' => 'teacher' . random_int(1000, 9999) . '@example.com',
+            'phone' => '0555' . random_int(100000, 999999),
+            'specialization' => 'Mathematics',
+            'is_alouaoui_teacher' => true,
+            'is_active' => true,
+        ], $attributes));
+    }
+
+    /**
+     * Helper method to create a user entity
+     */
+    protected function createUser(array $attributes = []): User
+    {
+        $defaults = [
+            'firstname' => 'Test',
+            'lastname' => 'User',
+            'birth_date' => '2000-01-01',
+            'address' => '123 Test Street, Algiers',
+            'school_name' => 'Test School',
+            'phone' => '0555' . random_int(100000, 999999),
             'password' => \Illuminate\Support\Facades\Hash::make('password123'),
             'role' => 'student',
             'year_of_study' => '2AM',
             'qr_token' => \Illuminate\Support\Str::uuid(),
+        ];
+
+        return User::create(array_merge($defaults, $attributes));
+    }
+
+    /**
+     * Helper method to authenticate a user with proper login flow
+     */
+    protected function authenticateUser(User $user): array
+    {
+        $deviceUuid = \Illuminate\Support\Str::uuid()->toString();
+
+        $response = $this->postJson('/api/auth/login', [
+            'login' => $user->phone,
+            'password' => 'password123',
+            'device_uuid' => $deviceUuid
+        ]);
+
+        $token = $response->json('data.token');
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+            'X-Device-UUID' => $deviceUuid,
+        ];
+    }
+
+    /**
+     * Test subscription creation.
+     */
+    public function test_create_subscription(): void
+    {
+        $user = $this->createUser([
+            'phone' => '0555123456',
         ]);
 
         // Create a teacher first
-        $teacher = \App\Models\Teacher::create([
-            'name' => 'Test Teacher',
-            'email' => 'teacher1@example.com',
+        $teacher = $this->createTeacher([
             'phone' => '0555654321',
-            'specialization' => 'Mathematics',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
         ]);
 
         // Log in the user first to get a valid token with device UUID
-        $loginResponse = $this->postJson('/api/auth/login', [
-            'login' => 'student@example.com',
-            'password' => 'password123',
-            'device_uuid' => 'test-device-123'
-        ]);
-
-        $token = $loginResponse->json('data.token');
+        $headers = $this->authenticateUser($user);
 
         $subscriptionData = [
-            'teacher_id' => $teacher->id,
+            'teacher_uuid' => $teacher->uuid,
             'duration_months' => 1,
             'videos_access' => true,
             'lives_access' => true,
@@ -64,23 +104,20 @@ class SubscriptionTest extends TestCase
             'amount' => 2000,
         ];
 
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'X-Device-UUID' => 'test-device-123',
-        ])->postJson('/api/subscriptions', $subscriptionData);
+        $response = $this->withHeaders($headers)->postJson('/api/subscriptions', $subscriptionData);
 
         $response->assertStatus(201)
                 ->assertJsonStructure([
                     'message',
                     'data' => [
-                        'subscription' => ['id', 'user_id', 'teacher_id', 'amount', 'status', 'starts_at', 'ends_at'],
-                        'payment' => ['id', 'user_id', 'amount', 'payment_method', 'status']
+                        'subscription' => ['id', 'user_uuid', 'teacher_uuid', 'amount', 'status', 'starts_at', 'ends_at'],
+                        'payment' => ['id', 'user_uuid', 'amount', 'payment_method', 'status']
                     ]
                 ]);
 
         $this->assertDatabaseHas('subscriptions', [
-            'user_id' => $user->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $user->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'status' => 'active', // Cash payments are immediately active
             'videos_access' => true,
@@ -95,40 +132,25 @@ class SubscriptionTest extends TestCase
     public function test_approve_subscription(): void
     {
         // Create admin user (since 'teacher' role is not allowed in users table)
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
+        $admin = $this->createUser([
             'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
             'role' => 'admin', // Change from 'teacher' to 'admin'
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create student user
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
+        $student = $this->createUser([
             'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create teacher in teachers table
-        $teacher = \App\Models\Teacher::create([
-            'name' => 'Test Teacher',
-            'email' => 'teacher1@example.com',
+        $teacher = $this->createTeacher([
             'phone' => '0555654321',
-            'specialization' => 'Mathematics',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
         ]);
 
         // Create a pending subscription
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 1500,
             'videos_access' => true,
             'lives_access' => false,
@@ -139,20 +161,11 @@ class SubscriptionTest extends TestCase
         ]);
 
         // Log in the admin user to get a valid token with device UUID
-        $loginResponse = $this->postJson('/api/auth/login', [
-            'login' => 'admin@example.com',
-            'password' => 'password123',
-            'device_uuid' => 'test-admin-device-123'
-        ]);
-
-        $token = $loginResponse->json('data.token');
+        $headers = $this->authenticateUser($admin);
 
         // This test would need actual subscription approval endpoint
         // For now, just test that we can retrieve subscriptions with proper auth
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'X-Device-UUID' => 'test-admin-device-123',
-        ])->getJson('/api/subscriptions');
+        $response = $this->withHeaders($headers)->getJson('/api/subscriptions');
 
         $response->assertStatus(200);
     }
@@ -167,40 +180,26 @@ class SubscriptionTest extends TestCase
     public function test_reject_subscription(): void
     {
         // Create admin user
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
+        $admin = $this->createUser([
             'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
             'role' => 'admin', // Change from 'teacher' to 'admin'
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create student user
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
+        $student = $this->createUser([
             'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create teacher for subscription
-        $teacher = \App\Models\Teacher::create([
-            'name' => 'Test Teacher',
-            'email' => 'teacher2@example.com',
+        $teacher = $this->createTeacher([
             'phone' => '0555654322',
             'specialization' => 'Physics',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
         ]);
 
         // Create pending subscription
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'videos_access' => true,
             'lives_access' => false,
@@ -211,19 +210,10 @@ class SubscriptionTest extends TestCase
         ]);
 
         // Log in the admin user to get a valid token with device UUID
-        $loginResponse = $this->postJson('/api/auth/login', [
-            'login' => 'admin@example.com',
-            'password' => 'password123',
-            'device_uuid' => 'test-admin-device-456'
-        ]);
-
-        $token = $loginResponse->json('data.token');
+        $headers = $this->authenticateUser($admin);
 
         // Since reject endpoint doesn't exist, test cancelling subscription instead
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'X-Device-UUID' => 'test-admin-device-456',
-        ])->patchJson("/api/subscriptions/{$subscription->id}/cancel");
+        $response = $this->withHeaders($headers)->patchJson("/api/subscriptions/{$subscription->id}/cancel");
 
         $response->assertStatus(200);
 
@@ -237,29 +227,19 @@ class SubscriptionTest extends TestCase
      */
     public function test_student_can_view_own_subscription(): void
     {
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
+        $student = $this->createUser([
             'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create teacher for subscription
-        $teacher = \App\Models\Teacher::create([
-            'name' => 'Test Teacher',
-            'email' => 'teacher3@example.com',
+        $teacher = $this->createTeacher([
             'phone' => '0555654323',
             'specialization' => 'Chemistry',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
         ]);
 
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'videos_access' => true,
             'lives_access' => false,
@@ -270,19 +250,10 @@ class SubscriptionTest extends TestCase
         ]);
 
         // Log in the student user to get a valid token with device UUID
-        $loginResponse = $this->postJson('/api/auth/login', [
-            'login' => 'student@example.com',
-            'password' => 'password123',
-            'device_uuid' => 'test-student-device-789'
-        ]);
-
-        $token = $loginResponse->json('data.token');
+        $headers = $this->authenticateUser($student);
 
         // Since /current endpoint doesn't exist, use /active endpoint to check subscription status
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'X-Device-UUID' => 'test-student-device-789',
-        ])->getJson('/api/subscriptions/active');
+        $response = $this->withHeaders($headers)->getJson('/api/subscriptions/active');
 
         $response->assertStatus(200);
     }
@@ -306,25 +277,19 @@ class SubscriptionTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacher->id,
+            'teacher_uuid' => $teacher->uuid,
             'year_target' => '2AM',
         ]);
 
         // Create a student with active subscription
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student4@example.com',
+        $student = $this->createUser([
             'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create active subscription
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'videos_access' => true,
             'lives_access' => false,
@@ -335,19 +300,10 @@ class SubscriptionTest extends TestCase
         ]);
 
         // Log in the student user to get a valid token with device UUID
-        $loginResponse = $this->postJson('/api/auth/login', [
-            'login' => 'student4@example.com',
-            'password' => 'password123',
-            'device_uuid' => 'test-student-device-valid'
-        ]);
-
-        $token = $loginResponse->json('data.token');
+        $headers = $this->authenticateUser($student);
 
         // Try to access chapters with proper authentication
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'X-Device-UUID' => 'test-student-device-valid',
-        ])->getJson('/api/chapters');
+        $response = $this->withHeaders($headers)->getJson('/api/chapters');
 
         $response->assertStatus(200);
     }
@@ -371,25 +327,19 @@ class SubscriptionTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacher->id,
+            'teacher_uuid' => $teacher->uuid,
             'year_target' => '2AM',
         ]);
 
         // Create a student with expired subscription
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student5@example.com',
+        $student = $this->createUser([
             'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create expired subscription
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'videos_access' => true,
             'lives_access' => false,
@@ -400,19 +350,10 @@ class SubscriptionTest extends TestCase
         ]);
 
         // Log in the student user to get a valid token with device UUID
-        $loginResponse = $this->postJson('/api/auth/login', [
-            'login' => 'student5@example.com',
-            'password' => 'password123',
-            'device_uuid' => 'test-student-device-expired'
-        ]);
-
-        $token = $loginResponse->json('data.token');
+        $headers = $this->authenticateUser($student);
 
         // Try to access chapters - should work but subscription info might affect responses
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'X-Device-UUID' => 'test-student-device-expired',
-        ])->getJson('/api/chapters');
+        $response = $this->withHeaders($headers)->getJson('/api/chapters');
 
         $response->assertStatus(200);
     }
@@ -433,20 +374,14 @@ class SubscriptionTest extends TestCase
         ]);
 
         // Create student with subscription that should be marked as expired
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student6@example.com',
+        $student = $this->createUser([
             'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         // Create subscription that ended yesterday
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'videos_access' => true,
             'lives_access' => false,

@@ -24,25 +24,37 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'firstname' => fake()->firstName(),
+            'lastname' => fake()->lastName(),
+            'birth_date' => fake()->date('Y-m-d', '2010-01-01'),
+            'address' => fake()->address(),
+            'school_name' => fake()->company() . ' School',
             'phone' => fake()->unique()->phoneNumber(),
+            'password' => static::$password ??= Hash::make('password'),
             'role' => 'student',
             'year_of_study' => fake()->randomElement(['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS']),
-            'qr_token' => (string) Str::uuid(),
+            'qr_token' => Str::uuid(),
+            'device_uuid' => Str::uuid(),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Create an admin user.
      */
-    public function unverified(): static
+    public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+            'role' => 'admin',
+        ]);
+    }
+
+    /**
+     * Create a student user.
+     */
+    public function student(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'student',
         ]);
     }
 }

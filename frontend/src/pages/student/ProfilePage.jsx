@@ -37,7 +37,7 @@ const StudentProfilePage = () => {
       gradeLevel: 'student',
       profilePic: u.profilePic || 'https://i.pinimg.com/736x/2d/a6/7e/2da67e0882ff0aa1d407d33c9b937e0d.jpg',
   // Generate QR from the user's public UUID if available, otherwise fall back to numeric id
-  qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${u.uuid ? `StudentID-${u.uuid}` : (u.id ? `StudentID-${u.id}` : 'unknown')}`,
+  qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${u.uuid ? `${u.uuid}` : (u.id ? `StudentID-${u.id}` : 'unknown')}`,
   idShort: u.uuid ? `S-${String(u.uuid).slice(0,8)}` : (u.id ? `S-${String(u.id).padStart(6, '0')}` : 'S-000000'),
     };
   })();

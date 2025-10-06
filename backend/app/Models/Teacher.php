@@ -11,16 +11,34 @@ class Teacher extends Model
     use HasFactory;
 
     /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'uuid';
+
+    /**
+     * Disable auto-incrementing for UUID primary key.
+     */
+    public $incrementing = false;
+
+    /**
+     * The data type of the primary key.
+     */
+    protected $keyType = 'string';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'email',
+        'firstname',
+        'lastname',
         'phone',
         'specialization',
         'bio',
+        'profile_picture',
         'is_alouaoui_teacher',
         'is_active',
         'module',
@@ -52,11 +70,17 @@ class Teacher extends Model
     public const YEARS = ['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS'];
 
     /**
-     * Teacher has many chapters
+     * Boot model to generate uuid on create if missing
      */
-    public function chapters(): HasMany
+    protected static function boot(): void
     {
-        return $this->hasMany(Chapter::class);
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
     }
 
     /**
@@ -64,24 +88,15 @@ class Teacher extends Model
      */
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(Subscription::class);
+        return $this->hasMany(Subscription::class, 'teacher_uuid', 'uuid');
     }
-
-    /**
-     * Teacher has many payments (through subscriptions)
-     * Note: Payments table doesn't have teacher_id, only user_id
-     */
-    // public function payments(): HasMany
-    // {
-    //     return $this->hasMany(Payment::class);
-    // }
 
     /**
      * Teacher has many sessions
      */
     public function sessions(): HasMany
     {
-        return $this->hasMany(Session::class);
+        return $this->hasMany(Session::class, 'teacher_uuid', 'uuid');
     }
 
     /**
@@ -89,7 +104,7 @@ class Teacher extends Model
      */
     public function attendances(): HasMany
     {
-        return $this->hasMany(Attendance::class);
+        return $this->hasMany(Attendance::class, 'teacher_uuid', 'uuid');
     }
 
     /**
@@ -98,9 +113,9 @@ class Teacher extends Model
     public function activeSubscriptions(): HasMany
     {
         return $this->subscriptions()
-            ->where('active', true)
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now());
+            ->where('status', 'active')
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now());
     }
 
     /**

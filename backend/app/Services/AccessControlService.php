@@ -283,18 +283,16 @@ class AccessControlService
             })
             ->where('ends_at', '>', now())
             ->where('videos_access', true)
-            ->with('teacher.chapters')
             ->get();
 
-        foreach ($alouaouiSubscriptions as $subscription) {
-            $chapterIds = $subscription->teacher->chapters()
-                ->where('is_active', true)
+        // Si l'utilisateur a un abonnement Alouaoui valide, il accède à tous les chapitres actifs
+        if ($alouaouiSubscriptions->isNotEmpty()) {
+            $accessibleChapters = \App\Models\Chapter::where('is_active', true)
                 ->pluck('id')
                 ->toArray();
-            $accessibleChapters = array_merge($accessibleChapters, $chapterIds);
         }
 
-        return array_unique($accessibleChapters);
+        return $accessibleChapters;
     }
 
     /**
@@ -346,7 +344,7 @@ class AccessControlService
     {
         $subscriptions = $student->subscriptions()
             ->where('ends_at', '>', now())
-            ->with('teacher:id,name,is_alouaoui_teacher')
+            ->with('teacher:uuid,name,is_alouaoui_teacher')
             ->get();
 
         $status = [
@@ -382,7 +380,7 @@ class AccessControlService
         $subscriptions = $student->subscriptions()
             ->where('ends_at', '>', now())
             ->where('status', 'active')
-            ->with('teacher:id,name,is_alouaoui_teacher')
+            ->with('teacher:uuid,name,is_alouaoui_teacher')
             ->get();
 
         $summary = [

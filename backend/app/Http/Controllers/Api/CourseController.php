@@ -41,10 +41,10 @@ class CourseController extends Controller
      */
     public function store(Request $request)
     {
-        // Only "Alouaoui" (the main teacher) can upload videos
-        if (Auth::user()->name !== 'Alouaoui') {
+        // Only admin can create videos (they will be automatically assigned to Alouaoui)
+        if (Auth::user()->role !== 'admin') {
             return response()->json([
-                'message' => 'Only Alouaoui can upload videos'
+                'message' => 'Only admin can create videos'
             ], 403);
         }
 
@@ -95,10 +95,10 @@ class CourseController extends Controller
      */
     public function update(Request $request, Course $course)
     {
-        // Only "Alouaoui" can update videos
-        if (Auth::user()->name !== 'Alouaoui') {
+        // Only admin can update videos
+        if (Auth::user()->role !== 'admin') {
             return response()->json([
-                'message' => 'Only Alouaoui can update videos'
+                'message' => 'Only admin can update videos'
             ], 403);
         }
 
@@ -139,10 +139,10 @@ class CourseController extends Controller
      */
     public function destroy(Course $course)
     {
-        // Only "Alouaoui" can delete videos
-        if (Auth::user()->name !== 'Alouaoui') {
+        // Only admin can delete videos
+        if (Auth::user()->role !== 'admin') {
             return response()->json([
-                'message' => 'Only Alouaoui can delete videos'
+                'message' => 'Only admin can delete videos'
             ], 403);
         }
 

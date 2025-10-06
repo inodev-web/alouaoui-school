@@ -15,12 +15,15 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->foreignId('teacher_id')->constrained('teachers')->onDelete('cascade');
+            $table->uuid('teacher_uuid');
             $table->enum('year_target', ['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS']);
             $table->timestamps();
 
+            // Foreign key constraint
+            $table->foreign('teacher_uuid')->references('uuid')->on('teachers')->onDelete('cascade');
+
             // Index pour améliorer les performances
-            $table->index(['teacher_id', 'year_target']);
+            $table->index(['teacher_uuid', 'year_target']);
             $table->index('year_target');
         });
     }

@@ -17,7 +17,7 @@ class StreamToken extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id',
+        'user_uuid',
         'course_id',
         'token',
         'ip_address',
@@ -45,7 +45,7 @@ class StreamToken extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
     /**
@@ -101,7 +101,7 @@ class StreamToken extends Model
     public static function createForCourse(User $user, Course $course, int $expirationMinutes = 120): self
     {
         return self::create([
-            'user_id' => $user->id,
+            'user_uuid' => $user->uuid,
             'course_id' => $course->id,
             'token' => self::generateToken(),
             'ip_address' => request()->ip(),

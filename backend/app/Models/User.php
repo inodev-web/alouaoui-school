@@ -14,6 +14,13 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasApiTokens;
 
     /**
+     * The primary key associated with the table.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'uuid';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -29,12 +36,10 @@ class User extends Authenticatable
         'year_of_study',
         'role',
         'device_uuid',
-        'qr_token',
-        'uuid',
     ];
 
     /**
-     * Disable auto-incrementing for UUID primary key (migration later will switch PK).
+     * Disable auto-incrementing for UUID primary key.
      * This tells Eloquent to treat the primary key as a non-incrementing string.
      */
     public $incrementing = false;
@@ -65,7 +70,6 @@ class User extends Authenticatable
         return [
             'birth_date' => 'date',
             'password' => 'hashed',
-            'uuid' => 'string',
         ];
     }
 
@@ -114,7 +118,7 @@ class User extends Authenticatable
      */
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(Subscription::class, 'user_id');
+        return $this->hasMany(Subscription::class, 'user_uuid');
     }
 
     /**
@@ -122,7 +126,7 @@ class User extends Authenticatable
      */
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class, 'user_id');
+        return $this->hasMany(Payment::class, 'user_uuid');
     }
 
     /**
@@ -130,7 +134,7 @@ class User extends Authenticatable
      */
     public function attendances(): HasMany
     {
-        return $this->hasMany(Attendance::class, 'student_id');
+        return $this->hasMany(Attendance::class, 'student_uuid');
     }
 
     /**

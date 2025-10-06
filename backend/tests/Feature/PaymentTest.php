@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use App\Models\User;
+use App\Models\Teacher;
 use App\Models\Subscription;
 use App\Models\Payment;
 use Laravel\Sanctum\Sanctum;
@@ -29,12 +30,33 @@ class PaymentTest extends TestCase
     {
         return \App\Models\Teacher::create(array_merge([
             'name' => 'Test Teacher',
-            'email' => 'teacher@example.com',
-            'phone' => '0555654321',
+            'email' => 'teacher' . random_int(1000, 9999) . '@example.com',
+            'phone' => '0555' . random_int(100000, 999999),
             'specialization' => 'Mathematics',
             'is_alouaoui_teacher' => true,
             'is_active' => true,
         ], $attributes));
+    }
+
+    /**
+     * Helper method to create a user entity
+     */
+    protected function createUser(array $attributes = []): User
+    {
+        $defaults = [
+            'firstname' => 'Test',
+            'lastname' => 'User',
+            'birth_date' => '2000-01-01',
+            'address' => '123 Test Street, Algiers',
+            'school_name' => 'Test School',
+            'phone' => '0555' . random_int(100000, 999999),
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role' => 'student',
+            'year_of_study' => '2AM',
+            'qr_token' => \Illuminate\Support\Str::uuid(),
+        ];
+
+        return User::create(array_merge($defaults, $attributes));
     }
 
     /**
@@ -45,7 +67,7 @@ class PaymentTest extends TestCase
         $deviceUuid = \Illuminate\Support\Str::uuid()->toString();
 
         $response = $this->postJson('/api/auth/login', [
-            'login' => $user->email,
+            'login' => $user->phone,
             'password' => 'password123',
             'device_uuid' => $deviceUuid
         ]);
@@ -59,25 +81,39 @@ class PaymentTest extends TestCase
     }
 
     /**
+     * Helper method to create a subscription entity
+     */
+    protected function createSubscription(User $student, Teacher $teacher, array $attributes = []): \App\Models\Subscription
+    {
+        $defaults = [
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
+            'amount' => 2000,
+            'videos_access' => true,
+            'lives_access' => false,
+            'school_entry_access' => false,
+            'starts_at' => now(),
+            'ends_at' => now()->addMonth(),
+            'status' => 'pending',
+        ];
+
+        return \App\Models\Subscription::create(array_merge($defaults, $attributes));
+    }
+
+    /**
      * Test payment creation for subscription.
      */
     public function test_create_payment_for_subscription(): void
     {
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
+        $student = $this->createUser([
             'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacher = $this->createTeacher();
 
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'videos_access' => true,
             'lives_access' => false,
@@ -103,30 +139,20 @@ class PaymentTest extends TestCase
      */
     public function test_approve_payment(): void
     {
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $admin = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $student = $this->createUser([
             'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
-        $headers = $this->authenticateUser($admin);
+    // Authenticate as admin
+    $headers = $this->authenticateUser($admin);
 
         // Test adding cash payment (admin functionality)
         $paymentData = [
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 1500,
             'description' => 'Cash payment for subscription',
             'reference' => 'CASH123456'
@@ -137,11 +163,11 @@ class PaymentTest extends TestCase
         $response->assertStatus(201)
                 ->assertJsonStructure([
                     'message',
-                    'data' => ['id', 'user_id', 'amount', 'payment_method', 'status', 'reference']
+                    'data' => ['id', 'user_uuid', 'amount', 'payment_method', 'status', 'reference']
                 ]);
 
         $this->assertDatabaseHas('payments', [
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 1500,
             'payment_method' => 'cash',
             'status' => 'completed',
@@ -154,36 +180,17 @@ class PaymentTest extends TestCase
      */
     public function test_reject_payment(): void
     {
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $admin = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $student = $this->createUser([
             'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacher = $this->createTeacher();
 
-        $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
+        $subscription = $this->createSubscription($student, $teacher, [
             'status' => 'pending',
         ]);
 
@@ -191,7 +198,7 @@ class PaymentTest extends TestCase
 
         // Create a payment to cancel
         $payment = Payment::create([
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 2000,
             'currency' => 'DZD',
             'payment_method' => 'online',
@@ -256,47 +263,30 @@ class PaymentTest extends TestCase
      */
     public function test_teacher_can_list_payments(): void
     {
-        $teacher = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $teacher = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $student = $this->createUser([
             'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacherEntity = $this->createTeacher();
 
-        $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacherEntity->id,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
+        $subscription = $this->createSubscription($student, $teacherEntity, [
             'status' => 'pending',
         ]);
 
         // Create multiple payments
         for ($i = 1; $i <= 5; $i++) {
             Payment::create([
-                'user_id' => $student->id,
+                'user_uuid' => $student->uuid,
                 'amount' => 2000,
+                'currency' => 'DZD',
                 'payment_method' => 'cash',
                 'reference' => "CCP12345678{$i}",
                 'status' => 'pending',
+                'description' => 'Test payment ' . $i,
             ]);
         }
 
@@ -315,36 +305,24 @@ class PaymentTest extends TestCase
      */
     public function test_student_can_view_own_payment_history(): void
     {
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $student = $this->createUser([
             'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacher = $this->createTeacher();
 
-        $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
+        $subscription = $this->createSubscription($student, $teacher, [
             'status' => 'active',
         ]);
 
         $payment = Payment::create([
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 2000,
+            'currency' => 'DZD',
             'payment_method' => 'cash',
             'reference' => 'CCP123456789',
             'status' => 'completed',
+            'description' => 'Test payment',
         ]);
 
         $headers = $this->authenticateUser($student);
@@ -363,64 +341,45 @@ class PaymentTest extends TestCase
     public function test_payment_filtering_by_status(): void
     {
         $teacher = $this->createTeacher();
+        $admin = $this->createUser(['role' => 'admin']);
+        $student = $this->createUser(['role' => 'student']);
 
-        $alouaoui = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
-        ]);
-
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
-        ]);
-
-        $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
+        $subscription = $this->createSubscription($student, $teacher, [
             'status' => 'active',
         ]);
 
         // Create payments with different statuses
         Payment::create([
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 2000,
+            'currency' => 'DZD',
             'payment_method' => 'cash',
             'reference' => 'CCP123456781',
             'status' => 'pending',
+            'description' => 'Pending payment',
         ]);
 
         Payment::create([
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 2000,
+            'currency' => 'DZD',
             'payment_method' => 'online',
             'reference' => 'CCP123456782',
             'status' => 'completed',
+            'description' => 'Completed payment',
         ]);
 
         Payment::create([
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 2000,
+            'currency' => 'DZD',
             'payment_method' => 'card',
             'reference' => 'CCP123456783',
             'status' => 'failed',
+            'description' => 'Failed payment',
         ]);
 
-        $headers = $this->authenticateUser($alouaoui);
+        $headers = $this->authenticateUser($admin);
 
         // Test filtering by pending status
         $response = $this->getJson('/api/payments?status=pending', $headers);
@@ -438,47 +397,24 @@ class PaymentTest extends TestCase
     public function test_payment_notification_after_approval(): void
     {
         $teacher = $this->createTeacher();
+        $admin = $this->createUser(['role' => 'admin']);
+        $student = $this->createUser(['role' => 'student']);
 
-        $alouaoui = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
-        ]);
-
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'student',
-            'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
-        ]);
-
-        $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
+        $subscription = $this->createSubscription($student, $teacher, [
             'status' => 'active',
         ]);
 
         $payment = Payment::create([
-            'user_id' => $student->id,
+            'user_uuid' => $student->uuid,
             'amount' => 2000,
+            'currency' => 'DZD',
             'payment_method' => 'transfer',
             'reference' => 'CCP123456789',
             'status' => 'pending',
+            'description' => 'Pending transfer',
         ]);
 
-        $headers = $this->authenticateUser($alouaoui);
+        $headers = $this->authenticateUser($admin);
 
         $response = $this->putJson("/api/payments/{$payment->id}/approve", [], $headers);
 

@@ -30,7 +30,7 @@ class SubscriptionController extends Controller
     public function create(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'teacher_id' => 'required|exists:teachers,id',
+            'teacher_uuid' => 'required|exists:teachers,uuid',
             'duration_months' => 'required|integer|min:1|max:12',
             'videos_access' => 'sometimes|boolean',
             'lives_access' => 'sometimes|boolean',
@@ -47,11 +47,11 @@ class SubscriptionController extends Controller
         }
 
         $user = $request->user();
-        $teacher = Teacher::findOrFail($request->teacher_id);
+        $teacher = Teacher::where('uuid', $request->teacher_uuid)->firstOrFail();
 
         // Vérifier que l'étudiant n'a pas déjà un abonnement actif avec ce professeur
         $existingSubscription = $user->subscriptions()
-            ->where('teacher_id', $teacher->id)
+            ->where('teacher_uuid', $teacher->uuid)
             ->where('ends_at', '>', now())
             ->first();
 
@@ -82,7 +82,8 @@ class SubscriptionController extends Controller
         try {
             // Créer l'abonnement (utilise user_uuid si la colonne existe)
             $subscriptionData = [
-                'teacher_id' => $teacher->id,
+                'user_uuid' => $user->uuid,
+                'teacher_uuid' => $teacher->uuid,
                 'amount' => $request->amount,
                 'videos_access' => $videosAccess,
                 'lives_access' => $livesAccess,
@@ -92,16 +93,11 @@ class SubscriptionController extends Controller
                 'status' => $request->payment_method === 'cash' ? 'active' : 'pending',
             ];
 
-            if (Schema::hasColumn('subscriptions', 'user_uuid') && $user->uuid) {
-                $subscriptionData['user_uuid'] = $user->uuid;
-            } else {
-                $subscriptionData['user_id'] = $user->id;
-            }
-
             $subscription = Subscription::create($subscriptionData);
 
             // Créer le paiement correspondant
             $paymentData = [
+                'user_uuid' => $user->uuid,
                 'amount' => $request->amount,
                 'currency' => 'DZD',
                 'payment_method' => $request->payment_method,
@@ -112,17 +108,11 @@ class SubscriptionController extends Controller
                 'processed_at' => $request->payment_method === 'cash' ? now() : null,
             ];
 
-            if (Schema::hasColumn('payments', 'user_uuid') && $user->uuid) {
-                $paymentData['user_uuid'] = $user->uuid;
-            } else {
-                $paymentData['user_id'] = $user->id;
-            }
-
             $payment = Payment::create($paymentData);
 
             DB::commit();
 
-            $subscription->load(['teacher:id,name,specialization,is_alouaoui_teacher']);
+            $subscription->load(['teacher:uuid,name,specialization,is_alouaoui_teacher']);
 
             return response()->json([
                 'message' => 'Subscription created successfully',
@@ -151,7 +141,7 @@ class SubscriptionController extends Controller
         $activeSubscriptions = $user->subscriptions()
             ->where('status', 'active')
             ->where('ends_at', '>', now())
-            ->with(['teacher:id,name,specialization,is_alouaoui_teacher'])
+            ->with(['teacher:uuid,name,specialization,is_alouaoui_teacher'])
             ->orderBy('ends_at', 'desc')
             ->get();
 

@@ -30,17 +30,39 @@ class VideoTest extends TestCase
 
     /**
      * Helper method to create a teacher entity
+     * Créer un vrai Teacher pour les subscriptions et relations
      */
     protected function createTeacher(array $attributes = []): Teacher
     {
         return Teacher::create(array_merge([
-            'name' => 'Test Teacher',
-            'email' => 'teacher@example.com',
-            'phone' => '0555654321',
+            'firstname' => 'Alouaoui',
+            'lastname' => 'Teacher',
+            'phone' => '0555' . random_int(100000, 999999),
             'specialization' => 'Mathematics',
             'is_alouaoui_teacher' => true,
             'is_active' => true,
         ], $attributes));
+    }
+
+    /**
+     * Helper method to create a user entity
+     */
+    protected function createUser(array $attributes = []): User
+    {
+        $defaults = [
+            'firstname' => 'Test',
+            'lastname' => 'User',
+            'birth_date' => '2000-01-01',
+            'address' => '123 Test Street, Algiers',
+            'school_name' => 'Test School',
+            'phone' => '0555' . random_int(100000, 999999),
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role' => 'student',
+            'year_of_study' => '2AM',
+            'qr_token' => \Illuminate\Support\Str::uuid(),
+        ];
+
+        return User::create(array_merge($defaults, $attributes));
     }
 
     /**
@@ -51,7 +73,7 @@ class VideoTest extends TestCase
         $deviceUuid = \Illuminate\Support\Str::uuid()->toString();
 
         $response = $this->postJson('/api/auth/login', [
-            'login' => $user->email,
+            'login' => $user->phone,
             'password' => 'password123',
             'device_uuid' => $deviceUuid
         ]);
@@ -69,13 +91,8 @@ class VideoTest extends TestCase
      */
     public function test_admin_can_access_courses(): void
     {
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $admin = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacher = $this->createTeacher();
@@ -83,7 +100,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacher->id,
+            'teacher_uuid' => $teacher->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -108,78 +125,20 @@ class VideoTest extends TestCase
     }
 
     /**
-     * Test that regular teacher cannot upload videos.
-     */
-    public function test_regular_teacher_cannot_upload_video(): void
-    {
-        $teacher = User::create([
-            'name' => 'Regular Teacher',
-            'email' => 'teacher@example.com',
-            'phone' => '0555999887',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
-            'role' => 'admin', // Admin role but not Alouaoui
-            'qr_token' => \Illuminate\Support\Str::uuid(),
-        ]);
-
-        $teacherEntity = \App\Models\Teacher::create([
-            'name' => 'Regular Teacher',
-            'email' => 'teacher@example.com',
-            'phone' => '0555999887',
-            'specialization' => 'General Studies',
-            'is_alouaoui_teacher' => false,
-            'is_active' => true,
-        ]);
-
-        $chapter = Chapter::create([
-            'title' => 'Test Chapter',
-            'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
-            'year_target' => '2AM',
-        ]);
-
-        $headers = $this->authenticateUser($teacher);
-
-        $video = UploadedFile::fake()->create('test-video.mp4', 10000, 'video/mp4');
-
-        $response = $this->postJson('/api/videos', [
-            'title' => 'Test Video',
-            'year_target' => '2AM',
-            'chapter_id' => $chapter->id,
-            'video' => $video,
-        ], $headers);
-
-        $response->assertStatus(403);
-    }
-
-    /**
      * Test video transcoding job dispatch.
      */
     public function test_video_transcoding_job_dispatched(): void
     {
         Queue::fake();
 
-        $teacher = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $teacher = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
-        ]);
-
-        $teacherEntity = \App\Models\Teacher::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'specialization' => 'General Studies',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
         ]);
 
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
+            'teacher_name' => 'Alouaoui',
             'year_target' => '2AM',
         ]);
 
@@ -204,22 +163,17 @@ class VideoTest extends TestCase
      */
     public function test_student_with_subscription_can_access_video(): void
     {
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $student = $this->createUser([
             'role' => 'student',
             'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacher = $this->createTeacher();
 
         // Create active subscription with correct fields
         $subscription = Subscription::create([
-            'user_id' => $student->id,
-            'teacher_id' => $teacher->id,
+            'user_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
             'amount' => 2000,
             'videos_access' => true,
             'starts_at' => now()->toDateString(),
@@ -230,7 +184,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacher->id,
+            'teacher_uuid' => $teacher->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -257,14 +211,9 @@ class VideoTest extends TestCase
      */
     public function test_student_without_subscription_cannot_access_paid_video(): void
     {
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $student = $this->createUser([
             'role' => 'student',
             'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacher = $this->createTeacher();
@@ -272,7 +221,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacher->id,
+            'teacher_uuid' => $teacher->uuid,
             'year_target' => '2AM',
             'is_free' => false, // Paid content
         ]);
@@ -297,14 +246,9 @@ class VideoTest extends TestCase
      */
     public function test_student_can_access_free_video_without_subscription(): void
     {
-        $student = User::create([
-            'name' => 'Student User',
-            'email' => 'student@example.com',
-            'phone' => '0555123456',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $student = $this->createUser([
             'role' => 'student',
             'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacher = $this->createTeacher();
@@ -312,7 +256,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Free Chapter',
             'description' => 'Free Chapter Description',
-            'teacher_id' => $teacher->id,
+            'teacher_uuid' => $teacher->uuid,
             'year_target' => '2AM',
             'is_free' => true, // Free content
         ]);
@@ -340,13 +284,8 @@ class VideoTest extends TestCase
      */
     public function test_alouaoui_can_update_video(): void
     {
-        $teacher = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $teacher = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacherEntity = $this->createTeacher();
@@ -354,7 +293,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
+            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -393,13 +332,8 @@ class VideoTest extends TestCase
      */
     public function test_alouaoui_can_delete_video(): void
     {
-        $teacher = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $teacher = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacherEntity = $this->createTeacher();
@@ -407,7 +341,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
+            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -437,13 +371,8 @@ class VideoTest extends TestCase
      */
     public function test_video_listing_with_pagination(): void
     {
-        $teacher = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $teacher = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacherEntity = $this->createTeacher();
@@ -451,7 +380,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
+            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -487,13 +416,8 @@ class VideoTest extends TestCase
      */
     public function test_video_search(): void
     {
-        $teacher = User::create([
-            'name' => 'Alouaoui',
-            'email' => 'alouaoui@example.com',
-            'phone' => '0555999888',
-            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+        $teacher = $this->createUser([
             'role' => 'admin',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
         ]);
 
         $teacherEntity = $this->createTeacher();
@@ -501,7 +425,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
+            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 

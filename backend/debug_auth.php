@@ -39,5 +39,5 @@ class DebugAuth extends TestCase
     }
 }
 
-$test = new DebugAuth();
+$test = new DebugAuth('testAuthFlow');
 $test->testAuthFlow();

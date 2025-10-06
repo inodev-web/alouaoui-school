@@ -16,7 +16,6 @@ class Payment extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id',
         'user_uuid',
         'amount',
         'currency',
@@ -26,7 +25,6 @@ class Payment extends Model
         'transaction_id',
         'description',
         'metadata',
-        'processed_by',
         'processed_by_uuid',
         'processed_at',
     ];
@@ -57,11 +55,6 @@ class Payment extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function userByUuid(): BelongsTo
-    {
         return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
@@ -78,7 +71,7 @@ class Payment extends Model
      */
     public function processor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'processed_by');
+        return $this->belongsTo(User::class, 'processed_by_uuid', 'uuid');
     }
 
     /**

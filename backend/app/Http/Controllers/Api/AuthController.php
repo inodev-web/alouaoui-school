@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -20,16 +19,16 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
+                $validator = Validator::make($request->all(), [
             'firstname' => 'required|string|max:255',
             'lastname' => 'required|string|max:255',
             'birth_date' => 'required|date',
-            'address' => 'required|string|max:255',
+            'address' => 'required|string|max:500',
             'school_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20|unique:users',
+            'phone' => 'required|string|unique:users,phone',
             'password' => 'required|string|min:6|confirmed',
-            'year_of_study' => 'required|in:1AM,2AM,3AM,4AM,1AS,2AS,3AS',
-            'device_uuid' => 'sometimes|string|max:255',
+            'role' => 'sometimes|string|in:student,admin',
+            'year_of_study' => 'sometimes|string|max:10',
         ]);
 
         if ($validator->fails()) {
@@ -53,20 +52,26 @@ class AuthController extends Controller
             'role' => 'student',
             'year_of_study' => $request->year_of_study,
             'device_uuid' => $deviceUuid,
-            // Ensure qr_token exists and is a UUID stored in DB
-            'qr_token' => (string) Str::uuid(),
+            // qr_token supprimé : le uuid servira pour le QR code côté client
         ]);
 
         // Créer le token d'authentification avec device UUID comme nom
         $token = $user->createToken($deviceUuid, ['student'])->plainTextToken;
 
         return response()->json([
-            'message' => 'تم إنشاء الحساب بنجاح',
+            'message' => 'User registered successfully',
             'data' => [
-                'user' => $this->formatUserData($user),
+                'user' => [
+                    'uuid' => $user->uuid,
+                    'firstname' => $user->firstname,
+                    'lastname' => $user->lastname,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'year_of_study' => $user->year_of_study,
+                    'qr_token' => $user->uuid,
+                ],
                 'token' => $token,
                 'device_uuid' => $deviceUuid,
-                'qr_token' => $user->qr_token,
             ]
         ], 201);
     }
@@ -77,7 +82,7 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'phone' => 'required|string', // Uniquement téléphone maintenant
+            'login' => 'required|string', // phone seulement
             'password' => 'required|string',
             'device_uuid' => 'sometimes|string|max:255',
             'single_device' => 'sometimes|boolean',
@@ -90,11 +95,12 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('phone', $request->phone)->first();
+        // Connexion par téléphone uniquement
+        $user = User::where('phone', $request->login)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'phone' => ['رقم الهاتف أو كلمة المرور غير صحيحة.'],
+                'login' => ['The provided credentials are incorrect.'],
             ]);
         }
 
@@ -119,14 +125,13 @@ class AuthController extends Controller
             'message' => 'Login successful',
             'data' => [
                 'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
+                    'uuid' => $user->uuid,
+                    'firstname' => $user->firstname,
+                    'lastname' => $user->lastname,
                     'phone' => $user->phone,
                     'role' => $user->role,
                     'year_of_study' => $user->year_of_study,
-                    'qr_token' => $user->qr_token,
-                    'uuid' => $user->uuid ?? null,
+                    'qr_token' => $user->uuid,
                 ],
                 'token' => $token,
                 'device_uuid' => $deviceUuid,
@@ -159,20 +164,27 @@ class AuthController extends Controller
     }
 
     /**
-     * Get current user profile
+     * Get user profile
      */
     public function profile(Request $request): JsonResponse
     {
         $user = $request->user();
 
         return response()->json([
-            'data' => array_merge(
-                $this->formatUserData($user),
-                [
-                    'device_uuid' => $user->device_uuid,
-                    'created_at' => $user->created_at,
-                ]
-            )
+            'message' => 'Profile retrieved successfully',
+            'data' => [
+                'uuid' => $user->uuid,
+                'firstname' => $user->firstname,
+                'lastname' => $user->lastname,
+                'phone' => $user->phone,
+                'birth_date' => $user->birth_date,
+                'address' => $user->address,
+                'school_name' => $user->school_name,
+                'role' => $user->role,
+                'year_of_study' => $user->year_of_study,
+                'qr_token' => $user->uuid,
+                'device_uuid' => $user->device_uuid,
+            ]
         ]);
     }
 
@@ -186,11 +198,12 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'firstname' => 'sometimes|string|max:255',
             'lastname' => 'sometimes|string|max:255',
+            'phone' => 'sometimes|string|unique:users,phone,' . $user->uuid . ',uuid',
             'birth_date' => 'sometimes|date',
-            'address' => 'sometimes|string|max:255',
+            'address' => 'sometimes|string|max:500',
             'school_name' => 'sometimes|string|max:255',
-            'phone' => 'sometimes|string|max:20|unique:users,phone,' . $user->id,
-            'year_of_study' => 'sometimes|in:1AM,2AM,3AM,4AM,1AS,2AS,3AS',
+            'year_of_study' => 'sometimes|string|max:10',
+            'password' => 'sometimes|string|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -200,14 +213,29 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user->update($request->only([
-            'firstname', 'lastname', 'birth_date', 'address',
-            'school_name', 'phone', 'year_of_study'
-        ]));
+        $dataToUpdate = $validator->validated();
+
+        // Hasher le mot de passe si fourni
+        if (isset($dataToUpdate['password'])) {
+            $dataToUpdate['password'] = Hash::make($dataToUpdate['password']);
+        }
+
+        $user->update($dataToUpdate);
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'data' => $this->formatUserData($user)
+            'data' => [
+                'uuid' => $user->uuid,
+                'firstname' => $user->firstname,
+                'lastname' => $user->lastname,
+                'phone' => $user->phone,
+                'birth_date' => $user->birth_date,
+                'address' => $user->address,
+                'school_name' => $user->school_name,
+                'role' => $user->role,
+                'year_of_study' => $user->year_of_study,
+                'qr_token' => $user->uuid,
+            ]
         ]);
     }
 
@@ -253,15 +281,12 @@ class AuthController extends Controller
      */
     public function regenerateQrToken(Request $request): JsonResponse
     {
+        // Compatibilité : renvoie simplement le uuid (nouveau QR code)
         $user = $request->user();
-        // Generate a new UUID-based qr_token, persist it and return
-        $new = (string) Str::uuid();
-        $user->update(['qr_token' => $new]);
-
         return response()->json([
-            'message' => 'QR token regenerated successfully',
+            'message' => 'QR token (uuid) returned successfully',
             'data' => [
-                'qr_token' => $new
+                'qr_token' => $user->uuid
             ]
         ]);
     }
@@ -294,98 +319,8 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Send password reset email
-     */
-    public function forgotPassword(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|string|exists:users,phone',
-        ]);
+    // Méthode generateUniqueQrToken supprimée: le uuid suffit comme identifiant unique
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'فشل التحقق',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Generate reset token
-        $token = Str::random(6); // Code plus court pour SMS
-        
-        // Store token in password_resets table
-        \DB::table('password_reset_tokens')->updateOrInsert(
-            ['phone' => $request->phone],
-            [
-                'token' => Hash::make($token),
-                'created_at' => now()
-            ]
-        );
-
-        // Get user
-        $user = User::where('phone', $request->phone)->first();
-        
-        // TODO: Send SMS with reset code
-        // Pour le développement, on retourne le token
-        return response()->json([
-            'message' => 'تم إرسال رمز إعادة التعيين إلى هاتفك',
-            'reset_token' => $token, // Remove this in production
-            'phone' => $request->phone
-        ]);
-    }
-
-    /**
-     * Reset password with token
-     */
-    public function resetPassword(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|string|exists:users,phone',
-            'token' => 'required|string',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'فشل التحقق',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Check if token exists and is not expired (15 minutes for SMS code)
-        $passwordReset = \DB::table('password_reset_tokens')
-            ->where('phone', $request->phone)
-            ->where('created_at', '>', now()->subMinutes(15))
-            ->first();
-
-        if (!$passwordReset || !Hash::check($request->token, $passwordReset->token)) {
-            return response()->json([
-                'message' => 'الرمز غير صالح أو منتهي الصلاحية'
-            ], 422);
-        }
-
-        // Update user password
-        $user = User::where('phone', $request->phone)->first();
-        $user->update([
-            'password' => Hash::make($request->password)
-        ]);
-
-        // Delete the reset token
-        \DB::table('password_reset_tokens')->where('phone', $request->phone)->delete();
-
-        // Revoke all existing tokens for security
-        $user->tokens()->delete();
-
-        return response()->json([
-            'message' => 'تم إعادة تعيين كلمة المرور بنجاح'
-        ]);
-    }
-
-
-    /**
-     * Compute a deterministic, compact QR token from user id.
-     * This avoids storing an additional UUID per user and is reversible by the same algorithm.
-     */
     /**
      * Enforce single device login
      */
@@ -398,27 +333,5 @@ class AuthController extends Controller
             // Mettre à jour le device UUID
             $user->update(['device_uuid' => $deviceUuid]);
         }
-    }
-
-    /**
-     * Format user data for response
-     */
-    private function formatUserData(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'firstname' => $user->firstname,
-            'lastname' => $user->lastname,
-            'birth_date' => $user->birth_date,
-            'address' => $user->address,
-            'school_name' => $user->school_name,
-            'phone' => $user->phone,
-            'role' => $user->role,
-            'year_of_study' => $user->year_of_study,
-            // Use stored QR token UUID from DB
-            'qr_token' => $user->qr_token,
-            // Public UUID identifier (new)
-            'uuid' => $user->uuid ?? null,
-        ];
     }
 }

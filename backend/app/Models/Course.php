@@ -42,7 +42,7 @@ class Course extends Model
      */
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class, 'teacher_id', 'id')
+        return $this->belongsTo(Teacher::class, 'teacher_uuid', 'uuid')
             ->through('chapter');
     }
 }

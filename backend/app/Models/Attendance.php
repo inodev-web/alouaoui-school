@@ -16,9 +16,8 @@ class Attendance extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'student_id',
-        'user_uuid',
-        'teacher_id',
+        'student_uuid',
+        'teacher_uuid',
         'session_id',
         'date',
         'status',
@@ -46,12 +45,7 @@ class Attendance extends Model
      */
     public function student(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'student_id');
-    }
-
-    public function studentByUuid(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
+        return $this->belongsTo(User::class, 'student_uuid', 'uuid');
     }
 
     /**
@@ -59,7 +53,7 @@ class Attendance extends Model
      */
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class);
+        return $this->belongsTo(Teacher::class, 'teacher_uuid', 'uuid');
     }
 
     /**

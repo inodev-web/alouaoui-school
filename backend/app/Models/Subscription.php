@@ -17,9 +17,8 @@ class Subscription extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id',
         'user_uuid',
-        'teacher_id',
+        'teacher_uuid',
         'amount',
         'videos_access',
         'lives_access',
@@ -54,7 +53,7 @@ class Subscription extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_uuid', 'uuid');
     }
 
     /**
@@ -70,7 +69,7 @@ class Subscription extends Model
      */
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class);
+        return $this->belongsTo(Teacher::class, 'teacher_uuid', 'uuid');
     }
 
     /**

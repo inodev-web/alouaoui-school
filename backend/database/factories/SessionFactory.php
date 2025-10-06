@@ -17,13 +17,7 @@ class SessionFactory extends Factory
     public function definition(): array
     {
         return [
-            'teacher_id' => \App\Models\Teacher::factory(),
-            'session_date' => fake()->dateTimeBetween('-1 week', '+1 week')->format('Y-m-d'),
-            'start_time' => fake()->time('H:i:s'),
-            'end_time' => fake()->time('H:i:s'),
-            'created_by' => null,
+            //
         ];
     }
-
-
 }

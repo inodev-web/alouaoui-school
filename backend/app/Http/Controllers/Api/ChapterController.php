@@ -29,11 +29,9 @@ class ChapterController extends Controller
         $user = $request->user();
         $perPage = $request->get('per_page', 15);
         $search = $request->get('search');
-        $teacherId = $request->get('teacher_id');
-        $courseId = $request->get('course_id');
         $yearOfStudy = $request->get('year_of_study');
 
-        $query = Chapter::with(['teacher:id,name', 'course:id,title']);
+        $query = Chapter::with(['courses']);
 
         // Recherche
         if ($search) {
@@ -42,18 +40,8 @@ class ChapterController extends Controller
         }
 
         // Filtres
-        if ($teacherId) {
-            $query->where('teacher_id', $teacherId);
-        }
-
-        if ($courseId) {
-            $query->where('course_id', $courseId);
-        }
-
         if ($yearOfStudy) {
-            $query->whereHas('course', function($q) use ($yearOfStudy) {
-                $q->where('year_of_study', $yearOfStudy);
-            });
+            $query->where('year_target', $yearOfStudy);
         }
 
         // Appliquer les restrictions d'accès pour les étudiants
@@ -90,13 +78,8 @@ class ChapterController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'sometimes|string|max:1000',
-            'teacher_id' => 'required|exists:teachers,id',
-            'course_id' => 'required|exists:courses,id',
-            'video_url' => 'sometimes|string|max:500',
-            'video_file' => 'sometimes|file|mimes:mp4,mov,avi,wmv|max:512000', // 500MB
-            'duration_minutes' => 'sometimes|integer|min:1',
-            'order_index' => 'sometimes|integer|min:0',
-            'is_active' => 'sometimes|boolean',
+            'year_target' => 'required|string|in:1AM,2AM,3AM,4AM,1AS,2AS,3AS',
+            'is_free' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -107,11 +90,11 @@ class ChapterController extends Controller
         }
 
         $chapterData = $request->only([
-            'title', 'description', 'teacher_id', 'course_id',
-            'video_url', 'duration_minutes', 'order_index', 'is_active'
+            'title', 'description', 'year_target', 'is_free'
         ]);
 
-        // Upload video file if provided
+        // Tous les chapitres appartiennent automatiquement à Alouaoui
+        $chapterData['teacher_name'] = 'Alouaoui';
         if ($request->hasFile('video_file')) {
             $videoPath = $request->file('video_file')->store('chapters/videos', 's3');
             $chapterData['video_url'] = $videoPath; // Store path, not full URL

@@ -19,8 +19,9 @@ class Chapter extends Model
     protected $fillable = [
         'title',
         'description',
-        'teacher_id',
+        'teacher_name',
         'year_target',
+        'is_free',
     ];
 
     /**
@@ -29,11 +30,11 @@ class Chapter extends Model
     public const YEAR_TARGETS = ['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS'];
 
     /**
-     * Chapter belongs to teacher
+     * Get the teacher name (always Alouaoui)
      */
-    public function teacher(): BelongsTo
+    public function getTeacherNameAttribute($value): string
     {
-        return $this->belongsTo(Teacher::class);
+        return $value ?? 'Alouaoui';
     }
 
     /**

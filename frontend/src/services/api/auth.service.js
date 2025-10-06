@@ -5,13 +5,23 @@ class AuthService {
         this.updateStoredUserStructure();
     }
 
-    async login(phone, password) {
+    async login(phone, password, options = {}) {
         try {
-            const response = await api.post('/auth/login', {
-                phone,
-                password
-            });
+            // Utiliser / persister un device_uuid pour cohérence avec le backend
+            let deviceUuid = localStorage.getItem('device_uuid');
+            if (!deviceUuid) {
+                deviceUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'dev-' + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('device_uuid', deviceUuid);
+            }
 
+            const payload = {
+                login: phone,          // le backend attend 'login'
+                password,
+                device_uuid: deviceUuid,
+                single_device: options.single_device ?? true
+            };
+
+            const response = await api.post('/auth/login', payload);
             const serverData = response.data.data;
             console.log('Server login response:', serverData);
 
@@ -19,62 +29,41 @@ class AuthService {
                 throw new Error('لم يتم استلام رمز المصادقة من الخادم');
             }
 
-            // Stocker les données essentielles
             localStorage.setItem('token', serverData.token);
-            localStorage.setItem('device_uuid', serverData.device_uuid);
-
-            // Après avoir stocké le token, utiliser les données retournées par la route /auth/login
-            // Certains endpoints renvoient { user: {...}, token, device_uuid }
-            let finalUser = {};
-            if (serverData.user) {
-                // Le serveur a retourné un objet user directement
-                const u = serverData.user;
-                finalUser = {
-                    id: u.id,
-                    firstname: u.firstname || '',
-                    lastname: u.lastname || '',
-                    phone: u.phone || phone,
-                    role: u.role || 'student',
-                    year_of_study: u.year_of_study || '',
-                    qr_token: u.qr_token || ''
-                };
-            } else {
-                // Structure alternative où les champs sont à la racine
-                finalUser = {
-                    id: serverData.id,
-                    firstname: serverData.firstname || '',
-                    lastname: serverData.lastname || '',
-                    phone: serverData.phone || phone,
-                    role: serverData.role || 'student',
-                    year_of_study: serverData.year_of_study || '',
-                    qr_token: serverData.qr_token || ''
-                };
+            if (serverData.device_uuid) {
+                localStorage.setItem('device_uuid', serverData.device_uuid);
             }
 
+            // Normalisation de l'objet user
+            const rawUser = serverData.user ? serverData.user : serverData;
+            const finalUser = {
+                id: rawUser.uuid || rawUser.id, // conserver compatibilité interne si l'app attend id
+                uuid: rawUser.uuid || rawUser.id,
+                firstname: rawUser.firstname || '',
+                lastname: rawUser.lastname || '',
+                phone: rawUser.phone || phone,
+                role: rawUser.role || 'student',
+                year_of_study: rawUser.year_of_study || '',
+                qr_token: rawUser.qr_token || rawUser.uuid || rawUser.id || '' // alias vers uuid
+            };
+
+            // Tentative d'enrichissement via /auth/profile (optionnel)
             try {
-                // getProfile utilise l'Authorization header via axios interceptors
                 const profile = await this.getProfile();
                 if (profile) {
-                    // Fusionner les données du profile (priorité au profile serveur)
-                    finalUser = {
-                        ...finalUser,
-                        ...profile
-                    };
+                    Object.assign(finalUser, profile);
+                    // S'assurer que uuid reste cohérent
+                    finalUser.uuid = profile.uuid || finalUser.uuid;
+                    finalUser.id = finalUser.uuid; // aligner id sur uuid pour éviter confusion
+                    finalUser.qr_token = finalUser.uuid;
                 }
             } catch (e) {
-                // Si getProfile échoue, on garde finalUser tel quel
                 console.warn('getProfile after login failed, using partial user data', e);
             }
 
-            // Prefer server-provided qr_token; default to empty string if absent
-            finalUser.qr_token = finalUser.qr_token || '';
-
             localStorage.setItem('user', JSON.stringify(finalUser));
 
-            return {
-                token: serverData.token,
-                user: finalUser
-            };
+            return { token: serverData.token, user: finalUser };
         } catch (error) {
             console.error('Auth service login error:', error);
             throw this.handleError(error);
@@ -85,43 +74,51 @@ class AuthService {
 
     async register(userData) {
         try {
-            const requiredFields = ['firstname', 'lastname', 'phone', 'password', 'year_of_study'];
+            // Champs requis côté backend
+            const requiredFields = ['firstname', 'lastname', 'phone', 'password', 'year_of_study', 'birth_date', 'address', 'school_name'];
             for (const field of requiredFields) {
                 if (!userData[field]) {
                     throw new Error(`Le champ ${field} est requis`);
                 }
             }
 
-            const response = await api.post('/auth/register', userData);
+            // Générer un device_uuid si absent (cohérent avec login)
+            let deviceUuid = localStorage.getItem('device_uuid');
+            if (!deviceUuid) {
+                deviceUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'dev-' + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('device_uuid', deviceUuid);
+            }
+
+            const payload = { ...userData, password_confirmation: userData.password_confirmation || userData.password, device_uuid: deviceUuid };
+
+            const response = await api.post('/auth/register', payload);
             const serverData = response.data.data;
 
             if (!serverData || !serverData.token) {
                 throw new Error('لم يتم استلام رمز المصادقة من الخادم');
             }
 
-            // Stocker les données essentielles
             localStorage.setItem('token', serverData.token);
-            localStorage.setItem('device_uuid', serverData.device_uuid);
+            if (serverData.device_uuid) {
+                localStorage.setItem('device_uuid', serverData.device_uuid);
+            }
 
-            // Formater les données utilisateur
+            const rawUser = serverData.user ? serverData.user : serverData;
             const formattedUser = {
-                id: serverData.id,
-                firstname: serverData.firstname || '',
-                lastname: serverData.lastname || '',
-                phone: serverData.phone || userData.phone,
-                role: serverData.role || 'student',
-                year_of_study: serverData.year_of_study || userData.year_of_study,
-                qr_token: serverData.qr_token || ''
+                id: rawUser.uuid || rawUser.id,
+                uuid: rawUser.uuid || rawUser.id,
+                firstname: rawUser.firstname || userData.firstname,
+                lastname: rawUser.lastname || userData.lastname,
+                phone: rawUser.phone || userData.phone,
+                role: rawUser.role || 'student',
+                year_of_study: rawUser.year_of_study || userData.year_of_study,
+                qr_token: rawUser.qr_token || rawUser.uuid || rawUser.id || ''
             };
-
-            formattedUser.qr_token = formattedUser.qr_token || '';
+            formattedUser.qr_token = formattedUser.uuid;
 
             localStorage.setItem('user', JSON.stringify(formattedUser));
 
-            return {
-                token: serverData.token,
-                user: formattedUser
-            };
+            return { token: serverData.token, user: formattedUser };
         } catch (error) {
             throw this.handleError(error);
         }
@@ -159,21 +156,19 @@ class AuthService {
     async getProfile() {
         try {
             const response = await api.get('/auth/profile');
-            console.log('Raw getProfile response:', response);
             const profileData = response.data.data;
-
-            // Mise à jour du localStorage avec les données les plus récentes
             if (profileData) {
                 const formattedProfile = {
-                    id: profileData.id,
+                    id: profileData.uuid || profileData.id,
+                    uuid: profileData.uuid || profileData.id,
                     firstname: profileData.firstname || '',
                     lastname: profileData.lastname || '',
                     phone: profileData.phone || '',
                     role: profileData.role || 'student',
                     year_of_study: profileData.year_of_study || '',
-                    qr_token: profileData.qr_token || ''
+                    qr_token: profileData.qr_token || profileData.uuid || profileData.id || ''
                 };
-                formattedProfile.qr_token = formattedProfile.qr_token || '';
+                formattedProfile.qr_token = formattedProfile.uuid;
                 localStorage.setItem('user', JSON.stringify(formattedProfile));
                 return formattedProfile;
             }
@@ -187,18 +182,18 @@ class AuthService {
         try {
             const response = await api.put('/auth/profile', profileData);
             const updatedProfile = response.data.data;
-
             if (updatedProfile) {
                 const formattedProfile = {
-                    id: updatedProfile.id,
+                    id: updatedProfile.uuid || updatedProfile.id,
+                    uuid: updatedProfile.uuid || updatedProfile.id,
                     firstname: updatedProfile.firstname || '',
                     lastname: updatedProfile.lastname || '',
                     phone: updatedProfile.phone || '',
                     role: updatedProfile.role || 'student',
                     year_of_study: updatedProfile.year_of_study || '',
-                    qr_token: updatedProfile.qr_token || ''
+                    qr_token: updatedProfile.qr_token || updatedProfile.uuid || updatedProfile.id || ''
                 };
-                formattedProfile.qr_token = formattedProfile.qr_token || '';
+                formattedProfile.qr_token = formattedProfile.uuid;
                 localStorage.setItem('user', JSON.stringify(formattedProfile));
                 return formattedProfile;
             }
@@ -245,19 +240,20 @@ class AuthService {
             const user = JSON.parse(userStr);
             
             // Ne mettre à jour que si l'ancienne structure est détectée
-            if (user.name !== undefined || user.email !== undefined) {
+            if (user.name !== undefined || user.email !== undefined || !user.uuid) {
+                const uuid = user.uuid || user.id || (user.qr_token) || 'missing-uuid';
                 const updatedUser = {
-                    id: user.id,
+                    id: uuid,
+                    uuid,
                     firstname: user.firstname || '',
                     lastname: user.lastname || '',
                     phone: user.phone || '',
                     role: user.role || 'student',
                     year_of_study: user.year_of_study || '',
-                    qr_token: user.qr_token || ''
+                    qr_token: uuid
                 };
-
                 localStorage.setItem('user', JSON.stringify(updatedUser));
-                console.log('User data structure updated:', updatedUser);
+                console.log('User data structure updated (uuid normalized):', updatedUser);
             }
         } catch (error) {
             console.error('Error updating user structure:', error);
