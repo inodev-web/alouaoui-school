@@ -11,9 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('chapters', function (Blueprint $table) {
-            $table->boolean('is_free')->default(false);
-        });
+        // Only add the column if it doesn't already exist (SQLite can't add duplicate columns)
+        if (!Schema::hasColumn('chapters', 'is_free')) {
+            Schema::table('chapters', function (Blueprint $table) {
+                $table->boolean('is_free')->default(false);
+            });
+        }
     }
 
     /**
@@ -21,8 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('chapters', function (Blueprint $table) {
-            $table->dropColumn('is_free');
-        });
+        // Only drop the column if it exists
+        if (Schema::hasColumn('chapters', 'is_free')) {
+            Schema::table('chapters', function (Blueprint $table) {
+                $table->dropColumn('is_free');
+            });
+        }
     }
 };

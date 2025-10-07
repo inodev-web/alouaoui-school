@@ -265,10 +265,15 @@ class AuthService {
             const message = error.response.data.message || 'Une erreur est survenue';
             
             if (error.response.status === 422 && error.response.data.errors) {
-                return new Error('بيانات غير صالحة');
+                // Create a detailed error object for validation errors
+                const err = new Error(message);
+                err.response = error.response;
+                return err;
             }
 
-            return new Error(message);
+            const err = new Error(message);
+            err.response = error.response;
+            return err;
         }
         return error;
     }

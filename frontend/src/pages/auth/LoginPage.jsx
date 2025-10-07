@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { BookOpen, Eye, EyeOff, Phone, Lock } from 'lucide-react'
 import authService from '../../services/api/auth.service'
+import { loginSuccess } from '../../store/slices/authSlice'
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +14,7 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   const validateForm = () => {
     const newErrors = {}
@@ -43,10 +46,11 @@ const LoginPage = () => {
       const response = await authService.login(formData.phone, formData.password)
       console.log('Login response:', response)
       
-      if (response.token) {
-        // Stockage explicite du token
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
+      if (response.token && response.user) {
+        // Update Redux store
+        dispatch(loginSuccess({ token: response.token, user: response.user }))
+        
+        // Navigate to profile
         navigate('/student/profile')
       } else {
         console.error('No token received in response:', response)
@@ -55,21 +59,29 @@ const LoginPage = () => {
     } catch (error) {
       console.error('Login error:', error)
       
-      if (error.cause?.details?.errors) {
-        // Erreurs de validation Laravel
+      // Handle validation errors from backend
+      if (error.response?.data?.errors) {
+        const backendErrors = error.response.data.errors
+        const formattedErrors = {}
+        Object.keys(backendErrors).forEach(key => {
+          formattedErrors[key] = Array.isArray(backendErrors[key]) 
+            ? backendErrors[key][0] 
+            : backendErrors[key]
+        })
+        setErrors(formattedErrors)
+      } else if (error.cause?.details?.errors) {
+        // Erreurs de validation Laravel (old format)
         const validationErrors = error.cause.details.errors
         setErrors({
-          ...errors,
           ...Object.keys(validationErrors).reduce((acc, key) => {
-            acc[key] = validationErrors[key][0] // Prendre le premier message d'erreur
+            acc[key] = validationErrors[key][0]
             return acc
           }, {})
         })
       } else {
         // Erreur générale
         setErrors({
-          ...errors,
-          submit: error.message || 'حدث خطأ أثناء تسجيل الدخول'
+          submit: error.response?.data?.message || error.message || 'حدث خطأ أثناء تسجيل الدخول'
         })
       }
     } finally {

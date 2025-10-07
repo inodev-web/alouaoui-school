@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { BookOpen, Eye, EyeOff, Phone, Lock, User, GraduationCap, Key } from 'lucide-react'
 import authService from '../../services/api/auth.service'
+import { loginSuccess } from '../../store/slices/authSlice'
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +22,7 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   const validateForm = () => {
     const newErrors = {}
@@ -98,8 +101,8 @@ const RegisterPage = () => {
       const { token, user } = response
       
       if (token && user) {
-        // Stockage du token
-        localStorage.setItem('token', token)
+        // Update Redux store
+        dispatch(loginSuccess({ token, user }))
         
         // Redirection en fonction du rôle
         navigate('/student/profile')
@@ -112,11 +115,22 @@ const RegisterPage = () => {
         config: error.config
       })
       
-      const errorMessage = error.response?.data?.message || error.message || 'حدث خطأ أثناء إنشاء الحساب'
-      setErrors({
-        ...errors,
-        submit: errorMessage
-      })
+      // Handle validation errors from backend
+      if (error.response?.data?.errors) {
+        const backendErrors = error.response.data.errors
+        const formattedErrors = {}
+        Object.keys(backendErrors).forEach(key => {
+          formattedErrors[key] = Array.isArray(backendErrors[key]) 
+            ? backendErrors[key][0] 
+            : backendErrors[key]
+        })
+        setErrors(formattedErrors)
+      } else {
+        const errorMessage = error.response?.data?.message || error.message || 'حدث خطأ أثناء إنشاء الحساب'
+        setErrors({
+          submit: errorMessage
+        })
+      }
     } finally {
       setIsLoading(false)
     }
