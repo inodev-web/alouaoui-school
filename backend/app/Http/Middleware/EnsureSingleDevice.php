@@ -40,21 +40,50 @@ class EnsureSingleDevice
         // Check if user has an active session on another device
         $currentToken = $user->currentAccessToken();
 
+        \Log::info("EnsureSingleDevice middleware check", [
+            'user_uuid' => $user->uuid,
+            'request_device_uuid' => $deviceUuid,
+            'token_device_uuid' => $currentToken ? $currentToken->name : 'NO_TOKEN',
+            'token_id' => $currentToken ? $currentToken->id : null
+        ]);
+
         if ($currentToken) {
             // Get device UUID from token's meta or name
-            $tokenDeviceUuid = $currentToken->name; // We'll store device UUID as token name
+            $tokenDeviceUuid = $currentToken->name;
 
             // If device UUID doesn't match current token's device UUID
             if ($tokenDeviceUuid !== $deviceUuid) {
-                // Revoke all existing tokens for this user
-                $user->tokens()->delete();
+                \Log::warning("Device mismatch for user {$user->uuid}: Token device={$tokenDeviceUuid}, Request device={$deviceUuid}");
+                
+                // Check if this device UUID is already associated with another token from this user
+                $userDeviceToken = DB::table('personal_access_tokens')
+                    ->where('tokenable_type', get_class($user))
+                    ->where('tokenable_id', $user->id)
+                    ->where('name', $deviceUuid)
+                    ->first();
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Session active détectée sur un autre appareil. Reconnectez-vous.',
-                    'error_code' => 'DEVICE_CONFLICT',
-                    'action' => 'LOGIN_REQUIRED'
-                ], 409); // Conflict status code
+                if ($userDeviceToken) {
+                    // This user has another token for this device - use that one instead
+                    // Revoke the current token being used (old device)
+                    $currentToken->delete();
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Session active détectée sur un autre appareil. Reconnectez-vous.',
+                        'error_code' => 'DEVICE_CONFLICT',
+                        'action' => 'LOGIN_REQUIRED'
+                    ], 401); // Use 401 for proper logout
+                } else {
+                    // Different device detected - revoke all tokens and force re-login
+                    $user->tokens()->delete();
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Votre compte a été connecté depuis un autre appareil. Reconnectez-vous.',
+                        'error_code' => 'DEVICE_CONFLICT',
+                        'action' => 'LOGIN_REQUIRED'
+                    ], 401); // Use 401 for proper logout
+                }
             }
         }
 
@@ -71,14 +100,6 @@ class EnsureSingleDevice
                 ->delete();
 
             \Log::info("Device UUID conflict resolved: Device {$deviceUuid} was transferred from user {$existingToken->tokenable_id} to user {$user->id}");
-        }
-
-        // Update current token's device info if needed
-        if ($currentToken && $currentToken->name !== $deviceUuid) {
-            $currentToken->update([
-                'name' => $deviceUuid,
-                'updated_at' => now()
-            ]);
         }
 
         // Store device UUID in request for further use

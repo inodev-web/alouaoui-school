@@ -2,16 +2,23 @@
 
 ## Issues Identified
 
-1. **Redux Store Not Updated**: After successful registration or login, the Redux store was not being updated with the authentication state, causing the `PrivateRoute` component to redirect users to the login page.
+1. **Redux Store Not Updated on Login/Register**: After successful registration or login, the Redux store was not being updated with the authentication state, causing the `PrivateRoute` component to redirect users to the login page.
 
-2. **Error Handling**: Error messages from the backend were not being properly displayed to users due to inconsistent error handling.
+2. **Redux State Not Persisted**: Redux state is stored in memory and resets on page refresh or navigation, even though the token remains in localStorage.
 
-3. **Authentication Flow**: The flow was:
+3. **Error Handling**: Error messages from the backend were not being properly displayed to users due to inconsistent error handling.
+
+4. **Authentication Flow Issues**: The flow was:
    - User registers/logs in
-   - Token and user stored in localStorage only
+   - Token and user stored in localStorage only (Redux not updated)
    - Navigate to `/student/profile`
    - `PrivateRoute` checks Redux state (finds nothing)
    - Redirects to `/login`
+   
+5. **Session Persistence Issue**: After refreshing the page or navigating away:
+   - Redux state resets to empty
+   - Token still in localStorage
+   - User redirected to login despite having valid token
 
 ## Fixes Applied
 
@@ -29,9 +36,20 @@
 - ✅ Improved error handling with multiple fallbacks for different error formats
 - ✅ Show specific validation errors from backend
 
-### 3. auth.service.js
+### 3. App.jsx (NEW - Session Persistence Fix)
+- ✅ Added `useEffect` hook to restore auth state on app initialization
+- ✅ Check localStorage for token and user data on app mount
+- ✅ Automatically restore Redux state from localStorage if valid session exists
+- ✅ Clear invalid session data if parsing fails
+- ✅ **This is the key fix for persistent login across page refreshes**
+
+### 4. auth.service.js
 - ✅ Improved `handleError` method to preserve response data
 - ✅ Attach `error.response` to Error object for better error extraction in components
+
+### 5. axios.config.js
+- ✅ Updated 401 error handler to also clear `device_uuid` from localStorage
+- ✅ Ensures complete session cleanup on authentication failure
 
 ## Testing Instructions
 
@@ -60,6 +78,19 @@
 5. Click "تسجيل الدخول" (Login)
 6. You should be redirected to `/student/profile`
 
+### Test Session Persistence (IMPORTANT)
+1. **After logging in successfully**:
+   - Navigate to the home page (`/`)
+   - Navigate back to `/student/profile` - you should still be logged in ✅
+   - Refresh the page (F5 or Ctrl+R) - you should remain logged in ✅
+   - Close the browser tab and reopen the app - you should still be logged in ✅
+   - Open browser DevTools → Console - you should see "Auth state restored from localStorage"
+
+2. **After logging out**:
+   - Click logout button
+   - Try to access `/student/profile` - you should be redirected to `/login` ✅
+   - Check localStorage (F12 → Application → Local Storage) - should be empty ✅
+
 ### Test Error Display
 1. Try registering with an already used phone number
    - You should see an error message under the phone field
@@ -70,7 +101,17 @@
 
 ## How Authentication Now Works
 
-1. **Registration/Login**:
+1. **App Initialization** (NEW):
+   ```
+   App loads
+   → App.jsx useEffect runs
+   → Check localStorage for token and user
+   → If found: Parse user data and dispatch loginSuccess()
+   → Redux state restored from localStorage
+   → User stays logged in across page refreshes
+   ```
+
+2. **Registration/Login**:
    ```
    User submits form
    → authService.register/login() called
@@ -80,7 +121,7 @@
    → Navigate to /student/profile
    ```
 
-2. **PrivateRoute Check**:
+3. **PrivateRoute Check**:
    ```
    User navigates to protected route
    → PrivateRoute checks Redux state
@@ -89,7 +130,16 @@
    → If no token: Redirect to /login
    ```
 
-3. **Error Handling**:
+4. **Session Persistence**:
+   ```
+   User refreshes page or navigates away
+   → Redux state resets (normal behavior)
+   → App.jsx useEffect runs on mount
+   → Restores auth state from localStorage
+   → User remains logged in
+   ```
+
+5. **Error Handling**:
    ```
    Backend returns error
    → Error intercepted by auth service
@@ -99,11 +149,23 @@
    → Display to user
    ```
 
+6. **Logout**:
+   ```
+   User clicks logout
+   → authService.logout() called
+   → Backend session terminated
+   → localStorage cleared (token, user, device_uuid)
+   → Redux state cleared via dispatch(logout())
+   → Navigate to /login
+   ```
+
 ## Files Modified
 
+- `frontend/src/App.jsx` ⭐ **KEY FIX for persistent login**
 - `frontend/src/pages/auth/RegisterPage.jsx`
 - `frontend/src/pages/auth/LoginPage.jsx`
 - `frontend/src/services/api/auth.service.js`
+- `frontend/src/services/api/axios.config.js`
 
 ## Backend Verification
 

@@ -1,8 +1,26 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import CountUp from "react-countup";
 
 const HeroSection = () => {
+  const navigate = useNavigate()
+  
+  const handleDiscoverClick = (e) => {
+    e.preventDefault()
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('token')
+    const user = localStorage.getItem('user')
+    
+    if (token && user) {
+      // User is logged in, go to chapters
+      navigate('/student/chapters')
+    } else {
+      // User not logged in, go to register
+      navigate('/register')
+    }
+  }
+  
   return (
     <div className=" bg-gradient-to-br from-pink-50 via-white to-blue-50 p-4 sm:p-6 mt-16 lg:mt-20">
       <div className="max-w-6xl mx-auto">
@@ -79,16 +97,17 @@ const HeroSection = () => {
                 </p>
                 
                 {/* Contact Button */}
-                <Link 
-                  to="/student/chapters"
+                <button 
+                  onClick={handleDiscoverClick}
                   className="bg-gradient-to-r from-red-400 to-pink-500 text-white 
                            px-6 py-3 sm:px-8 sm:py-4 rounded-full font-medium 
                            text-base sm:text-lg hover:from-red-500 hover:to-pink-600 
                            transition-all duration-300 shadow-lg hover:shadow-xl 
-                           transform hover:scale-105 w-full sm:w-auto inline-block text-center"
+                           transform hover:scale-105 w-full sm:w-auto inline-block text-center
+                           cursor-pointer"
                 >
                    اكتشف الدروس
-                </Link>
+                </button>
               </div>
             </div>
           </div>

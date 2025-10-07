@@ -22,21 +22,95 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
     const syncAuth = async () => {
       try {
         const storedToken = token || localStorage.getItem('token')
+        const storedUserStr = localStorage.getItem('user')
+        
+        console.log('🔍 PrivateRoute - syncAuth check:', {
+          hasToken: !!storedToken,
+          hasReduxUser: !!user,
+          hasStoredUser: !!storedUserStr
+        })
+        
         if (!storedToken) {
             if (isMounted) setChecking(false)
             return
         }
-        // Si l'utilisateur Redux est absent, tenter de récupérer le profil
+        
+        // Si l'utilisateur Redux est absent, try localStorage first
         if (!user) {
+          // First try to use cached user from localStorage (faster, no API call)
+          if (storedUserStr) {
+            try {
+              const cachedUser = JSON.parse(storedUserStr)
+              console.log('✅ Using cached user from localStorage in PrivateRoute')
+              dispatch(loginSuccess({ token: storedToken, user: cachedUser }))
+              if (isMounted) setChecking(false)
+              return // Don't fetch profile if we have cached user
+            } catch (parseError) {
+              console.warn('Failed to parse cached user, will fetch from API:', parseError)
+            }
+          }
+          
+          // Only fetch profile if no cached user available
           try {
+            console.log('📡 Fetching profile from API...')
             const profile = await authService.getProfile()
             if (profile && isMounted) {
               dispatch(loginSuccess({ token: storedToken, user: profile }))
             }
           } catch (e) {
             console.warn('Profile fetch failed in PrivateRoute:', e)
-            if (isMounted) {
+            
+            // Handle device conflicts and unauthorized errors
+            if (e.response?.status === 401 && isMounted) {
+              const errorCode = e.response?.data?.error_code
+              
+              if (errorCode === 'DEVICE_CONFLICT') {
+                console.log('Device conflict detected - account logged in on another device')
+                alert('Votre compte a été connecté depuis un autre appareil. Veuillez vous reconnecter.')
+              } else {
+                console.log('Unauthorized - clearing auth state')
+              }
+              
+              // Clear all auth data
               dispatch(logout())
+              localStorage.removeItem('token')
+              localStorage.removeItem('user')
+              localStorage.removeItem('device_uuid')
+            } else if (e.response?.status === 400 && isMounted) {
+              // Handle missing device UUID or other bad requests
+              const errorCode = e.response?.data?.error_code
+              
+              if (errorCode === 'DEVICE_UUID_REQUIRED') {
+                console.log('Device UUID missing - clearing auth and forcing re-login')
+                dispatch(logout())
+                localStorage.removeItem('token')
+                localStorage.removeItem('user')
+                localStorage.removeItem('device_uuid')
+              } else {
+                // For other 400 errors, try to use cached user
+                const cachedUser = localStorage.getItem('user')
+                if (cachedUser) {
+                  try {
+                    const user = JSON.parse(cachedUser)
+                    dispatch(loginSuccess({ token: storedToken, user }))
+                    console.log('Using cached user from localStorage due to profile fetch error')
+                  } catch (parseError) {
+                    console.error('Failed to parse cached user:', parseError)
+                  }
+                }
+              }
+            } else if (isMounted) {
+              // For other errors (500, network issues), use cached user from localStorage
+              const cachedUser = localStorage.getItem('user')
+              if (cachedUser) {
+                try {
+                  const user = JSON.parse(cachedUser)
+                  dispatch(loginSuccess({ token: storedToken, user }))
+                  console.log('Using cached user from localStorage due to profile fetch error')
+                } catch (parseError) {
+                  console.error('Failed to parse cached user:', parseError)
+                }
+              }
             }
           }
         }

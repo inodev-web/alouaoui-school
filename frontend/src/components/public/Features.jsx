@@ -1,8 +1,24 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Video, BookOpen, PenTool, Users, Play, CheckCircle } from 'lucide-react';
 
 export default function FeaturesSection() {
+  const navigate = useNavigate()
+  
+  const handleFeatureClick = (targetRoute) => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token')
+    const user = localStorage.getItem('user')
+    
+    if (token && user) {
+      // User is logged in, go to target route
+      navigate(targetRoute)
+    } else {
+      // User not logged in, go to register
+      navigate('/register')
+    }
+  }
+  
   const features = [
     {
       title: "الدروس",
@@ -84,10 +100,12 @@ export default function FeaturesSection() {
                   </p>
 
                   {/* CTA Button */}
-                  <Link 
-                    to={feature.title === "الدروس" ? "/student/chapters" : 
-                        feature.title === "اللايف" ? "/student/lives" : 
-                        "/student/chapters"}
+                  <button 
+                    onClick={() => handleFeatureClick(
+                      feature.title === "الدروس" ? "/student/chapters" : 
+                      feature.title === "اللايف" ? "/student/lives" : 
+                      "/student/chapters"
+                    )}
                     className={`
                       w-full py-3 px-6 rounded-2xl font-semibold text-sm
                       bg-white/80 backdrop-blur-sm border-2 ${feature.borderColor}
@@ -95,11 +113,12 @@ export default function FeaturesSection() {
                       transform transition-all duration-300 ease-in-out
                       shadow-lg hover:shadow-xl group-hover:shadow-2xl
                       flex items-center justify-center gap-2
+                      cursor-pointer
                     `}
                   >
                     <Play className="w-4 h-4" />
                     اكتشف المزيد
-                  </Link>
+                  </button>
                 </div>
 
                 {/* Decorative Elements */}
