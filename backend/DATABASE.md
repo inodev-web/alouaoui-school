@@ -1,217 +1,186 @@
-# 🗃️ Structure de la Base de Données - Alouaoui School
+# 🗃️ Structure de la Base de Données - Alouaoui School (Version Simplifiée)
 
-## 📋 Vue d'ensemble des tables
+Cette version reflète la refonte : suppression du module Paiements, simplification des abonnements et clarification de la logique d'accès.
 
-### 👥 **Users** (Utilisateurs/Étudiants)
+## � Tables Principales
+
+### 👥 Users
 ```sql
-id (PK)                 - Identifiant unique
-name                    - Nom complet
-email                   - Email unique
-phone                   - Numéro de téléphone unique
-email_verified_at       - Date de vérification email
-password               - Mot de passe hashé
-role                   - Enum: 'admin', 'student'
-year_of_study          - Enum: '1AM','2AM','3AM','4AM','1AS','2AS','3AS'
-device_uuid            - UUID de l'appareil (nullable)
-qr_token              - Token QR unique pour check-in
-remember_token        - Token de session Laravel
-timestamps            - created_at, updated_at
+uuid (PK)                - Clé primaire UUID
+firstname                - Prénom
+lastname                 - Nom
+birth_date               - Date de naissance (nullable)
+address                  - Adresse (nullable)
+school_name              - Nom de l'établissement (nullable)
+phone                    - Téléphone unique (login)
+phone_verified_at        - Datetime vérification (nullable)
+password                 - Hash
+year_of_study            - Enum(1AM..3AS) nullable
+role                     - 'admin' | 'student'
+device_uuid              - UUID appareil (single device enforcement)
+free_subscriber          - Bool (true si exonéré de paiement)
+free_subscriber_reason   - Texte (nullable)
+remember_token           - Token session
+timestamps               - created_at / updated_at
 ```
 
-### 👨‍🏫 **Teachers** (Enseignants)
+### 👨‍🏫 Teachers
 ```sql
-id (PK)                 - Identifiant unique
-name                    - Nom de l'enseignant
-module                  - Matière enseignée
-year                    - Enum: '1AM','2AM','3AM','4AM','1AS','2AS','3AS'
-is_online_publisher     - Boolean: publie du contenu en ligne
-price_subscription      - Prix d'abonnement mensuel (decimal 8,2)
-percent_school          - Pourcentage pour l'école (tinyint)
-timestamps             - created_at, updated_at
+uuid (PK)
+name                     - Nom affiché
+module                   - Matière
+year                     - Cible pédagogique
+is_online_publisher      - Bool
+price_subscription       - Prix abonnement mensuel (decimal 8,2)
+percent_school           - Pourcentage part école
+timestamps               - created_at / updated_at
 ```
 
-### 📚 **Chapters** (Chapitres)
+### 📚 Chapters
 ```sql
-id (PK)                 - Identifiant unique
-title                   - Titre du chapitre
-description            - Description (text, nullable)
-teacher_id (FK)        - Référence vers teachers
-year_target            - Enum: année cible
-timestamps             - created_at, updated_at
+id (PK)                  - Auto-incrément
+title                    - Titre
+description              - Text nullable
+teacher_name             - Nom affiché (ex: 'Alouaoui')
+year_target              - Enum année cible
+timestamps               - created_at / updated_at
 ```
 
-### 🎥 **Courses** (Cours)
+### 🎥 Courses
 ```sql
-id (PK)                 - Identifiant unique
-chapter_id (FK)        - Référence vers chapters
-title                   - Titre du cours
-video_ref              - Référence vidéo (URL/chemin)
-pdf_summary            - Chemin vers PDF résumé
-exercises_pdf          - Chemin vers PDF exercices
-year_target            - Enum: année cible
-timestamps             - created_at, updated_at
+id (PK)
+chapter_id (FK)          - Vers chapters.id
+title                    - Titre
+video_ref                - Chemin/clé vidéo
+pdf_summary              - PDF résumé (nullable)
+exercises_pdf            - PDF exercices (nullable)
+year_target              - Année cible
+timestamps               - created_at / updated_at
 ```
 
-### 📅 **Sessions** (Sessions de cours)
+### 📅 Sessions
+Simplifiées : uniquement notion temporelle + prix unitaire éventuel.
 ```sql
-id (PK)                 - Identifiant unique
-teacher_id (FK)        - Référence vers teachers
-title                   - Titre de la session
-description            - Description (text, nullable)
-type                   - Enum: 'subscription','free','paid'
-price                  - Prix (decimal 8,2, nullable)
-year_target            - Enum: année cible
-start_time             - Date/heure de début
-end_time               - Date/heure de fin
-status                 - Enum: 'scheduled','live','completed','cancelled'
-meeting_link           - Lien de réunion en ligne
-max_participants       - Nombre max de participants
-timestamps             - created_at, updated_at
+id (PK)
+teacher_id (FK)          - Vers teachers.uuid
+year_target              - Année cible
+start_time               - Datetime début
+end_time                 - Datetime fin
+price                    - Prix (appliqué aux non abonnés) nullable
+status                   - 'completed' | 'cancelled'
+timestamps               - created_at / updated_at
 ```
 
-### 💳 **Subscriptions** (Abonnements)
+### 💳 Subscriptions
+Deux formes :
+1. Mensuelle : starts_at = today, ends_at = +1 mois exact
+2. Pass séance (éphémère) : starts_at = ends_at = today
 ```sql
-id (PK)                 - Identifiant unique
-student_id (FK)        - Référence vers users
-teacher_id (FK)        - Référence vers teachers
-start_date             - Date de début
-end_date               - Date de fin
-active                 - Boolean: statut actif
-timestamps             - created_at, updated_at
+id (PK)
+user_uuid (FK)           - Vers users.uuid
+teacher_uuid (FK)        - Vers teachers.uuid
+starts_at                - Datetime début
+ends_at                  - Datetime fin
+timestamps               - created_at / updated_at
 ```
 
-### 💰 **Payments** (Paiements)
+Statut implicite : active si NOW() entre starts_at et ends_at.
+
+### � Attendances
 ```sql
-id (PK)                 - Identifiant unique
-student_id (FK)        - Référence vers users
-teacher_id (FK)        - Référence vers teachers
-amount                 - Montant (decimal 10,2)
-method                 - Enum: 'online','cash'
-status                 - Enum: 'pending','confirmed','failed'
-payment_details        - Détails JSON (nullable)
-transaction_id         - ID transaction externe
-confirmed_at           - Date de confirmation
-timestamps             - created_at, updated_at
+id (PK)
+student_uuid (FK)        - Vers users.uuid
+teacher_uuid (FK)        - Vers teachers.uuid
+session_id (FK)          - Vers sessions.id (nullable)
+validated_at             - Datetime validation (scan / saisie)
+timestamps               - created_at / updated_at
 ```
 
-### 📊 **Attendances** (Présences)
-```sql
-id (PK)                 - Identifiant unique
-student_id (FK)        - Référence vers users
-teacher_id (FK)        - Référence vers teachers
-session_id (FK)        - Référence vers sessions (nullable)
-date                   - Date de la session
-status                 - Enum: 'present','absent'
-check_in_time          - Heure d'arrivée
-notes                  - Notes additionnelles
-timestamps             - created_at, updated_at
-```
+Classification (dérivée) :
+- invité (guest) si validated_at = starts_at = ends_at d'un abonnement correspondant
+- abonné si validated_at ∈ [starts_at, ends_at] d'un abonnement mensuel
 
-## 🔗 Relations entre les tables
+## 🔗 Relations
+Users
+- hasMany Subscriptions (user_uuid)
+- hasMany Attendances (student_uuid)
 
-### **Users (Students)**
-- `hasMany` Subscriptions
-- `hasMany` Payments
-- `hasMany` Attendances
+Teachers
+- hasMany Sessions
+- hasMany Subscriptions
+- hasMany Attendances
 
-### **Teachers**
-- `hasMany` Chapters
-- `hasMany` Sessions
-- `hasMany` Subscriptions
-- `hasMany` Payments
-- `hasMany` Attendances
+Chapters
+- hasMany Courses
 
-### **Chapters**
-- `belongsTo` Teacher
-- `hasMany` Courses
+Courses
+- belongsTo Chapter
 
-### **Courses**
-- `belongsTo` Chapter
+Sessions
+- belongsTo Teacher
+- hasMany Attendances
 
-### **Sessions**
-- `belongsTo` Teacher
-- `hasMany` Attendances
+Subscriptions
+- belongsTo User
+- belongsTo Teacher
 
-### **Subscriptions**
-- `belongsTo` User (Student)
-- `belongsTo` Teacher
+Attendances
+- belongsTo User
+- belongsTo Teacher
+- belongsTo Session
 
-### **Payments**
-- `belongsTo` User (Student)
-- `belongsTo` Teacher
+## 📈 Index Recommandés
+Users:
+- UNIQUE(phone)
+- role, year_of_study
 
-### **Attendances**
-- `belongsTo` User (Student)
-- `belongsTo` Teacher
-- `belongsTo` Session
+Subscriptions:
+- user_uuid, starts_at, ends_at
+- teacher_uuid, starts_at
 
-## 📈 Index de performance
+Sessions:
+- teacher_id, start_time
+- status
 
-### Users
-- `role`, `year_of_study`
-- `qr_token`
+Attendances:
+- student_uuid, validated_at
+- teacher_uuid, validated_at
+- session_id
 
-### Teachers
-- `module`, `year`
-- `is_online_publisher`
+Courses:
+- chapter_id
 
-### Chapters
-- `teacher_id`, `year_target`
-- `year_target`
+Chapters:
+- year_target
 
-### Courses
-- `chapter_id`, `year_target`
-- `year_target`
+## 🧮 Logique Métier Clé
+Accès vidéo : subscription active (ou user.free_subscriber = true)
+Pass séance : entrée unique (starts_at=ends_at) — ne prolonge pas l'accès hors session.
+Mensuel : fenêtre continue d'accès.
+Exonéré (free_subscriber) : bypass des contrôles de dates.
 
-### Sessions
-- `teacher_id`, `status`
-- `start_time`, `end_time`
-- `type`, `year_target`
-- `status`
-
-### Subscriptions
-- `student_id`, `active`
-- `teacher_id`, `active`
-- `start_date`, `end_date`
-
-### Payments
-- `student_id`, `status`
-- `teacher_id`, `status`
-- `status`, `created_at`
-- `transaction_id`
-
-### Attendances
-- `student_id`, `date`
-- `teacher_id`, `date`
-- `date`, `status`
-- `session_id`
-
-## 🚀 Commandes de migration
-
+## 🛠️ Commandes de Migration
 ```bash
-# Exécuter toutes les migrations
-php artisan migrate
-
-# Rollback de la dernière migration
-php artisan migrate:rollback
-
-# Reset complet et re-migration
-php artisan migrate:fresh
-
-# Avec seeders
+php artisan migrate            # Appliquer
+php artisan migrate:rollback   # Annuler dernier batch
+php artisan migrate:fresh      # Reset + recréation
 php artisan migrate:fresh --seed
-
-# Vérifier le statut des migrations
-php artisan migrate:status
+php artisan migrate:status     # Statut
 ```
 
-## 🌱 Seeders disponibles
-
+## 🌱 Seeders
 ```bash
-# Exécuter tous les seeders
-php artisan db:seed
-
-# Exécuter un seeder spécifique
 php artisan db:seed --class=UserSeeder
 php artisan db:seed --class=TeacherSeeder
 ```
+
+## 🧪 Points de Test Recommandés
+1. Création abonnement mensuel → accès persistant
+2. Création pass séance → accès limité session
+3. free_subscriber = true → accès sans abonnement
+4. Attendance (guest vs subscriber) classification correcte
+5. Fin d'abonnement (ends_at passé) → accès refusé
+
+---
+Documentation à jour (paiements retirés, flags d'accès supprimés, QR = uuid).
+- `status`

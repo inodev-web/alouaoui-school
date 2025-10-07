@@ -25,34 +25,27 @@
 - ✅ File upload support for PDFs and videos
 - ✅ Year-based content organization
 
-### 💰 Payment System (`PaymentController`)
-- ✅ Cash addition to user wallets
-- ✅ PSP webhook handling with signature validation
-- ✅ Payment history and statistics
-- ✅ Admin payment management
+### � Subscription Management (`SubscriptionController`)
+- ✅ Création d'abonnements (mensuel ou pass séance)
+- ✅ Vérification d'abonnement actif (dates only)
+- ✅ Accès vidéo via fenêtre active ou statut free_subscriber
+- ✅ Simplification: plus de statuts persistés, logique dérivée
 
-### 📋 Subscription Management (`SubscriptionController`)
-- ✅ Subscription creation with access control
-- ✅ Active subscription checking
-- ✅ Alouaoui teacher privilege enforcement
-- ✅ Admin subscription management
-
-### 📱 QR Attendance System (`CheckinController`)
-- ✅ QR code scanning for attendance
-- ✅ Session management for physical classes
-- ✅ Attendance tracking and validation
-- ✅ Teacher access control
+### 📱 Attendance & QR (`CheckinController`)
+- ✅ Scan QR (uuid user)
+- ✅ Enregistrement attendance + classification guest/subscriber
+- ✅ Création rapide pass séance ou abonnement mensuel
+- ✅ Statistiques dérivées (plus de paiements directs)
 
 ## 🗃️ Database Structure
 
-### Tables Created:
-- ✅ `users` (students, admins)
-- ✅ `teachers` (with Alouaoui distinction)
-- ✅ `chapters` (subjects by teacher)
-- ✅ `courses` (individual lessons)
-- ✅ `subscriptions` (student enrollments)
-- ✅ `payments` (transaction history)
-- ✅ `checkins` (attendance records)
+### Tables Principales:
+- ✅ `users`
+- ✅ `teachers`
+- ✅ `chapters`
+- ✅ `courses`
+- ✅ `subscriptions` (simplifiées)
+- ✅ `attendances`
 
 ### Test Data Created:
 - ✅ Admin user: `admin@alouaoui-school.com` / `admin123`
@@ -91,26 +84,22 @@ PUT    /api/chapters/{id}    - Update chapter
 DELETE /api/chapters/{id}    - Delete chapter
 ```
 
-### Payment Routes (`/api/payments/`)
-```
-POST /api/payments/add-cash  - Add cash to wallet
-POST /api/payments/webhook   - PSP webhook handler
-GET  /api/payments/history   - Payment history
-GET  /api/payments/stats     - Payment statistics (admin)
-```
+### (Retiré) Payment Routes
+Ancien module supprimé dans la refonte simplifiée.
 
 ### Subscription Routes (`/api/subscriptions/`)
 ```
-POST /api/subscriptions      - Create subscription
-GET  /api/subscriptions/check/{chapterId} - Check active subscription
-GET  /api/subscriptions      - List subscriptions (admin)
+POST /api/subscriptions          - Créer (mode=monthly|session_pass)
+GET  /api/subscriptions/active   - Vérifier abonnement actif
+GET  /api/subscriptions/{id}     - Détails
 ```
 
-### QR Checkin Routes (`/api/admin/checkins/`)
+### Attendance / Check-in Routes (`/api/admin/checkin/`)
 ```
-POST /api/admin/checkins/scan - Scan QR for attendance
-GET  /api/admin/checkins/sessions - List sessions
-POST /api/admin/checkins/sessions - Create session
+POST /api/admin/checkin/scan-qr         - Scan & enregistrer
+GET  /api/admin/checkin/session-attendance - Liste présence session courante
+GET  /api/admin/checkin/attendance-stats   - Stat global
+POST /api/admin/checkin/manual-checkin     - Saisie manuelle
 ```
 
 ## 🧪 Testing Instructions
@@ -153,23 +142,16 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ## 🔒 Access Control Rules
 
-### Alouaoui Teacher Privileges:
-- ✅ Can create online + physical course content
-- ✅ Students can access content remotely
-- ✅ Generate stream tokens for video content
-- ✅ Premium pricing and features
-
-### Regular Teacher Restrictions:
-- ✅ Physical classes only (no online content)
-- ✅ Students must attend in-person
-- ✅ Limited to traditional teaching methods
-- ✅ Cannot create video content
+### Abonnements & Accès
+- Accès vidéo: abonnement actif OU free_subscriber
+- Pass séance: accès ponctuel session
+- Mensuel: période glissante entre starts_at et ends_at
 
 ### Admin Capabilities:
-- ✅ Full CRUD on all resources
-- ✅ User management and statistics
-- ✅ Payment oversight and reporting
-- ✅ System configuration and monitoring
+- ✅ CRUD global
+- ✅ Gestion abonnements
+- ✅ Gestion présences / sessions
+- ✅ Statistiques simplifiées (paiements retirés)
 
 ## 🚀 Production Deployment Notes
 
@@ -194,7 +176,7 @@ backend/
 │   ├── AuthController.php           ✅ Complete
 │   ├── TeacherController.php        ✅ Complete
 │   ├── ChapterController.php        ✅ Complete
-│   ├── PaymentController.php        ✅ Complete
+│   ├── (PaymentController supprimé)
 │   ├── SubscriptionController.php   ✅ Complete
 │   └── Admin/CheckinController.php  ✅ Complete
 ├── app/Services/

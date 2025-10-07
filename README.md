@@ -6,7 +6,7 @@ This project is an **E-Learning and School Management System** built with:
 - **Frontend**: React.js (UI/UX)
 - **Containerization**: Docker & Docker Compose
 - **Database**: MySQL (via Docker)
-- **Authentication**: JWT/Auth Guards
+- **Authentication**: Laravel Sanctum (single device enforcement)
 - **Deployment**: Docker Compose for multi-service orchestration
 
 ---
@@ -98,16 +98,15 @@ This project is an **E-Learning and School Management System** built with:
 ## 🛠️ Admin Side Pages
 
 ### **Page 1: Dashboard**
-- KPI Cards: Total Students, Teachers, Revenue, Sessions.
+- KPI Cards: Total Students, Teachers, Active Subscriptions, Sessions.
 - Calendar filter.
 - Graphs:
-  - Subscriptions (monthly)
-  - Guests (ma3fi cases with cause)
-  - Top 3 Teachers (by load)
+  - Active Subscriptions vs Session Passes (guests)
+  - Free (exonérés) vs Paying users
+  - Top 3 Teachers (by session load)
 - Detailed view with:
-  - School % performance
-  - Revenue & Benefits
-  - Session table (date, duration, type, revenue)
+  - School % performance (pédagogique)
+  - Session table (date, durée, mode)
   - Print/export
 
 ---
@@ -119,7 +118,7 @@ This project is an **E-Learning and School Management System** built with:
 - Add Student Modal:
   - Num, Nom, Prénom
   - Default Password (000000 → changeable)
-  - Subscription / ma3fi with cause
+  - Abonnement mensuel ou Exonération (free_subscriber + cause)
 
 ---
 
@@ -135,9 +134,8 @@ This project is an **E-Learning and School Management System** built with:
 - Add Session Form:
   - Select Prof
   - Time
-  - Type (sub/free/paid)
-  - Price
-- Filter: By Prof, Module, Type
+  - Optional unit price (for non-subscribed pass)
+- Filter: By Prof / Module / Date
 - Default View: Today’s Sessions (cards)
 
 ---
@@ -153,20 +151,16 @@ This project is an **E-Learning and School Management System** built with:
 ---
 
 ### **Page 6: Check-In**
-- QR Code Scanner → Shows student info.
-- Teacher Cards:
-  - 🟢 Subscribed / 🔴 Not Subscribed
-  - Button to pay monthly or per-session
-- Search bar: by Prof/Module
+- QR Code Scanner → Student info (uuid-based)
+- Status badge: Subscribed / Session Pass / Free / Not Subscribed
+- Actions: Create session pass (one-day) or monthly subscription
+- Search bar: By Prof / Module
 
 ---
 
 ### **Page 7: Events (Admin)**
-- Add Sliders for promotions
-- Add Live Events:
-  - Teacher
-  - Date/Time
-  - Join Link
+- Sliders / promotional content
+- (Future) Live events scheduling
 
 ---
 
