@@ -12,10 +12,17 @@ const axiosInstance = axios.create({
 // Intercepteur pour ajouter le token d'authentification aux requêtes
 axiosInstance.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
+        // Ne pas ajouter le token pour les routes d'authentification publiques
+        const isAuthRoute = config.url.includes('/auth/login') || 
+                           config.url.includes('/auth/register');
+        
+        if (!isAuthRoute) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                config.headers['Authorization'] = `Bearer ${token}`;
+            }
         }
+        
         // Ajouter le Device UUID si disponible
         const deviceUUID = localStorage.getItem('device_uuid');
         if (deviceUUID) {
@@ -27,8 +34,9 @@ axiosInstance.interceptors.request.use(
             console.log('📤 API Request:', {
                 url: config.url,
                 method: config.method,
-                hasToken: !!token,
-                deviceUUID: deviceUUID
+                hasToken: !isAuthRoute && !!localStorage.getItem('token'),
+                deviceUUID: deviceUUID,
+                isAuthRoute: isAuthRoute
             });
         }
         

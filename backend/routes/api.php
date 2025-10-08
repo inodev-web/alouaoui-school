@@ -30,17 +30,16 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('logout-all');
-
-        // Profile routes with device validation
-        Route::middleware('ensure.single.device')->group(function () {
-            Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
-            Route::put('/profile', [AuthController::class, 'updateProfile'])->name('update-profile');
-        });
-
         Route::put('/change-password', [AuthController::class, 'changePassword'])->name('change-password');
         Route::post('/regenerate-qr', [AuthController::class, 'regenerateQrToken'])->name('regenerate-qr');
         Route::post('/check-device', [AuthController::class, 'checkDevice'])->name('check-device');
         Route::post('/force-device-change', [AuthController::class, 'forceDeviceChange'])->name('force-device-change');
+
+        // Profile routes (device validation applies but admins are exempted in middleware)
+        Route::middleware('ensure.single.device')->group(function () {
+            Route::get('/profile', [AuthController::class, 'profile'])->name('profile');
+            Route::put('/profile', [AuthController::class, 'updateProfile'])->name('update-profile');
+        });
     });
 });
 
@@ -52,91 +51,98 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    // Routes requiring single device enforcement
-    Route::middleware('ensure.single.device')->group(function () {
-
-        // Teacher management (Admin only)
-        Route::prefix('teachers')->name('teachers.')->group(function () {
-            Route::get('/active', [TeacherController::class, 'active'])->name('active'); // Public list
-            Route::middleware('abilities:admin')->group(function () {
-                Route::get('/', [TeacherController::class, 'index'])->name('index');
-                Route::post('/', [TeacherController::class, 'store'])->name('store');
-                Route::get('/{teacher}', [TeacherController::class, 'show'])->name('show');
-                Route::put('/{teacher}', [TeacherController::class, 'update'])->name('update');
-                Route::delete('/{teacher}', [TeacherController::class, 'destroy'])->name('destroy');
-                Route::patch('/{teacher}/toggle-status', [TeacherController::class, 'toggleStatus'])->name('toggle-status');
-                Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics'])->name('statistics');
-            });
+    // Teacher management (Admin routes don't need device check)
+    Route::prefix('teachers')->name('teachers.')->group(function () {
+        // Public routes (need device check for students)
+        Route::middleware('ensure.single.device')->group(function () {
+            Route::get('/active', [TeacherController::class, 'active'])->name('active');
         });
+        
+        // Admin only routes (no device check needed)
+        Route::middleware('abilities:admin')->group(function () {
+            Route::get('/', [TeacherController::class, 'index'])->name('index');
+            Route::post('/', [TeacherController::class, 'store'])->name('store');
+            Route::get('/{teacher}', [TeacherController::class, 'show'])->name('show');
+            Route::put('/{teacher}', [TeacherController::class, 'update'])->name('update');
+            Route::delete('/{teacher}', [TeacherController::class, 'destroy'])->name('destroy');
+            Route::patch('/{teacher}/toggle-status', [TeacherController::class, 'toggleStatus'])->name('toggle-status');
+            Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics'])->name('statistics');
+        });
+    });
 
-        // Chapter management with subscription check for video access
-        Route::prefix('chapters')->name('chapters.')->group(function () {
+    // Chapter management
+    Route::prefix('chapters')->name('chapters.')->group(function () {
+        // Public routes (need device check for students)
+        Route::middleware('ensure.single.device')->group(function () {
             Route::get('/', [ChapterController::class, 'index'])->name('index');
             Route::get('/{chapter}', [ChapterController::class, 'show'])->name('show');
             Route::get('/teacher/{teacher}', [ChapterController::class, 'byTeacher'])->name('by-teacher');
-
-            // Admin only routes
-            Route::middleware('abilities:admin')->group(function () {
-                Route::post('/', [ChapterController::class, 'store'])->name('store');
-                Route::put('/{chapter}', [ChapterController::class, 'update'])->name('update');
-                Route::delete('/{chapter}', [ChapterController::class, 'destroy'])->name('destroy');
-                Route::patch('/{chapter}/toggle-status', [ChapterController::class, 'toggleStatus'])->name('toggle-status');
-                Route::post('/reorder', [ChapterController::class, 'reorder'])->name('reorder');
-            });
         });
 
-        // Subscription management with device verification
-        Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
-            Route::post('/', [SubscriptionController::class, 'store'])->name('store');
-            Route::get('/active', [SubscriptionController::class, 'active'])->name('active');
-            Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show');
+        // Admin only routes (no device check needed)
+        Route::middleware('abilities:admin')->group(function () {
+            Route::post('/', [ChapterController::class, 'store'])->name('store');
+            Route::put('/{chapter}', [ChapterController::class, 'update'])->name('update');
+            Route::delete('/{chapter}', [ChapterController::class, 'destroy'])->name('destroy');
+            Route::patch('/{chapter}/toggle-status', [ChapterController::class, 'toggleStatus'])->name('toggle-status');
+            Route::post('/reorder', [ChapterController::class, 'reorder'])->name('reorder');
         });
+    });
 
-        // Admin check-in management with scanner lock
-        Route::prefix('admin/checkin')->name('admin.checkin.')->middleware(['abilities:admin', 'scanner.lock'])->group(function () {
-            Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
-            Route::get('/session-attendance', [CheckinController::class, 'sessionAttendance'])->name('session-attendance');
-            Route::get('/attendance-stats', [CheckinController::class, 'attendanceStats'])->name('attendance-stats');
-            Route::get('/student/{student}/history', [CheckinController::class, 'studentHistory'])->name('student-history');
-            Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
-        });
+    // Subscription management (needs device check for students)
+    Route::prefix('subscriptions')->name('subscriptions.')->middleware('ensure.single.device')->group(function () {
+        Route::post('/', [SubscriptionController::class, 'store'])->name('store');
+        Route::get('/active', [SubscriptionController::class, 'active'])->name('active');
+        Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show');
+    });
 
-        // Routes des cours avec vérification d'abonnement pour le streaming
-        Route::prefix('courses')->name('courses.')->group(function () {
+    // Admin check-in management (no device check needed for admin)
+    Route::prefix('admin/checkin')->name('admin.checkin.')->middleware(['abilities:admin', 'scanner.lock'])->group(function () {
+        Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
+        Route::get('/session-attendance', [CheckinController::class, 'sessionAttendance'])->name('session-attendance');
+        Route::get('/attendance-stats', [CheckinController::class, 'attendanceStats'])->name('attendance-stats');
+        Route::get('/student/{student}/history', [CheckinController::class, 'studentHistory'])->name('student-history');
+        Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
+    });
+
+    // Course management
+    Route::prefix('courses')->name('courses.')->group(function () {
+        // Public routes (need device check for students)
+        Route::middleware('ensure.single.device')->group(function () {
             Route::get('/', [CourseController::class, 'index'])->name('index');
             Route::get('/{course}', [CourseController::class, 'show'])->name('show');
-
-            // Admin only routes for course management
-            Route::middleware('abilities:admin')->group(function () {
-                Route::post('/', [CourseController::class, 'store'])->name('store');
-                Route::put('/{course}', [CourseController::class, 'update'])->name('update');
-                Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
-            });
-
-            // Routes for video access (subscription checked in controller)
             Route::post('/{course}/stream-token', [CourseController::class, 'streamToken'])->name('stream-token');
-
             Route::post('/{course}/report-issue', [CourseController::class, 'reportIssue'])->name('report-issue');
         });
 
-        // Video management routes (alias for courses)
-        Route::prefix('videos')->name('videos.')->group(function () {
+        // Admin only routes (no device check needed)
+        Route::middleware('abilities:admin')->group(function () {
+            Route::post('/', [CourseController::class, 'store'])->name('store');
+            Route::put('/{course}', [CourseController::class, 'update'])->name('update');
+            Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
+        });
+    });
+
+    // Video management routes (alias for courses)
+    Route::prefix('videos')->name('videos.')->group(function () {
+        // Public routes (need device check for students)
+        Route::middleware('ensure.single.device')->group(function () {
             Route::get('/', [CourseController::class, 'index'])->name('index');
             Route::get('/search', [CourseController::class, 'search'])->name('search');
             Route::get('/{course}', [CourseController::class, 'show'])->name('show');
-
-            // Admin only routes
-            Route::middleware('abilities:admin')->group(function () {
-                Route::post('/', [CourseController::class, 'store'])->name('store');
-                Route::put('/{course}', [CourseController::class, 'update'])->name('update');
-                Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
-            });
         });
 
-        // Statistiques de streaming (admin only)
+        // Admin only routes (no device check needed)
         Route::middleware('abilities:admin')->group(function () {
-            Route::get('/streaming/stats', [CourseController::class, 'streamingStats'])->name('streaming.stats');
+            Route::post('/', [CourseController::class, 'store'])->name('store');
+            Route::put('/{course}', [CourseController::class, 'update'])->name('update');
+            Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
         });
+    });
+
+    // Streaming statistics (admin only, no device check needed)
+    Route::middleware('abilities:admin')->group(function () {
+        Route::get('/streaming/stats', [CourseController::class, 'streamingStats'])->name('streaming.stats');
     });
 });
 

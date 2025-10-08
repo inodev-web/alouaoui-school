@@ -26,6 +26,11 @@ class EnsureSingleDevice
             ], 401);
         }
 
+        // Skip device check for admin users
+        if ($user->role === 'admin') {
+            return $next($request);
+        }
+
         // Get device UUID from request header
         $deviceUuid = $request->header('X-Device-UUID');
 

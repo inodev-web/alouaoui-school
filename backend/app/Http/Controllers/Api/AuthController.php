@@ -108,17 +108,29 @@ class AuthController extends Controller
         // Récupérer ou générer device UUID
         $deviceUuid = $request->device_uuid ?? Str::uuid()->toString();
 
-        // Pour les étudiants : vérifier la restriction d'appareil unique
+        // Pour les étudiants uniquement : vérifier la restriction d'appareil unique
+        // Les admins peuvent se connecter depuis plusieurs appareils
         if ($user->role === 'student') {
             if ($request->boolean('single_device')) {
                 $this->enforceSingleDeviceWithTokenInvalidation($user, $deviceUuid);
             } else {
                 $this->enforceSingleDeviceForStudent($user, $deviceUuid);
             }
+        } elseif ($user->role === 'admin') {
+            // Pour les admins : permettre plusieurs tokens par device mais nettoyer les anciens du même device
+            // Garder seulement les 3 derniers tokens par device pour éviter l'accumulation
+            $existingTokens = $user->tokens()->where('name', $deviceUuid)->get();
+            if ($existingTokens->count() > 2) {
+                // Supprimer les plus anciens, garder les 2 plus récents
+                $tokensToDelete = $existingTokens->sortBy('created_at')->take($existingTokens->count() - 2);
+                foreach ($tokensToDelete as $token) {
+                    $token->delete();
+                }
+            }
         }
 
-        // Mettre à jour le device_uuid si fourni
-        if ($request->has('device_uuid')) {
+        // Mettre à jour le device_uuid si fourni (pour les étudiants seulement)
+        if ($request->has('device_uuid') && $user->role === 'student') {
             $user->update(['device_uuid' => $deviceUuid]);
         }
 

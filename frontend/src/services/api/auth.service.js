@@ -7,6 +7,12 @@ class AuthService {
 
     async login(phone, password, options = {}) {
         try {
+            // Éviter les appels de login multiples
+            if (this.isLoggingIn) {
+                throw new Error('Une connexion est déjà en cours...');
+            }
+            this.isLoggingIn = true;
+
             // Utiliser / persister un device_uuid pour cohérence avec le backend
             let deviceUuid = localStorage.getItem('device_uuid');
             if (!deviceUuid) {
@@ -48,17 +54,22 @@ class AuthService {
             };
 
             // Tentative d'enrichissement via /auth/profile (optionnel)
-            try {
-                const profile = await this.getProfile();
-                if (profile) {
-                    Object.assign(finalUser, profile);
-                    // S'assurer que uuid reste cohérent
-                    finalUser.uuid = profile.uuid || finalUser.uuid;
-                    finalUser.id = finalUser.uuid; // aligner id sur uuid pour éviter confusion
-                    finalUser.qr_token = finalUser.uuid;
+            // Skip pour les admins qui ont déjà toutes les infos nécessaires
+            if (finalUser.role !== 'admin') {
+                try {
+                    const profile = await this.getProfile();
+                    if (profile) {
+                        Object.assign(finalUser, profile);
+                        // S'assurer que uuid reste cohérent
+                        finalUser.uuid = profile.uuid || finalUser.uuid;
+                        finalUser.id = finalUser.uuid; // aligner id sur uuid pour éviter confusion
+                        finalUser.qr_token = finalUser.uuid;
+                    }
+                } catch (e) {
+                    console.warn('getProfile after login failed, using partial user data', e);
                 }
-            } catch (e) {
-                console.warn('getProfile after login failed, using partial user data', e);
+            } else {
+                console.log('Admin login - skipping profile fetch, using login data');
             }
 
             localStorage.setItem('user', JSON.stringify(finalUser));
@@ -67,6 +78,8 @@ class AuthService {
         } catch (error) {
             console.error('Auth service login error:', error);
             throw this.handleError(error);
+        } finally {
+            this.isLoggingIn = false;
         }
     }
 

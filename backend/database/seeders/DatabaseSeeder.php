@@ -13,12 +13,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'firstname' => 'Test',
-            'lastname' => 'User',
-            'phone' => '0123456789',
+        $this->call([
+            TeacherSeeder::class,
+            AdminSeeder::class,
         ]);
     }
 }

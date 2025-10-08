@@ -50,8 +50,13 @@ const LoginPage = () => {
         // Update Redux store
         dispatch(loginSuccess({ token: response.token, user: response.user }))
         
-        // Navigate to profile
-        navigate('/student/profile')
+        // Navigate based on user role
+        console.log('User role after login:', response.user.role)
+        if (response.user.role === 'admin') {
+          navigate('/admin')
+        } else {
+          navigate('/student/profile')
+        }
       } else {
         console.error('No token received in response:', response)
         throw new Error('لم يتم استلام رمز المصادقة')
