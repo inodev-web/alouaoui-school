@@ -8,6 +8,7 @@ use App\Models\Teacher;
 use App\Models\Session;
 use App\Models\Attendance;
 use App\Services\AccessControlService;
+use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -16,13 +17,10 @@ use Carbon\Carbon;
 
 class CheckinController extends Controller
 {
-    protected AccessControlService $accessControl;
-
-    public function __construct(AccessControlService $accessControl)
-    {
-        // Middleware is now applied in routes/api.php
-        $this->accessControl = $accessControl;
-    }
+    public function __construct(
+        protected AccessControlService $accessControl,
+        protected SubscriptionService $subscriptions
+    ) {}
 
     /**
      * Scan QR code and check-in student
@@ -34,11 +32,13 @@ class CheckinController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'qr_token' => 'required|string',
-            'teacher_id' => 'required|exists:teachers,id',
-            'session_date' => 'sometimes|date',
+            // accept either user_uuid or legacy uuid param from frontend
+            'user_uuid' => 'sometimes|exists:users,uuid',
+            'uuid' => 'sometimes|exists:users,uuid',
+            'teacher_uuid' => 'required|exists:teachers,uuid',
+            'mode' => 'sometimes|in:monthly,session_pass',
+            'session_id' => 'sometimes|exists:sessions,id',
         ]);
-
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
@@ -46,112 +46,84 @@ class CheckinController extends Controller
             ], 422);
         }
 
-        // Trouver l'étudiant par QR token
-        $qr = $request->qr_token;
-        $student = null;
+    $targetUuid = $request->get('user_uuid') ?? $request->get('uuid');
+    $student = User::where('uuid', $targetUuid)->firstOrFail();
+        $teacher = Teacher::where('uuid', $request->teacher_uuid)->firstOrFail();
+        $mode = $request->mode; // optional (monthly|session_pass)
 
-        // Support QR codes generated from the student numeric id like: StudentID-123
-        if (is_string($qr) && strpos($qr, 'StudentID-') === 0) {
-            $idPart = substr($qr, strlen('StudentID-'));
-            if (ctype_digit($idPart)) {
-                $student = User::where('id', (int) $idPart)
-                    ->where('role', 'student')
+        // Determine session (if provided) else create ephemeral in-memory session instance for classification
+        $session = null;
+        if ($request->filled('session_id')) {
+            $session = Session::findOrFail($request->session_id);
+        }
+
+        // If free subscriber: no subscription creation
+        $createdSubscription = null;
+        if ($student->isFree()) {
+            // skip subscription creation
+        } else {
+            if ($mode === 'monthly') {
+                // Vérifier s'il y a déjà une subscription active
+                $activeSubscription = $student->activeSubscriptions()
+                    ->where('teacher_uuid', $teacher->uuid)
                     ->first();
+                
+                if ($activeSubscription) {
+                    // Subscription active trouvée, pas besoin d'en créer une nouvelle
+                    $createdSubscription = null;
+                } else {
+                    try {
+                        $createdSubscription = $this->subscriptions->createMonthly($student, $teacher);
+                    } catch (\RuntimeException $e) {
+                        // Overlap avec subscription future -> erreur
+                        if (str_contains($e->getMessage(), 'Overlapping')) {
+                            return response()->json([
+                                'message' => 'Overlapping monthly subscription detected.',
+                                'error' => $e->getMessage()
+                            ], 422);
+                        }
+                        // Autres erreurs -> ignorer et continuer
+                    }
+                }
+            } elseif ($mode === 'session_pass') {
+                try {
+                    $createdSubscription = $this->subscriptions->createSessionPass($student, $teacher, $session);
+                } catch (\RuntimeException $e) {
+                    // ignore errors for pass
+                }
             }
         }
 
-        // Fallback: lookup by stored qr_token UUID
-        if (!$student) {
-            $student = User::where('qr_token', $qr)
-                ->where('role', 'student')
-                ->first();
-        }
-
-        if (!$student) {
-            return response()->json([
-                'message' => 'Invalid QR code or student not found'
-            ], 404);
-        }
-
-        $teacher = Teacher::findOrFail($request->teacher_id);
-        $sessionDate = $request->session_date ? Carbon::parse($request->session_date) : now();
-
-        // Vérifier si l'étudiant a accès aux cours de ce professeur
-        if (!$this->accessControl->canAttendPhysicalClass($student, $teacher)) {
-            return response()->json([
-                'message' => 'Student does not have access to this teacher\'s classes',
-                'student' => [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'year_of_study' => $student->year_of_study,
-                ],
-                'access_denied' => true
-            ], 403);
-        }
-
-        // Créer ou récupérer la session du jour
-        $session = Session::firstOrCreate([
-            'teacher_id' => $teacher->id,
-            'session_date' => $sessionDate->format('Y-m-d'),
-        ], [
-            'start_time' => $sessionDate->format('H:i:s'),
-            'end_time' => $sessionDate->addHours(2)->format('H:i:s'), // 2h par défaut
-            'created_by' => $request->user()->id,
-        ]);
-
-        // Vérifier si l'étudiant est déjà enregistré pour cette session
-        $existingAttendance = Attendance::where([
-            'user_id' => $student->id,
-            'session_id' => $session->id,
-        ])->first();
-
-        if ($existingAttendance) {
-            return response()->json([
-                'message' => 'Student already checked in for this session',
-                'student' => [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'year_of_study' => $student->year_of_study,
-                ],
-                'session' => [
-                    'id' => $session->id,
-                    'date' => $session->session_date,
-                    'teacher' => $teacher->name,
-                ],
-                'attendance' => [
-                    'checked_in_at' => $existingAttendance->created_at,
-                    'already_present' => true,
-                ]
-            ], 200);
-        }
-
-        // Enregistrer la présence
+        // Create attendance (student_uuid, teacher_uuid, session_id optional)
         $attendance = Attendance::create([
-            'user_id' => $student->id,
-            'session_id' => $session->id,
-            'status' => 'present',
-            'checked_in_by' => $request->user()->id,
+            'student_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
+            'session_id' => $session?->id,
+            'validated_at' => now(),
         ]);
+
+        $classification = (new \App\Services\SubscriptionService())->classify($student, now(), $teacher);
 
         return response()->json([
-            'message' => 'Student checked in successfully',
-            'student' => [
-                'id' => $student->id,
-                'name' => $student->name,
-                'email' => $student->email,
-                'phone' => $student->phone,
-                'year_of_study' => $student->year_of_study,
-            ],
-            'session' => [
-                'id' => $session->id,
-                'date' => $session->session_date,
-                'teacher' => $teacher->name,
-                'teacher_specialization' => $teacher->specialization,
-            ],
-            'attendance' => [
-                'id' => $attendance->id,
-                'checked_in_at' => $attendance->created_at,
-                'status' => $attendance->status,
+            'message' => 'Scan processed',
+            'data' => [
+                'student' => [
+                    'uuid' => $student->uuid,
+                    'firstname' => $student->firstname,
+                    'lastname' => $student->lastname,
+                    'free_subscriber' => $student->isFree(),
+                ],
+                'teacher' => [
+                    'uuid' => $teacher->uuid,
+                    'name' => $teacher->name ?? 'Teacher',
+                ],
+                'subscription_created' => $createdSubscription ? [
+                    'id' => $createdSubscription->id,
+                    'starts_at' => $createdSubscription->starts_at,
+                    'ends_at' => $createdSubscription->ends_at,
+                ] : null,
+                'attendance' => $attendance,
+                'classification' => $classification,
             ]
         ], 201);
     }
@@ -166,8 +138,9 @@ class CheckinController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'teacher_id' => 'required|exists:teachers,id',
-            'session_date' => 'required|date',
+            'teacher_uuid' => 'required|exists:teachers,uuid',
+            'session_date' => 'sometimes|date', // legacy support
+            'date' => 'sometimes|date', // new format
         ]);
 
         if ($validator->fails()) {
@@ -177,10 +150,20 @@ class CheckinController extends Controller
             ], 422);
         }
 
-        $session = Session::where([
-            'teacher_id' => $request->teacher_id,
-            'session_date' => $request->session_date,
-        ])->with(['teacher:id,name,specialization'])->first();
+        // Support both legacy session_date and new date parameter
+        $targetDate = $request->get('date') ?? $request->get('session_date');
+        if (!$targetDate) {
+            return response()->json([
+                'message' => 'Either date or session_date parameter is required'
+            ], 422);
+        }
+
+        $dayStart = now()->parse($targetDate)->startOfDay();
+        $dayEnd = (clone $dayStart)->endOfDay();
+        $session = Session::where('teacher_uuid', $request->teacher_uuid)
+            ->whereBetween('start_time', [$dayStart, $dayEnd])
+            ->with(['teacher:uuid,name'])
+            ->first();
 
         if (!$session) {
             return response()->json([
@@ -197,7 +180,7 @@ class CheckinController extends Controller
             'data' => [
                 'session' => [
                     'id' => $session->id,
-                    'date' => $session->session_date,
+                    'date' => $session->start_time?->toDateString(),
                     'start_time' => $session->start_time,
                     'end_time' => $session->end_time,
                     'teacher' => $session->teacher,
@@ -223,12 +206,12 @@ class CheckinController extends Controller
 
         $fromDate = $request->get('from_date', now()->startOfMonth());
         $toDate = $request->get('to_date', now()->endOfMonth());
-        $teacherId = $request->get('teacher_id');
+    $teacherId = $request->get('teacher_uuid');
 
-        $query = Session::whereBetween('session_date', [$fromDate, $toDate]);
+    $query = Session::whereBetween('start_time', [$fromDate, $toDate]);
 
         if ($teacherId) {
-            $query->where('teacher_id', $teacherId);
+            $query->where('teacher_uuid', $teacherId);
         }
 
         $sessions = $query->with(['teacher:id,name', 'attendances.user:id,name'])
@@ -250,7 +233,7 @@ class CheckinController extends Controller
                         : 0,
                 ];
             }),
-            'daily_stats' => $sessions->groupBy('session_date')->map(function ($daySessions) {
+            'daily_stats' => $sessions->groupBy(function($s){ return optional($s->start_time)->toDateString(); })->map(function ($daySessions) {
                 return [
                     'sessions_count' => $daySessions->count(),
                     'total_attendances' => $daySessions->sum('attendances_count'),
@@ -291,13 +274,13 @@ class CheckinController extends Controller
 
         if ($fromDate) {
             $query->whereHas('session', function ($q) use ($fromDate) {
-                $q->where('session_date', '>=', $fromDate);
+                $q->where('start_time', '>=', $fromDate);
             });
         }
 
         if ($toDate) {
             $query->whereHas('session', function ($q) use ($toDate) {
-                $q->where('session_date', '<=', $toDate);
+                $q->where('start_time', '<=', $toDate);
             });
         }
 
@@ -330,11 +313,10 @@ class CheckinController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            // accept either legacy numeric user_id or new user_uuid
-            'user_id' => 'sometimes|exists:users,id',
-            'user_uuid' => 'sometimes|exists:users,uuid',
-            'teacher_id' => 'required|exists:teachers,id',
-            'session_date' => 'required|date',
+            'user_uuid' => 'required|exists:users,uuid',
+            'teacher_uuid' => 'required|exists:teachers,uuid',
+            'session_date' => 'sometimes|date', // legacy support
+            'target_date' => 'sometimes|date', // new format (renamed to avoid conflict)
             'reason' => 'sometimes|string|max:500',
         ]);
 
@@ -345,12 +327,16 @@ class CheckinController extends Controller
             ], 422);
         }
 
-        if ($request->filled('user_uuid')) {
-            $student = User::where('uuid', $request->user_uuid)->firstOrFail();
-        } else {
-            $student = User::findOrFail($request->user_id);
+        // Support both legacy session_date and new target_date parameter
+        $targetDate = $request->get('target_date') ?? $request->get('session_date');
+        if (!$targetDate) {
+            return response()->json([
+                'message' => 'Either target_date or session_date parameter is required'
+            ], 422);
         }
-        $teacher = Teacher::findOrFail($request->teacher_id);
+
+        $student = User::where('uuid', $request->user_uuid)->firstOrFail();
+    $teacher = Teacher::where('uuid', $request->teacher_uuid)->firstOrFail();
 
         if ($student->role !== 'student') {
             return response()->json([
@@ -359,22 +345,19 @@ class CheckinController extends Controller
         }
 
         // Créer ou récupérer la session
+        $dayStart = now()->parse($targetDate)->setTime(8,0);
+        $dayEnd = (clone $dayStart)->addHours(2);
         $session = Session::firstOrCreate([
-            'teacher_id' => $teacher->id,
-            'session_date' => $request->session_date,
+            'teacher_uuid' => $teacher->uuid,
+            'start_time' => $dayStart,
         ], [
-            'start_time' => '08:00:00',
-            'end_time' => '10:00:00',
-            'created_by' => $request->user()->id,
+            'end_time' => $dayEnd,
+            'status' => 'completed',
         ]);
 
         // Vérifier si déjà présent
-        $existingAttendanceQuery = Attendance::where('session_id', $session->id);
-        if (Schema::hasColumn('attendances', 'user_uuid') && $student->uuid) {
-            $existingAttendanceQuery->where('user_uuid', $student->uuid);
-        } else {
-            $existingAttendanceQuery->where('user_id', $student->id);
-        }
+        $existingAttendanceQuery = Attendance::where('session_id', $session->id)
+            ->where('student_uuid', $student->uuid);
         $existingAttendance = $existingAttendanceQuery->first();
 
         if ($existingAttendance) {
@@ -384,25 +367,12 @@ class CheckinController extends Controller
         }
 
         // Créer la présence
-        $attendanceData = [
+        $attendance = Attendance::create([
             'session_id' => $session->id,
-            'status' => 'present',
-            'notes' => 'Manual check-in' . ($request->reason ? ': ' . $request->reason : ''),
-        ];
-
-        if (Schema::hasColumn('attendances', 'user_uuid') && $student->uuid) {
-            $attendanceData['user_uuid'] = $student->uuid;
-        } else {
-            $attendanceData['user_id'] = $student->id;
-        }
-
-        if (Schema::hasColumn('attendances', 'checked_in_by_uuid') && $request->user()->uuid) {
-            $attendanceData['checked_in_by_uuid'] = $request->user()->uuid;
-        } else {
-            $attendanceData['checked_in_by'] = $request->user()->id;
-        }
-
-        $attendance = Attendance::create($attendanceData);
+            'student_uuid' => $student->uuid,
+            'teacher_uuid' => $teacher->uuid,
+            'validated_at' => now(),
+        ]);
 
         return response()->json([
             'message' => 'Student manually checked in successfully',
@@ -411,7 +381,7 @@ class CheckinController extends Controller
                 'student' => $student->only(['id', 'name', 'email']),
                 'session' => [
                     'id' => $session->id,
-                    'date' => $session->session_date,
+                    'date' => $session->start_time?->toDateString(),
                     'teacher' => $teacher->name,
                 ]
             ]

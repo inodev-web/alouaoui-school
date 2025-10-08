@@ -21,13 +21,11 @@ class Course extends Model
         'video_ref',
         'pdf_summary',
         'exercises_pdf',
-        'year_target',
     ];
 
     /**
      * The available year targets
      */
-    public const YEAR_TARGETS = ['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS'];
 
     /**
      * Course belongs to chapter
@@ -35,6 +33,14 @@ class Course extends Model
     public function chapter(): BelongsTo
     {
         return $this->belongsTo(Chapter::class);
+    }
+
+    /**
+     * Get the year target from the chapter
+     */
+    public function getYearTargetAttribute()
+    {
+        return $this->chapter?->year_target;
     }
 
     /**

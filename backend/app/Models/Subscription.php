@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
+use Illuminate\Support\Carbon; // ensure Carbon reference from framework
 
 class Subscription extends Model
 {
@@ -19,14 +19,8 @@ class Subscription extends Model
     protected $fillable = [
         'user_uuid',
         'teacher_uuid',
-        'amount',
-        'videos_access',
-        'lives_access',
-        'school_entry_access',
         'starts_at',
         'ends_at',
-        'status',
-        'rejection_reason',
     ];
 
     /**
@@ -37,16 +31,11 @@ class Subscription extends Model
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
-        'amount' => 'decimal:2',
-        'videos_access' => 'boolean',
-        'lives_access' => 'boolean',
-        'school_entry_access' => 'boolean',
     ];
 
-    /**
-     * The available payment types
-     */
-    public const PAYMENT_TYPES = ['cash_presentiel', 'online', 'cash_direct'];
+    // Marker constants for potential classification logic (monthly vs pass) if needed later
+    public const TYPE_MONTHLY = 'monthly';
+    public const TYPE_SESSION_PASS = 'session_pass';
 
     /**
      * Subscription belongs to user (student)
@@ -77,9 +66,7 @@ class Subscription extends Model
      */
     public function isActive(): bool
     {
-        return $this->status === 'active'
-            && $this->starts_at <= now()
-            && $this->ends_at >= now();
+        return $this->starts_at <= now() && $this->ends_at >= now();
     }
 
     /**
@@ -87,7 +74,7 @@ class Subscription extends Model
      */
     public function isExpired(): bool
     {
-        return $this->ends_at < now() || $this->status === 'expired';
+        return $this->ends_at < now();
     }
 
     /**
@@ -100,5 +87,41 @@ class Subscription extends Model
         }
 
         return now()->diffInDays($this->ends_at);
+    }
+
+    /**
+     * Determine if subscription spans roughly a month (>= 28 days window) - heuristic monthly
+     */
+    public function isMonthly(): bool
+    {
+        if (!$this->starts_at || !$this->ends_at) {
+            return false;
+        }
+        $start = $this->starts_at instanceof Carbon ? $this->starts_at : Carbon::parse($this->starts_at);
+        $end = $this->ends_at instanceof Carbon ? $this->ends_at : Carbon::parse($this->ends_at);
+        return $start->diffInDays($end) >= 28;
+    }
+
+    /**
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $userUuid
+     * @param string $teacherUuid
+     * @param Carbon|string $startsAt
+     * @param Carbon|string $endsAt
+     */
+    public function scopeOverlapping($query, string $userUuid, string $teacherUuid, $startsAt, $endsAt)
+    {
+        $startsAt = $startsAt instanceof Carbon ? $startsAt : Carbon::parse($startsAt);
+        $endsAt = $endsAt instanceof Carbon ? $endsAt : Carbon::parse($endsAt);
+        return $query->where('user_uuid', $userUuid)
+            ->where('teacher_uuid', $teacherUuid)
+            ->where(function ($q) use ($startsAt, $endsAt) {
+                $q->whereBetween('starts_at', [$startsAt, $endsAt])
+                  ->orWhereBetween('ends_at', [$startsAt, $endsAt])
+                  ->orWhere(function ($inner) use ($startsAt, $endsAt) {
+                      $inner->where('starts_at', '<=', $startsAt)
+                            ->where('ends_at', '>=', $endsAt);
+                  });
+            });
     }
 }

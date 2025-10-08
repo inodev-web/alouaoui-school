@@ -3,7 +3,6 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\TeacherController;
 use App\Http\Controllers\Api\ChapterController;
-use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\Admin\CheckinController;
 use App\Http\Controllers\Api\CourseController;
@@ -41,11 +40,9 @@ Route::prefix('auth')->name('auth.')->group(function () {
         Route::put('/change-password', [AuthController::class, 'changePassword'])->name('change-password');
         Route::post('/regenerate-qr', [AuthController::class, 'regenerateQrToken'])->name('regenerate-qr');
         Route::post('/check-device', [AuthController::class, 'checkDevice'])->name('check-device');
+        Route::post('/force-device-change', [AuthController::class, 'forceDeviceChange'])->name('force-device-change');
     });
 });
-
-// Payment webhook (public - no auth required)
-Route::post('/payments/webhook', [PaymentController::class, 'webhook'])->name('payments.webhook');
 
 // Protected routes requiring authentication
 Route::middleware('auth:sanctum')->group(function () {
@@ -88,35 +85,11 @@ Route::middleware('auth:sanctum')->group(function () {
             });
         });
 
-        // Payment management
-        Route::prefix('payments')->name('payments.')->group(function () {
-            Route::get('/history', [PaymentController::class, 'history'])->name('history');
-            Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
-
-            // Admin only routes
-            Route::middleware('abilities:admin')->group(function () {
-                Route::get('/', [PaymentController::class, 'index'])->name('index');
-                Route::post('/cash', [PaymentController::class, 'addCash'])->name('add-cash');
-                Route::put('/{payment}/approve', [PaymentController::class, 'approve'])->name('approve');
-                Route::put('/{payment}/reject', [PaymentController::class, 'reject'])->name('reject');
-                Route::patch('/{payment}/cancel', [PaymentController::class, 'cancel'])->name('cancel');
-                Route::get('/admin/statistics', [PaymentController::class, 'statistics'])->name('statistics');
-            });
-        });
-
         // Subscription management with device verification
         Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
-            Route::post('/', [SubscriptionController::class, 'create'])->name('create');
-            Route::get('/active', [SubscriptionController::class, 'checkActive'])->name('check-active');
+            Route::post('/', [SubscriptionController::class, 'store'])->name('store');
+            Route::get('/active', [SubscriptionController::class, 'active'])->name('active');
             Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show');
-
-            // Admin only routes
-            Route::middleware('abilities:admin')->group(function () {
-                Route::get('/', [SubscriptionController::class, 'index'])->name('index');
-                Route::patch('/{subscription}/extend', [SubscriptionController::class, 'extend'])->name('extend');
-                Route::patch('/{subscription}/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
-                Route::get('/admin/statistics', [SubscriptionController::class, 'statistics'])->name('statistics');
-            });
         });
 
         // Admin check-in management with scanner lock
@@ -140,10 +113,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
             });
 
-            // Routes requiring subscription for video access
-            Route::middleware('ensure.subscription')->group(function () {
-                Route::post('/{course}/stream-token', [CourseController::class, 'streamToken'])->name('stream-token');
-            });
+            // Routes for video access (subscription checked in controller)
+            Route::post('/{course}/stream-token', [CourseController::class, 'streamToken'])->name('stream-token');
 
             Route::post('/{course}/report-issue', [CourseController::class, 'reportIssue'])->name('report-issue');
         });

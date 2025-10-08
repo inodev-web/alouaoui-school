@@ -24,17 +24,18 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'uuid' => Str::uuid(),
             'firstname' => fake()->firstName(),
             'lastname' => fake()->lastName(),
-            'birth_date' => fake()->date('Y-m-d', '2010-01-01'),
+            'birth_date' => fake()->date(),
             'address' => fake()->address(),
             'school_name' => fake()->company() . ' School',
             'phone' => fake()->unique()->phoneNumber(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => 'student',
             'year_of_study' => fake()->randomElement(['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS']),
-            'qr_token' => Str::uuid(),
             'device_uuid' => Str::uuid(),
+            'free_subscriber' => false,
         ];
     }
 
@@ -55,6 +56,7 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'role' => 'student',
+            'device_uuid' => Str::uuid(),
         ]);
     }
 }

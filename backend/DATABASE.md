@@ -28,10 +28,13 @@ timestamps               - created_at / updated_at
 ```sql
 uuid (PK)
 name                     - Nom affiché
+phone number
+picture link
 module                   - Matière
 year                     - Cible pédagogique
 is_online_publisher      - Bool
 price_subscription       - Prix abonnement mensuel (decimal 8,2)
+price_session
 percent_school           - Pourcentage part école
 timestamps               - created_at / updated_at
 ```
@@ -49,7 +52,7 @@ timestamps               - created_at / updated_at
 ### 🎥 Courses
 ```sql
 id (PK)
-chapter_id (FK)          - Vers chapters.id
+chapter_uuid (FK)          - Vers chapters.id
 title                    - Titre
 video_ref                - Chemin/clé vidéo
 pdf_summary              - PDF résumé (nullable)
@@ -62,11 +65,10 @@ timestamps               - created_at / updated_at
 Simplifiées : uniquement notion temporelle + prix unitaire éventuel.
 ```sql
 id (PK)
-teacher_id (FK)          - Vers teachers.uuid
+teacher_uuid (FK)          - Vers teachers.uuid
 year_target              - Année cible
 start_time               - Datetime début
 end_time                 - Datetime fin
-price                    - Prix (appliqué aux non abonnés) nullable
 status                   - 'completed' | 'cancelled'
 timestamps               - created_at / updated_at
 ```
@@ -139,7 +141,7 @@ Subscriptions:
 - teacher_uuid, starts_at
 
 Sessions:
-- teacher_id, start_time
+- teacher_uuid, start_time
 - status
 
 Attendances:

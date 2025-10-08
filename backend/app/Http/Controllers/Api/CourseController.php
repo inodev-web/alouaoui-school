@@ -25,8 +25,24 @@ class CourseController extends Controller
         $perPage = $request->get('per_page', 15);
         $courses = $query->paginate($perPage);
 
+        // Transform the data to include year_target from chapter
+        $coursesData = $courses->getCollection()->map(function ($course) {
+            return [
+                'id' => $course->id,
+                'title' => $course->title,
+                'chapter_id' => $course->chapter_id,
+                'year_target' => $course->chapter?->year_target,
+                'video_ref' => $course->video_ref,
+                'pdf_summary' => $course->pdf_summary,
+                'exercises_pdf' => $course->exercises_pdf,
+                'created_at' => $course->created_at,
+                'updated_at' => $course->updated_at,
+                'chapter' => $course->chapter,
+            ];
+        });
+
         return response()->json([
-            'data' => $courses->items(),
+            'data' => $coursesData,
             'meta' => [
                 'current_page' => $courses->currentPage(),
                 'last_page' => $courses->lastPage(),
@@ -51,27 +67,25 @@ class CourseController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'chapter_id' => 'required|exists:chapters,id',
-            'year_target' => 'required|string',
             'video' => 'required|file|mimes:mp4,avi,mov|max:2048000', // Max 2GB
         ]);
 
         // Handle video upload
-        $videoPath = null;
+        $videoRef = null;
         if ($request->hasFile('video')) {
             $videoPath = $request->file('video')->store('videos', 'public');
+            $videoRef = basename($videoPath);
         }
 
         $course = Course::create([
             'title' => $request->title,
             'chapter_id' => $request->chapter_id,
-            'year_target' => $request->year_target,
-            'video_path' => $videoPath,
-            'status' => 'processing',
+            'video_ref' => $videoRef,
         ]);
 
         // Dispatch transcoding job
-        if ($videoPath) {
-            Queue::push(new TranscodeVideoJob($course, $videoPath));
+        if ($videoRef) {
+            Queue::push(new TranscodeVideoJob($course, $videoRef));
         }
 
         return response()->json([
@@ -105,25 +119,23 @@ class CourseController extends Controller
         $request->validate([
             'title' => 'sometimes|string|max:255',
             'chapter_id' => 'sometimes|exists:chapters,id',
-            'year_target' => 'sometimes|string',
             'video' => 'sometimes|file|mimes:mp4,avi,mov|max:2048000',
         ]);
 
-        $updateData = $request->only(['title', 'chapter_id', 'year_target']);
+        $updateData = $request->only(['title', 'chapter_id']);
 
         // Handle video upload if provided
         if ($request->hasFile('video')) {
             // Delete old video file if exists
-            if ($course->video_path) {
-                Storage::disk('public')->delete($course->video_path);
+            if ($course->video_ref) {
+                Storage::disk('public')->delete('videos/' . $course->video_ref);
             }
 
             $videoPath = $request->file('video')->store('videos', 'public');
-            $updateData['video_path'] = $videoPath;
-            $updateData['status'] = 'processing';
+            $updateData['video_ref'] = basename($videoPath);
 
             // Dispatch transcoding job for new video
-            Queue::push(new TranscodeVideoJob($course, $videoPath));
+            Queue::push(new TranscodeVideoJob($course, basename($videoPath)));
         }
 
         $course->update($updateData);
@@ -147,8 +159,8 @@ class CourseController extends Controller
         }
 
         // Delete video file if exists
-        if ($course->video_path) {
-            Storage::disk('public')->delete($course->video_path);
+        if ($course->video_ref) {
+            Storage::disk('public')->delete('videos/' . $course->video_ref);
         }
 
         $course->delete();
@@ -174,8 +186,24 @@ class CourseController extends Controller
         $perPage = $request->get('per_page', 15);
         $courses = $query->paginate($perPage);
 
+        // Transform the data to include year_target from chapter
+        $coursesData = $courses->getCollection()->map(function ($course) {
+            return [
+                'id' => $course->id,
+                'title' => $course->title,
+                'chapter_id' => $course->chapter_id,
+                'year_target' => $course->chapter?->year_target,
+                'video_ref' => $course->video_ref,
+                'pdf_summary' => $course->pdf_summary,
+                'exercises_pdf' => $course->exercises_pdf,
+                'created_at' => $course->created_at,
+                'updated_at' => $course->updated_at,
+                'chapter' => $course->chapter,
+            ];
+        });
+
         return response()->json([
-            'data' => $courses->items(),
+            'data' => $coursesData,
             'meta' => [
                 'current_page' => $courses->currentPage(),
                 'last_page' => $courses->lastPage(),
@@ -190,13 +218,46 @@ class CourseController extends Controller
      */
     public function streamToken(Course $course)
     {
-        // Generate a signed URL for video streaming
-        $token = route('courses.stream', ['course' => $course->id]);
+        $user = Auth::user();
+        
+        // Admin can access everything
+        if ($user->role === 'admin') {
+            $token = route('courses.stream', ['course' => $course->id]);
+            return response()->json([
+                'stream_url' => $token,
+                'expires_at' => now()->addHour(),
+            ]);
+        }
+
+        // For students, check subscription and videos_access
+        if ($user->role === 'student') {
+            // Load the course's chapter
+            $course->load('chapter');
+            
+            // Check if user has active subscription with videos access
+            $subscription = \App\Models\Subscription::where('user_uuid', $user->uuid)
+                ->where('status', 'active')
+                ->where('videos_access', true)
+                ->where('starts_at', '<=', now()->toDateString())
+                ->where('ends_at', '>=', now()->toDateString())
+                ->first();
+
+            if (!$subscription) {
+                return response()->json([
+                    'message' => 'Active subscription with video access required'
+                ], 403);
+            }
+
+            $token = route('courses.stream', ['course' => $course->id]);
+            return response()->json([
+                'stream_url' => $token,
+                'expires_at' => now()->addHour(),
+            ]);
+        }
 
         return response()->json([
-            'stream_url' => $token,
-            'expires_at' => now()->addHour(),
-        ]);
+            'message' => 'Unauthorized'
+        ], 403);
     }
 
     /**

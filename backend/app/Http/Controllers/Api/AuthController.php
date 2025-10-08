@@ -52,10 +52,9 @@ class AuthController extends Controller
             'role' => 'student',
             'year_of_study' => $request->year_of_study,
             'device_uuid' => $deviceUuid,
-            // qr_token supprimé : le uuid servira pour le QR code côté client
         ]);
 
-        // Créer le token d'authentification avec device UUID comme nom
+        // Token avec device UUID comme nom
         $token = $user->createToken($deviceUuid, ['student'])->plainTextToken;
 
         return response()->json([
@@ -69,6 +68,8 @@ class AuthController extends Controller
                     'role' => $user->role,
                     'year_of_study' => $user->year_of_study,
                     'qr_token' => $user->uuid,
+                    'free_subscriber' => $user->isFree(),
+                    'free_subscriber_reason' => $user->free_subscriber_reason,
                 ],
                 'token' => $token,
                 'device_uuid' => $deviceUuid,
@@ -107,9 +108,13 @@ class AuthController extends Controller
         // Récupérer ou générer device UUID
         $deviceUuid = $request->device_uuid ?? Str::uuid()->toString();
 
-        // Vérification du device unique si demandé
-        if ($request->boolean('single_device') && $request->has('device_uuid')) {
-            $this->enforceSingleDevice($user, $deviceUuid);
+        // Pour les étudiants : vérifier la restriction d'appareil unique
+        if ($user->role === 'student') {
+            if ($request->boolean('single_device')) {
+                $this->enforceSingleDeviceWithTokenInvalidation($user, $deviceUuid);
+            } else {
+                $this->enforceSingleDeviceForStudent($user, $deviceUuid);
+            }
         }
 
         // Mettre à jour le device_uuid si fourni
@@ -117,10 +122,10 @@ class AuthController extends Controller
             $user->update(['device_uuid' => $deviceUuid]);
         }
 
-        // Créer le token avec les permissions appropriées et device UUID comme nom
-        $abilities = $user->role === 'admin' ? ['admin', 'student'] : ['student'];
-        $token = $user->createToken($deviceUuid, $abilities)->plainTextToken;
+        // Créer le token d'authentification avec device UUID comme nom
+        $token = $user->createToken($deviceUuid, [$user->role])->plainTextToken;
 
+        // Retourner les informations utilisateur sans token Sanctum
         return response()->json([
             'message' => 'Login successful',
             'data' => [
@@ -132,8 +137,10 @@ class AuthController extends Controller
                     'role' => $user->role,
                     'year_of_study' => $user->year_of_study,
                     'qr_token' => $user->uuid,
+                    'free_subscriber' => $user->isFree(),
+                    'free_subscriber_reason' => $user->free_subscriber_reason,
                 ],
-                'token' => $token,
+                'token' => $token, // Token Sanctum
                 'device_uuid' => $deviceUuid,
             ]
         ]);
@@ -144,7 +151,15 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        // Supprimer le token actuel
+        $user->currentAccessToken()->delete();
+
+        // Pour les étudiants, supprimer le device_uuid pour permettre une nouvelle connexion
+        if ($user && $user->role === 'student') {
+            $user->update(['device_uuid' => null]);
+        }
 
         return response()->json([
             'message' => 'Logout successful'
@@ -156,7 +171,15 @@ class AuthController extends Controller
      */
     public function logoutAll(Request $request): JsonResponse
     {
-        $request->user()->tokens()->delete();
+        $user = $request->user();
+
+        // Supprimer tous les tokens
+        $user->tokens()->delete();
+
+        // Pour les étudiants, supprimer le device_uuid pour permettre une nouvelle connexion
+        if ($user && $user->role === 'student') {
+            $user->update(['device_uuid' => null]);
+        }
 
         return response()->json([
             'message' => 'Logged out from all devices'
@@ -184,6 +207,8 @@ class AuthController extends Controller
                 'year_of_study' => $user->year_of_study,
                 'qr_token' => $user->uuid,
                 'device_uuid' => $user->device_uuid,
+                'free_subscriber' => $user->isFree(),
+                'free_subscriber_reason' => $user->free_subscriber_reason,
             ]
         ]);
     }
@@ -235,6 +260,8 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'year_of_study' => $user->year_of_study,
                 'qr_token' => $user->uuid,
+                'free_subscriber' => $user->isFree(),
+                'free_subscriber_reason' => $user->free_subscriber_reason,
             ]
         ]);
     }
@@ -319,17 +346,92 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Force device change (for students who need to change device)
+     */
+    public function forceDeviceChange(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'new_device_uuid' => 'required|string|max:255',
+            'password' => 'required|string', // Verification pour sécurité
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+
+        // Vérifier le mot de passe pour sécurité
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Password incorrect'
+            ], 422);
+        }
+
+        // Autoriser seulement pour les étudiants
+        if ($user->role !== 'student') {
+            return response()->json([
+                'message' => 'Device change is only available for students'
+            ], 403);
+        }
+
+        // Mettre à jour le device UUID
+        $user->update(['device_uuid' => $request->new_device_uuid]);
+
+        return response()->json([
+            'message' => 'Device changed successfully',
+            'data' => [
+                'new_device_uuid' => $request->new_device_uuid,
+                'token' => $user->createToken($request->new_device_uuid, [$user->role])->plainTextToken,
+            ]
+        ]);
+    }
+
     // Méthode generateUniqueQrToken supprimée: le uuid suffit comme identifiant unique
 
     /**
-     * Enforce single device login
+     * Enforce single device login for students
+     */
+    private function enforceSingleDeviceForStudent(User $user, string $deviceUuid): void
+    {
+        // Si l'utilisateur a déjà un device_uuid et que ce n'est pas le même
+        if ($user->device_uuid && $user->device_uuid !== $deviceUuid) {
+            throw ValidationException::withMessages([
+                'device_uuid' => ['Ce compte est déjà connecté sur un autre appareil. Un étudiant ne peut être connecté que sur un seul appareil à la fois.'],
+            ]);
+        }
+
+        // Si aucun device_uuid n'est enregistré, on l'accepte
+        if (!$user->device_uuid) {
+            $user->update(['device_uuid' => $deviceUuid]);
+        }
+    }
+
+    /**
+     * Enforce single device login with token invalidation (for single_device=true)
+     */
+    private function enforceSingleDeviceWithTokenInvalidation(User $user, string $deviceUuid): void
+    {
+        // Si l'utilisateur a déjà un device_uuid différent, invalider tous les tokens existants
+        if ($user->device_uuid && $user->device_uuid !== $deviceUuid) {
+            // Supprimer tous les tokens existants
+            $user->tokens()->delete();
+        }
+        
+        // Mettre à jour le device_uuid
+        $user->update(['device_uuid' => $deviceUuid]);
+    }
+
+    /**
+     * Enforce single device login (deprecated - kept for compatibility)
      */
     private function enforceSingleDevice(User $user, string $deviceUuid): void
     {
         if ($user->device_uuid && $user->device_uuid !== $deviceUuid) {
-            // Invalider tous les tokens existants
-            $user->tokens()->delete();
-
             // Mettre à jour le device UUID
             $user->update(['device_uuid' => $deviceUuid]);
         }

@@ -95,43 +95,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Restore subscriptions table
-        Schema::table('subscriptions', function (Blueprint $table) {
-            $table->dropColumn(['user_uuid', 'teacher_uuid']);
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->unsignedBigInteger('teacher_id')->nullable();
-        });
-
-        // Restore payments table
-        Schema::table('payments', function (Blueprint $table) {
-            $table->dropColumn(['user_uuid', 'processed_by_uuid']);
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->unsignedBigInteger('processed_by')->nullable();
-        });
-
-        // Restore attendances table
-        Schema::table('attendances', function (Blueprint $table) {
-            $table->dropColumn(['student_uuid', 'teacher_uuid']);
-            $table->unsignedBigInteger('student_id')->nullable();
-            $table->unsignedBigInteger('teacher_id')->nullable();
-        });
-
-        // Restore stream_tokens table
-        Schema::table('stream_tokens', function (Blueprint $table) {
-            $table->dropColumn('user_uuid');
-            $table->unsignedBigInteger('user_id')->nullable();
-        });
-
-        // Restore chapters table
-        Schema::table('chapters', function (Blueprint $table) {
-            $table->dropColumn('teacher_uuid');
-            $table->unsignedBigInteger('teacher_id')->nullable();
-        });
-
-        // Restore sessions table
-        Schema::table('sessions', function (Blueprint $table) {
-            $table->dropColumn('teacher_uuid');
-            $table->unsignedBigInteger('teacher_id')->nullable();
-        });
+        // Pas de rollback détaillé : this migration standardises UUID columns; utiliser migrate:fresh pour revenir en arrière.
     }
 };

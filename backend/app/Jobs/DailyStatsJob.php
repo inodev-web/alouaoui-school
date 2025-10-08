@@ -13,7 +13,6 @@ use App\Models\User;
 use App\Models\Teacher;
 use App\Models\Chapter;
 use App\Models\Course;
-use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Attendance;
 use Carbon\Carbon;
@@ -150,28 +149,20 @@ class DailyStatsJob implements ShouldQueue
     }
 
     /**
-     * Calculate payment-related statistics
+     * Calculate payment-related statistics (deprecated - payments removed)
      */
     protected function calculatePaymentStats(): array
     {
-        $startOfDay = $this->date->startOfDay();
-        $endOfDay = $this->date->endOfDay();
-
-        $dailyPayments = Payment::whereBetween('created_at', [$startOfDay, $endOfDay]);
-
+        // Payment module removed - return empty stats
         return [
-            'daily_transactions' => $dailyPayments->count(),
-            'daily_revenue' => $dailyPayments->where('status', 'completed')->sum('amount'),
-            'successful_payments' => $dailyPayments->where('status', 'completed')->count(),
-            'failed_payments' => $dailyPayments->where('status', 'failed')->count(),
-            'pending_payments' => $dailyPayments->where('status', 'pending')->count(),
-            'average_transaction' => round($dailyPayments->where('status', 'completed')->avg('amount'), 2),
-            'payment_methods' => Payment::whereBetween('created_at', [$startOfDay, $endOfDay])
-                ->select('payment_method', DB::raw('count(*) as count'))
-                ->groupBy('payment_method')
-                ->pluck('count', 'payment_method')
-                ->toArray(),
-            'total_revenue_to_date' => Payment::where('status', 'completed')->sum('amount'),
+            'daily_transactions' => 0,
+            'daily_revenue' => 0,
+            'successful_payments' => 0,
+            'failed_payments' => 0,
+            'pending_payments' => 0,
+            'average_transaction' => 0,
+            'payment_methods' => [],
+            'total_revenue_to_date' => 0,
         ];
     }
 

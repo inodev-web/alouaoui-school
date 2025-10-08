@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Chapter;
-use App\Models\Teacher;
 use App\Services\AccessControlService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +30,7 @@ class ChapterController extends Controller
         $search = $request->get('search');
         $yearOfStudy = $request->get('year_of_study');
 
-        $query = Chapter::with(['courses']);
+    $query = Chapter::with(['courses']);
 
         // Recherche
         if ($search) {
@@ -45,15 +44,12 @@ class ChapterController extends Controller
         }
 
         // Appliquer les restrictions d'accès pour les étudiants
-        if ($user->role === 'student') {
-            $accessibleChapters = $this->accessControl->getAccessibleChapters($user);
-            $query->whereIn('id', $accessibleChapters);
+        if ($user && $user->role === 'student') {
+            // Access control currently grants all chapters for free or active subscriptions.
+            // Placeholder: no filtering since chapters are global in simplified model.
         }
 
-        $chapters = $query->where('is_active', true)
-            ->orderBy('order_index')
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+        $chapters = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return response()->json([
             'data' => $chapters->items(),
@@ -101,12 +97,8 @@ class ChapterController extends Controller
         }
 
         // Set default order if not provided
-        if (!isset($chapterData['order_index'])) {
-            $chapterData['order_index'] = Chapter::where('course_id', $request->course_id)->max('order_index') + 1;
-        }
-
         $chapter = Chapter::create($chapterData);
-        $chapter->load(['teacher:id,name', 'course:id,title']);
+        $chapter->load(['courses']);
 
         return response()->json([
             'message' => 'Chapter created successfully',
@@ -122,21 +114,15 @@ class ChapterController extends Controller
         $user = $request->user();
 
         // Vérifier l'accès pour les étudiants
-        if ($user->role === 'student') {
-            if (!$this->accessControl->canAccessChapter($user, $chapter)) {
-                return response()->json(['message' => 'Access denied to this chapter'], 403);
-            }
-        }
-
-        $chapter->load(['teacher:id,name,specialization', 'course:id,title,year_of_study']);
+        // Simplified: all chapters visible; detailed access logic removed.
+        $chapter->load(['courses']);
 
         // Ajouter les informations d'accès pour l'étudiant
         $responseData = $chapter->toArray();
-        if ($user->role === 'student') {
+        // Access info simplified: all visible for now
+        if ($user && $user->role === 'student') {
             $responseData['access_info'] = [
                 'can_access' => true,
-                'access_type' => $this->accessControl->getAccessType($user, $chapter),
-                'subscription_status' => $this->accessControl->getSubscriptionStatus($user),
             ];
         }
 
@@ -157,13 +143,7 @@ class ChapterController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string|max:1000',
-            'teacher_id' => 'sometimes|exists:teachers,id',
-            'course_id' => 'sometimes|exists:courses,id',
-            'video_url' => 'sometimes|string|max:500',
-            'video_file' => 'sometimes|file|mimes:mp4,mov,avi,wmv|max:512000',
-            'duration_minutes' => 'sometimes|integer|min:1',
-            'order_index' => 'sometimes|integer|min:0',
-            'is_active' => 'sometimes|boolean',
+            'year_target' => 'sometimes|string|in:1AM,2AM,3AM,4AM,1AS,2AS,3AS',
         ]);
 
         if ($validator->fails()) {
@@ -173,10 +153,7 @@ class ChapterController extends Controller
             ], 422);
         }
 
-        $updateData = $request->only([
-            'title', 'description', 'teacher_id', 'course_id',
-            'video_url', 'duration_minutes', 'order_index', 'is_active'
-        ]);
+        $updateData = $request->only(['title','description','year_target']);
 
         // Upload new video file if provided
         if ($request->hasFile('video_file')) {
@@ -190,8 +167,6 @@ class ChapterController extends Controller
         }
 
         $chapter->update($updateData);
-        $chapter->load(['teacher:id,name', 'course:id,title']);
-
         return response()->json([
             'message' => 'Chapter updated successfully',
             'data' => $chapter->fresh()
@@ -208,10 +183,6 @@ class ChapterController extends Controller
         }
 
         // Delete video file if exists
-        if ($chapter->video_url && str_contains($chapter->video_url, 'chapters/videos/')) {
-            Storage::disk('s3')->delete($chapter->video_url);
-        }
-
         $chapter->delete();
 
         return response()->json([
@@ -222,82 +193,15 @@ class ChapterController extends Controller
     /**
      * Get chapters by teacher
      */
-    public function byTeacher(Request $request, Teacher $teacher): JsonResponse
-    {
-        $user = $request->user();
-
-        $query = $teacher->chapters()->with(['course:id,title'])->where('is_active', true);
-
-        // Appliquer les restrictions d'accès pour les étudiants
-        if ($user->role === 'student') {
-            $accessibleChapters = $this->accessControl->getAccessibleChapters($user);
-            $query->whereIn('id', $accessibleChapters);
-        }
-
-        $chapters = $query->orderBy('order_index')->get();
-
-        return response()->json([
-            'data' => $chapters,
-            'teacher' => [
-                'id' => $teacher->id,
-                'name' => $teacher->name,
-                'specialization' => $teacher->specialization,
-            ]
-        ]);
-    }
+    // Removed byTeacher endpoint; chapters not linked to teacher entity in simplified model.
 
     /**
      * Toggle chapter status (Admin only)
      */
-    public function toggleStatus(Request $request, Chapter $chapter): JsonResponse
-    {
-        if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $chapter->update([
-            'is_active' => !$chapter->is_active
-        ]);
-
-        return response()->json([
-            'message' => 'Chapter status updated successfully',
-            'data' => [
-                'id' => $chapter->id,
-                'title' => $chapter->title,
-                'is_active' => $chapter->is_active
-            ]
-        ]);
-    }
+    // Removed toggleStatus due to absence of is_active field in simplified schema.
 
     /**
      * Reorder chapters (Admin only)
      */
-    public function reorder(Request $request): JsonResponse
-    {
-        if ($request->user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'chapters' => 'required|array',
-            'chapters.*.id' => 'required|exists:chapters,id',
-            'chapters.*.order_index' => 'required|integer|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        foreach ($request->chapters as $chapterData) {
-            Chapter::where('id', $chapterData['id'])
-                   ->update(['order_index' => $chapterData['order_index']]);
-        }
-
-        return response()->json([
-            'message' => 'Chapters reordered successfully'
-        ]);
-    }
+    // Removed reorder (no order_index field maintained now).
 }

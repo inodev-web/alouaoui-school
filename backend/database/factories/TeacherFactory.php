@@ -17,7 +17,9 @@ class TeacherFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => fake()->name(),
+            'phone' => fake()->unique()->phoneNumber(),
+            'uuid' => \Illuminate\Support\Str::uuid(),
         ];
     }
 }

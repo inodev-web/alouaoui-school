@@ -19,10 +19,7 @@ class Attendance extends Model
         'student_uuid',
         'teacher_uuid',
         'session_id',
-        'date',
-        'status',
-        'check_in_time',
-        'notes',
+        'validated_at',
     ];
 
     /**
@@ -31,14 +28,8 @@ class Attendance extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'date' => 'date',
-        'check_in_time' => 'datetime',
+        'validated_at' => 'datetime',
     ];
-
-    /**
-     * The available attendance statuses
-     */
-    public const STATUSES = ['present', 'absent'];
 
     /**
      * Attendance belongs to user (student)
@@ -65,18 +56,10 @@ class Attendance extends Model
     }
 
     /**
-     * Check if student was present
+     * Determine if attendance was validated by an admin/teacher (has validated_at timestamp)
      */
-    public function isPresent(): bool
+    public function isValidated(): bool
     {
-        return $this->status === 'present';
-    }
-
-    /**
-     * Check if student was absent
-     */
-    public function isAbsent(): bool
-    {
-        return $this->status === 'absent';
+        return !is_null($this->validated_at);
     }
 }

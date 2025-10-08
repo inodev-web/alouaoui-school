@@ -119,10 +119,28 @@ class ScannerLock
     private function isRedisAvailable(): bool
     {
         try {
-            Redis::ping();
+            // En mode test, utiliser toujours le cache
+            if (app()->environment('testing')) {
+                return false;
+            }
+
+            // Vérifier si Redis est configuré
+            if (!config('database.redis.default')) {
+                return false;
+            }
+
+            $redis = \Illuminate\Support\Facades\Redis::connection();
+            if (!$redis) {
+                return false;
+            }
+
+            $redis->ping();
             return true;
         } catch (\Exception $e) {
             \Log::warning("Redis not available, falling back to cache: " . $e->getMessage());
+            return false;
+        } catch (\Error $e) {
+            \Log::warning("Redis error, falling back to cache: " . $e->getMessage());
             return false;
         }
     }

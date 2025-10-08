@@ -35,12 +35,9 @@ class VideoTest extends TestCase
     protected function createTeacher(array $attributes = []): Teacher
     {
         return Teacher::create(array_merge([
-            'firstname' => 'Alouaoui',
-            'lastname' => 'Teacher',
+            'name' => 'Alouaoui Teacher',
             'phone' => '0555' . random_int(100000, 999999),
-            'specialization' => 'Mathematics',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
+            'uuid' => \Illuminate\Support\Str::uuid(),
         ], $attributes));
     }
 
@@ -87,6 +84,38 @@ class VideoTest extends TestCase
     }
 
     /**
+     * Helper method to create a course with its chapter
+     */
+    protected function createCourse(array $attributes = []): Course
+    {
+        $chapterDefaults = [
+            'title' => 'Test Chapter',
+            'description' => 'Test chapter description',
+            'teacher_name' => 'Test Teacher',
+            'year_target' => '2AM',
+        ];
+
+        $courseDefaults = [
+            'title' => 'Test Course',
+            'video_ref' => 'videos/test-video/playlist.m3u8',
+        ];
+
+        // Extract chapter attributes
+        $chapterAttributes = array_intersect_key($attributes, $chapterDefaults);
+        $chapterData = array_merge($chapterDefaults, $chapterAttributes);
+
+        // Create chapter
+        $chapter = Chapter::create($chapterData);
+
+        // Extract course attributes
+        $courseAttributes = array_diff_key($attributes, $chapterDefaults);
+        $courseData = array_merge($courseDefaults, $courseAttributes);
+        $courseData['chapter_id'] = $chapter->id;
+
+        return Course::create($courseData);
+    }
+
+    /**
      * Test admin can access courses (videos) endpoint.
      */
     public function test_admin_can_access_courses(): void
@@ -95,18 +124,8 @@ class VideoTest extends TestCase
             'role' => 'admin',
         ]);
 
-        $teacher = $this->createTeacher();
-
-        $chapter = Chapter::create([
-            'title' => 'Test Chapter',
-            'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacher->uuid,
-            'year_target' => '2AM',
-        ]);
-
-        // Create a test course (video)
-        Course::create([
-            'chapter_id' => $chapter->id,
+        // Create a test course with chapter
+        $this->createCourse([
             'title' => 'Test Video Course',
             'video_ref' => 'test-video.mp4',
             'year_target' => '2AM',
@@ -184,16 +203,14 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacher->uuid,
+            'teacher_name' => $teacher->name,
             'year_target' => '2AM',
         ]);
 
         $video = Course::create([
             'title' => 'Test Video',
             'chapter_id' => $chapter->id,
-            'video_path' => 'videos/test-video.mp4',
             'video_ref' => 'videos/test-video/playlist.m3u8',
-            'year_target' => '2AM',
         ]);
 
         $headers = $this->authenticateUser($student);
@@ -216,20 +233,8 @@ class VideoTest extends TestCase
             'year_of_study' => '2AM',
         ]);
 
-        $teacher = $this->createTeacher();
-
-        $chapter = Chapter::create([
-            'title' => 'Test Chapter',
-            'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacher->uuid,
-            'year_target' => '2AM',
-            'is_free' => false, // Paid content
-        ]);
-
-        $video = Course::create([
+        $video = $this->createCourse([
             'title' => 'Test Video',
-            'chapter_id' => $chapter->id,
-            'video_path' => 'videos/test-video.mp4',
             'video_ref' => 'videos/test-video/playlist.m3u8',
             'year_target' => '2AM',
         ]);
@@ -323,7 +328,12 @@ class VideoTest extends TestCase
         $this->assertDatabaseHas('courses', [
             'id' => $video->id,
             'title' => 'Updated Title',
-            'year_target' => '3AM',
+        ]);
+
+        // Verify that chapter still has the correct year_target
+        $this->assertDatabaseHas('chapters', [
+            'id' => $video->chapter_id,
+            'year_target' => '2AM', // Should remain unchanged
         ]);
     }
 

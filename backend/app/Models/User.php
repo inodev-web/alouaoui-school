@@ -36,6 +36,9 @@ class User extends Authenticatable
         'year_of_study',
         'role',
         'device_uuid',
+        // New simplified access model fields
+        'free_subscriber',
+        'free_subscriber_reason',
     ];
 
     /**
@@ -70,6 +73,7 @@ class User extends Authenticatable
         return [
             'birth_date' => 'date',
             'password' => 'hashed',
+            'free_subscriber' => 'boolean',
         ];
     }
 
@@ -122,14 +126,6 @@ class User extends Authenticatable
     }
 
     /**
-     * User has many payments
-     */
-    public function payments(): HasMany
-    {
-        return $this->hasMany(Payment::class, 'user_uuid');
-    }
-
-    /**
      * User has many attendances
      */
     public function attendances(): HasMany
@@ -138,13 +134,32 @@ class User extends Authenticatable
     }
 
     /**
-     * Get active subscriptions
+     * Get active subscriptions (time window based)
      */
     public function activeSubscriptions(): HasMany
     {
         return $this->subscriptions()
-            ->where('active', true)
-            ->where('start_date', '<=', now())
-            ->where('end_date', '>=', now());
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now());
+    }
+
+    /**
+     * Determine if user is flagged as free subscriber (global access bypass)
+     */
+    public function isFree(): bool
+    {
+        return (bool) $this->free_subscriber;
+    }
+
+    /**
+     * Check if user currently has an active subscription for a given teacher
+     */
+    public function hasActiveSubscriptionForTeacher(string $teacherUuid): bool
+    {
+        return $this->subscriptions()
+            ->where('teacher_uuid', $teacherUuid)
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now())
+            ->exists();
     }
 }

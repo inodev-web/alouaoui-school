@@ -54,7 +54,7 @@ class EnsureSingleDevice
             // If device UUID doesn't match current token's device UUID
             if ($tokenDeviceUuid !== $deviceUuid) {
                 \Log::warning("Device mismatch for user {$user->uuid}: Token device={$tokenDeviceUuid}, Request device={$deviceUuid}");
-                
+
                 // Check if this device UUID is already associated with another token from this user
                 $userDeviceToken = DB::table('personal_access_tokens')
                     ->where('tokenable_type', get_class($user))
@@ -66,13 +66,13 @@ class EnsureSingleDevice
                     // This user has another token for this device - use that one instead
                     // Revoke the current token being used (old device)
                     $currentToken->delete();
-                    
+
                     return response()->json([
                         'success' => false,
                         'message' => 'Session active détectée sur un autre appareil. Reconnectez-vous.',
                         'error_code' => 'DEVICE_CONFLICT',
                         'action' => 'LOGIN_REQUIRED'
-                    ], 401); // Use 401 for proper logout
+                    ], 409); // Use 409 for device conflict
                 } else {
                     // Different device detected - revoke all tokens and force re-login
                     $user->tokens()->delete();
@@ -82,7 +82,7 @@ class EnsureSingleDevice
                         'message' => 'Votre compte a été connecté depuis un autre appareil. Reconnectez-vous.',
                         'error_code' => 'DEVICE_CONFLICT',
                         'action' => 'LOGIN_REQUIRED'
-                    ], 401); // Use 401 for proper logout
+                    ], 409); // Use 409 for device conflict
                 }
             }
         }

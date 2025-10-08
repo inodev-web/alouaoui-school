@@ -6,8 +6,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use App\Models\User;
+use App\Models\Teacher;
 use App\Models\Subscription;
-use App\Models\Chapter;
+use App\Models\Session;
+use App\Services\SubscriptionService;
 use Laravel\Sanctum\Sanctum;
 
 class SubscriptionTest extends TestCase
@@ -23,15 +25,17 @@ class SubscriptionTest extends TestCase
     /**
      * Helper method to create a teacher entity
      */
-    protected function createTeacher(array $attributes = []): \App\Models\Teacher
+    protected function createTeacher(array $attributes = []): Teacher
     {
-        return \App\Models\Teacher::create(array_merge([
+        return Teacher::create(array_merge([
             'name' => 'Test Teacher',
             'email' => 'teacher' . random_int(1000, 9999) . '@example.com',
             'phone' => '0555' . random_int(100000, 999999),
             'specialization' => 'Mathematics',
             'is_alouaoui_teacher' => true,
             'is_active' => true,
+            'price_subscription' => 2000.00,
+            'price_session' => 500.00,
         ], $attributes));
     }
 
@@ -50,10 +54,25 @@ class SubscriptionTest extends TestCase
             'password' => \Illuminate\Support\Facades\Hash::make('password123'),
             'role' => 'student',
             'year_of_study' => '2AM',
-            'qr_token' => \Illuminate\Support\Str::uuid(),
+            'free_subscriber' => false,
+            'free_subscriber_reason' => null,
         ];
 
         return User::create(array_merge($defaults, $attributes));
+    }
+
+    /**
+     * Helper method to create a session entity
+     */
+    protected function createSession(Teacher $teacher, array $attributes = []): Session
+    {
+        return Session::create(array_merge([
+            'teacher_uuid' => $teacher->uuid,
+            'start_time' => now()->addHour(),
+            'end_time' => now()->addHours(2),
+            'price' => $teacher->price_session,
+            'status' => 'scheduled',
+        ], $attributes));
     }
 
     /**
@@ -78,323 +97,121 @@ class SubscriptionTest extends TestCase
     }
 
     /**
-     * Test subscription creation.
+     * Test that monthly subscriptions cannot overlap for the same (user, teacher) pair.
      */
-    public function test_create_subscription(): void
+    public function test_cannot_overlap_monthly(): void
     {
-        $user = $this->createUser([
-            'phone' => '0555123456',
-        ]);
+        $user = $this->createUser();
+        $teacher = $this->createTeacher();
+        $service = new SubscriptionService();
 
-        // Create a teacher first
-        $teacher = $this->createTeacher([
-            'phone' => '0555654321',
-        ]);
+        // Create first monthly subscription
+        $subscription1 = $service->createMonthly($user, $teacher);
+        $this->assertNotNull($subscription1);
+        $this->assertTrue($subscription1->isMonthly());
 
-        // Log in the user first to get a valid token with device UUID
-        $headers = $this->authenticateUser($user);
+        // Try to create overlapping monthly subscription - should throw exception
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Overlapping monthly subscription detected.');
 
-        $subscriptionData = [
-            'teacher_uuid' => $teacher->uuid,
-            'duration_months' => 1,
-            'videos_access' => true,
-            'lives_access' => true,
-            'school_entry_access' => false,
-            'payment_method' => 'cash',
-            'amount' => 2000,
-        ];
+        $service->createMonthly($user, $teacher);
+    }
 
-        $response = $this->withHeaders($headers)->postJson('/api/subscriptions', $subscriptionData);
+    /**
+     * Test that users can have monthly subscriptions for different teachers.
+     */
+    public function test_can_have_monthly_for_different_teachers(): void
+    {
+        $user = $this->createUser();
+        $teacher1 = $this->createTeacher(['name' => 'Math Teacher']);
+        $teacher2 = $this->createTeacher(['name' => 'Physics Teacher']);
+        $service = new SubscriptionService();
 
-        $response->assertStatus(201)
-                ->assertJsonStructure([
-                    'message',
-                    'data' => [
-                        'subscription' => ['id', 'user_uuid', 'teacher_uuid', 'amount', 'status', 'starts_at', 'ends_at'],
-                        'payment' => ['id', 'user_uuid', 'amount', 'payment_method', 'status']
-                    ]
-                ]);
+        // Create monthly subscription for teacher1
+        $subscription1 = $service->createMonthly($user, $teacher1);
+        $this->assertNotNull($subscription1);
+        $this->assertEquals($teacher1->uuid, $subscription1->teacher_uuid);
 
+        // Create monthly subscription for teacher2 - should work fine
+        $subscription2 = $service->createMonthly($user, $teacher2);
+        $this->assertNotNull($subscription2);
+        $this->assertEquals($teacher2->uuid, $subscription2->teacher_uuid);
+
+        // Verify both subscriptions exist in database
         $this->assertDatabaseHas('subscriptions', [
             'user_uuid' => $user->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 2000,
-            'status' => 'active', // Cash payments are immediately active
-            'videos_access' => true,
-            'lives_access' => true,
-            'school_entry_access' => false,
+            'teacher_uuid' => $teacher1->uuid,
         ]);
-    }
-
-    /**
-     * Test subscription approval by teacher.
-     */
-    public function test_approve_subscription(): void
-    {
-        // Create admin user (since 'teacher' role is not allowed in users table)
-        $admin = $this->createUser([
-            'phone' => '0555999888',
-            'role' => 'admin', // Change from 'teacher' to 'admin'
-        ]);
-
-        // Create student user
-        $student = $this->createUser([
-            'phone' => '0555123456',
-        ]);
-
-        // Create teacher in teachers table
-        $teacher = $this->createTeacher([
-            'phone' => '0555654321',
-        ]);
-
-        // Create a pending subscription
-        $subscription = Subscription::create([
-            'user_uuid' => $student->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 1500,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
-            'status' => 'pending',
-        ]);
-
-        // Log in the admin user to get a valid token with device UUID
-        $headers = $this->authenticateUser($admin);
-
-        // This test would need actual subscription approval endpoint
-        // For now, just test that we can retrieve subscriptions with proper auth
-        $response = $this->withHeaders($headers)->getJson('/api/subscriptions');
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test subscription access control.
-     */
-
-    /**
-     * Test subscription rejection by teacher.
-     */
-    public function test_reject_subscription(): void
-    {
-        // Create admin user
-        $admin = $this->createUser([
-            'phone' => '0555999888',
-            'role' => 'admin', // Change from 'teacher' to 'admin'
-        ]);
-
-        // Create student user
-        $student = $this->createUser([
-            'phone' => '0555123456',
-        ]);
-
-        // Create teacher for subscription
-        $teacher = $this->createTeacher([
-            'phone' => '0555654322',
-            'specialization' => 'Physics',
-        ]);
-
-        // Create pending subscription
-        $subscription = Subscription::create([
-            'user_uuid' => $student->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
-            'status' => 'pending',
-        ]);
-
-        // Log in the admin user to get a valid token with device UUID
-        $headers = $this->authenticateUser($admin);
-
-        // Since reject endpoint doesn't exist, test cancelling subscription instead
-        $response = $this->withHeaders($headers)->patchJson("/api/subscriptions/{$subscription->id}/cancel");
-
-        $response->assertStatus(200);
-
-        // Verify subscription was cancelled
-        $subscription->refresh();
-        $this->assertEquals('cancelled', $subscription->status);
-    }
-
-    /**
-     * Test student can view their own subscription.
-     */
-    public function test_student_can_view_own_subscription(): void
-    {
-        $student = $this->createUser([
-            'phone' => '0555123456',
-        ]);
-
-        // Create teacher for subscription
-        $teacher = $this->createTeacher([
-            'phone' => '0555654323',
-            'specialization' => 'Chemistry',
-        ]);
-
-        $subscription = Subscription::create([
-            'user_uuid' => $student->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
-            'status' => 'active',
-        ]);
-
-        // Log in the student user to get a valid token with device UUID
-        $headers = $this->authenticateUser($student);
-
-        // Since /current endpoint doesn't exist, use /active endpoint to check subscription status
-        $response = $this->withHeaders($headers)->getJson('/api/subscriptions/active');
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test subscription middleware - accessing protected resources with valid subscription.
-     */
-    public function test_access_with_valid_subscription(): void
-    {
-        // Create teacher first
-        $teacher = \App\Models\Teacher::create([
-            'name' => 'Test Teacher',
-            'email' => 'teacher4@example.com',
-            'phone' => '0555654324',
-            'specialization' => 'Biology',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
-        ]);
-
-        // Create a chapter
-        $chapter = Chapter::create([
-            'title' => 'Test Chapter',
-            'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacher->uuid,
-            'year_target' => '2AM',
-        ]);
-
-        // Create a student with active subscription
-        $student = $this->createUser([
-            'phone' => '0555123456',
-        ]);
-
-        // Create active subscription
-        $subscription = Subscription::create([
-            'user_uuid' => $student->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
-            'status' => 'active',
-        ]);
-
-        // Log in the student user to get a valid token with device UUID
-        $headers = $this->authenticateUser($student);
-
-        // Try to access chapters with proper authentication
-        $response = $this->withHeaders($headers)->getJson('/api/chapters');
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test subscription middleware - accessing protected resources with expired subscription.
-     */
-    public function test_access_with_expired_subscription(): void
-    {
-        // Create teacher first
-        $teacher = \App\Models\Teacher::create([
-            'name' => 'Test Teacher',
-            'email' => 'teacher5@example.com',
-            'phone' => '0555654325',
-            'specialization' => 'History',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
-        ]);
-
-        // Create a chapter
-        $chapter = Chapter::create([
-            'title' => 'Test Chapter',
-            'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacher->uuid,
-            'year_target' => '2AM',
-        ]);
-
-        // Create a student with expired subscription
-        $student = $this->createUser([
-            'phone' => '0555123456',
-        ]);
-
-        // Create expired subscription
-        $subscription = Subscription::create([
-            'user_uuid' => $student->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now()->subMonths(2),
-            'ends_at' => now()->subMonth(), // Expired one month ago
-            'status' => 'expired',
-        ]);
-
-        // Log in the student user to get a valid token with device UUID
-        $headers = $this->authenticateUser($student);
-
-        // Try to access chapters - should work but subscription info might affect responses
-        $response = $this->withHeaders($headers)->getJson('/api/chapters');
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * Test subscription expiration job.
-     */
-    public function test_subscription_expiration_job(): void
-    {
-        // Create teacher first
-        $teacher = \App\Models\Teacher::create([
-            'name' => 'Test Teacher',
-            'email' => 'teacher6@example.com',
-            'phone' => '0555654326',
-            'specialization' => 'Geography',
-            'is_alouaoui_teacher' => true,
-            'is_active' => true,
-        ]);
-
-        // Create student with subscription that should be marked as expired
-        $student = $this->createUser([
-            'phone' => '0555123456',
-        ]);
-
-        // Create subscription that ended yesterday
-        $subscription = Subscription::create([
-            'user_uuid' => $student->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 2000,
-            'videos_access' => true,
-            'lives_access' => false,
-            'school_entry_access' => false,
-            'starts_at' => now()->subMonth()->subDay(),
-            'ends_at' => now()->subDay(), // Ended yesterday
-            'status' => 'active', // Still marked as active
-        ]);
-
-        // For now, just test that subscription exists
         $this->assertDatabaseHas('subscriptions', [
-            'id' => $subscription->id,
-            'status' => 'active',
+            'user_uuid' => $user->uuid,
+            'teacher_uuid' => $teacher2->uuid,
         ]);
+    }
+
+    /**
+     * Test session pass creation functionality.
+     */
+    public function test_session_pass_creation(): void
+    {
+        $user = $this->createUser();
+        $teacher = $this->createTeacher();
+        $session = $this->createSession($teacher);
+        $service = new SubscriptionService();
+
+        // Create session pass subscription
+        $subscription = $service->createSessionPass($user, $teacher, $session);
+
+        $this->assertNotNull($subscription);
+        $this->assertEquals($user->uuid, $subscription->user_uuid);
+        $this->assertEquals($teacher->uuid, $subscription->teacher_uuid);
+
+        // Session pass should be same day (starts at beginning, ends at end of day)
+        $expectedDay = $session->start_time->copy()->startOfDay();
+        $this->assertTrue($subscription->starts_at->isSameDay($expectedDay));
+        $this->assertTrue($subscription->ends_at->isSameDay($expectedDay));
+        $this->assertTrue($subscription->starts_at->isStartOfDay());
+        $this->assertTrue($subscription->ends_at->isEndOfDay());
+
+        // Should NOT be classified as monthly
+        $this->assertFalse($subscription->isMonthly());
+    }
+
+    /**
+     * Test free subscriber does not need subscriptions.
+     */
+    public function test_free_subscriber_cannot_create_subscription(): void
+    {
+        $freeUser = $this->createUser([
+            'free_subscriber' => true,
+            'free_subscriber_reason' => 'Staff member exemption'
+        ]);
+        $teacher = $this->createTeacher();
+        $service = new SubscriptionService();
+
+        // Try to create monthly subscription for free user - should throw exception
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Free subscriber does not need monthly subscription.');
+
+        $service->createMonthly($freeUser, $teacher);
+    }
+
+    /**
+     * Test free subscriber cannot create session pass.
+     */
+    public function test_free_subscriber_cannot_create_session_pass(): void
+    {
+        $freeUser = $this->createUser([
+            'free_subscriber' => true,
+            'free_subscriber_reason' => 'Staff member exemption'
+        ]);
+        $teacher = $this->createTeacher();
+        $session = $this->createSession($teacher);
+        $service = new SubscriptionService();
+
+        // Try to create session pass for free user - should throw exception
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Free subscriber does not need session pass.');
+
+        $service->createSessionPass($freeUser, $teacher, $session);
     }
 }

@@ -184,7 +184,7 @@ $teacher = Teacher::find(1);
 
 // Vérifier l'abonnement actif
 $subscription = $student->subscriptions()
-    ->where('teacher_id', $teacher->id)
+    ->where('teacher_uuid', $teacher->uuid)
     ->where('active', true)
     ->where('start_date', '<=', now())
     ->where('end_date', '>=', now())
@@ -199,7 +199,7 @@ if ($subscription && $subscription->videos_access) {
 ```php
 $payment = Payment::create([
     'student_id' => $student->id,
-    'teacher_id' => $teacher->id,
+    'teacher_uuid' => $teacher->uuid,
     'amount' => $teacher->price_subscription,
     'method' => 'online',
     'status' => 'confirmed',
@@ -207,7 +207,7 @@ $payment = Payment::create([
 
 $subscription = Subscription::create([
     'student_id' => $student->id,
-    'teacher_id' => $teacher->id,
+    'teacher_uuid' => $teacher->uuid,
     'start_date' => now()->startOfMonth(),
     'end_date' => now()->endOfMonth(),
     'active' => true,
@@ -221,7 +221,7 @@ $subscription = Subscription::create([
 ```php
 $attendance = Attendance::create([
     'student_id' => $student->id,
-    'teacher_id' => $teacher->id,
+    'teacher_uuid' => $teacher->uuid,
     'session_id' => $session->id,
     'date' => now()->toDateString(),
     'status' => 'present',

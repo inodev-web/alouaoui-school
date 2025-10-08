@@ -17,17 +17,11 @@ class Session extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'teacher_uuid',
-        'title',
-        'description',
-        'type',
-        'price',
+    'teacher_uuid',
         'year_target',
         'start_time',
         'end_time',
         'status',
-        'meeting_link',
-        'max_participants',
     ];
 
     /**
@@ -36,21 +30,20 @@ class Session extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'price' => 'decimal:2',
         'start_time' => 'datetime',
         'end_time' => 'datetime',
-        'max_participants' => 'integer',
     ];
 
     /**
      * The available session types
      */
-    public const TYPES = ['subscription', 'free', 'paid'];
+    // Types removed in simplified model
 
     /**
      * The available session statuses
      */
-    public const STATUSES = ['scheduled', 'live', 'completed', 'cancelled'];
+    // Simplified per DATABASE.md: only completed | cancelled retained.
+    public const STATUSES = ['completed', 'cancelled'];
 
     /**
      * The available year targets
@@ -62,7 +55,7 @@ class Session extends Model
      */
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(Teacher::class, 'teacher_uuid', 'uuid');
+    return $this->belongsTo(Teacher::class, 'teacher_uuid', 'uuid');
     }
 
     /**
@@ -78,7 +71,8 @@ class Session extends Model
      */
     public function isLive(): bool
     {
-        return $this->status === 'live';
+        // no live state in simplified model
+        return false;
     }
 
     /**
@@ -86,7 +80,7 @@ class Session extends Model
      */
     public function isScheduled(): bool
     {
-        return $this->status === 'scheduled';
+        return false; // scheduled concept removed
     }
 
     /**
@@ -103,5 +97,16 @@ class Session extends Model
     public function isCancelled(): bool
     {
         return $this->status === 'cancelled';
+    }
+
+    /**
+     * Duration in minutes
+     */
+    public function durationMinutes(): ?int
+    {
+        if (!$this->start_time || !$this->end_time) {
+            return null;
+        }
+        return $this->start_time->diffInMinutes($this->end_time);
     }
 }

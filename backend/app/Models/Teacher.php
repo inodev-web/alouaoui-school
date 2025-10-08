@@ -33,21 +33,15 @@ class Teacher extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'firstname',
-        'lastname',
+        'name',
         'phone',
-        'specialization',
-        'bio',
-        'profile_picture',
-        'is_alouaoui_teacher',
-        'is_active',
+        'picture',
         'module',
         'year',
         'is_online_publisher',
-        'allows_online_payment',
         'price_subscription',
+        'price_session',
         'percent_school',
-        'payment_processor_id',
     ];
 
     /**
@@ -56,11 +50,9 @@ class Teacher extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'is_active' => 'boolean',
         'is_online_publisher' => 'boolean',
-        'is_alouaoui_teacher' => 'boolean',
-        'allows_online_payment' => 'boolean',
         'price_subscription' => 'decimal:2',
+        'price_session' => 'decimal:2',
         'percent_school' => 'integer',
     ];
 
@@ -105,25 +97,6 @@ class Teacher extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class, 'teacher_uuid', 'uuid');
-    }
-
-    /**
-     * Get active subscriptions for this teacher
-     */
-    public function activeSubscriptions(): HasMany
-    {
-        return $this->subscriptions()
-            ->where('status', 'active')
-            ->where('starts_at', '<=', now())
-            ->where('ends_at', '>=', now());
-    }
-
-    /**
-     * Check if teacher is Alouaoui teacher
-     */
-    public function isAlouaouiTeacher(): bool
-    {
-        return $this->is_alouaoui_teacher;
     }
 
     /**

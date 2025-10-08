@@ -12,12 +12,19 @@ class CourseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get teachers
-        $alouaouiTeacher = Teacher::where('is_alouaoui_teacher', true)->first();
-        $regularTeacher = Teacher::where('is_alouaoui_teacher', false)->first();
+        // Retrieve two teachers (online publisher vs other) based on current simplified schema
+        $alouaouiTeacher = Teacher::where('is_online_publisher', true)->first();
+        $regularTeacher = Teacher::where('is_online_publisher', false)->first();
+
+        if (!$alouaouiTeacher) {
+            $alouaouiTeacher = Teacher::first();
+        }
+        if (!$regularTeacher) {
+            $regularTeacher = Teacher::where('uuid', '!=', optional($alouaouiTeacher)->uuid)->first();
+        }
 
         if (!$alouaouiTeacher || !$regularTeacher) {
-            echo "❌ Teachers not found. Please run AdminUserSeeder first.\n";
+            echo "❌ Not enough teachers to seed courses (need at least 2).\n";
             return;
         }
 
@@ -26,7 +33,7 @@ class CourseSeeder extends Seeder
             $mathChapter = Chapter::create([
                 'title' => 'Mathématiques 2AM',
                 'description' => 'Chapitre complet de mathématiques pour la 2ème année moyenne avec Prof. Alouaoui',
-                'teacher_id' => $alouaouiTeacher->id,
+                'teacher_uuid' => $alouaouiTeacher->uuid,
                 'year_target' => '2AM',
             ]);
 
@@ -59,7 +66,7 @@ class CourseSeeder extends Seeder
             $physicsChapter = Chapter::create([
                 'title' => 'Physique 2AM',
                 'description' => 'Chapitre de physique en présentiel uniquement',
-                'teacher_id' => $regularTeacher->id,
+                'teacher_uuid' => $regularTeacher->uuid,
                 'year_target' => '2AM',
             ]);
 
@@ -90,7 +97,7 @@ class CourseSeeder extends Seeder
             $math3Chapter = Chapter::create([
                 'title' => 'Mathématiques 3AM',
                 'description' => 'Chapitre avancé de mathématiques pour la 3ème année moyenne',
-                'teacher_id' => $alouaouiTeacher->id,
+                'teacher_uuid' => $alouaouiTeacher->uuid,
                 'year_target' => '3AM',
             ]);
 

@@ -5,9 +5,6 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Subscription;
-use App\Models\Chapter;
-use App\Models\Course;
 use App\Services\AccessControlService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -41,134 +38,51 @@ class EnsureSubscription
             return $next($request);
         }
 
-        // Skip subscription check for non-student users
-        if ($user->role !== 'student') {
+        // Extract teacher UUID from route parameters or request
+        $teacherUuid = $this->extractTeacherUuid($request);
+
+        if (!$teacherUuid) {
             return response()->json([
                 'success' => false,
-                'message' => 'Accès réservé aux étudiants'
-            ], 403);
-        }
-
-        // Extract chapter ID from route parameters
-        $chapterId = $this->extractChapterId($request);
-
-        if (!$chapterId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Chapitre non identifié',
-                'error_code' => 'CHAPTER_NOT_FOUND'
+                'message' => 'Enseignant non identifié',
+                'error_code' => 'TEACHER_NOT_FOUND'
             ], 400);
         }
 
-        // Get the chapter
-        $chapter = Chapter::find($chapterId);
-
-        if (!$chapter) {
+        // Check video access using simplified logic
+        if (!$this->accessControl->hasVideoAccess($user, $teacherUuid)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chapitre introuvable'
-            ], 404);
-        }
-
-        // Check if user has access to this chapter through AccessControlService
-        if (!$this->accessControl->canAccessChapter($user, $chapter)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Accès non autorisé à ce chapitre',
-                'error_code' => 'ACCESS_DENIED'
+                'message' => 'Accès non autorisé à ce contenu vidéo',
+                'error_code' => 'ACCESS_DENIED',
+                'teacher_uuid' => $teacherUuid,
+                'free_subscriber' => $user->isFree(),
             ], 403);
         }
-
-        // Check for active subscription to this chapter
-        $subscription = Subscription::where('user_id', $user->id)
-            ->where('chapter_id', $chapterId)
-            ->where('is_active', true)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (!$subscription) {
-            // Check if this is a regular teacher's content (physical only)
-            if (!$chapter->teacher->is_alouaoui_teacher) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ce contenu nécessite une présence physique en cours',
-                    'error_code' => 'PHYSICAL_ATTENDANCE_REQUIRED',
-                    'chapter_id' => $chapterId,
-                    'teacher_name' => $chapter->teacher->name
-                ], 403);
-            }
-
-            // For Alouaoui teacher content, require subscription
-            return response()->json([
-                'success' => false,
-                'message' => 'Abonnement requis pour accéder à ce contenu',
-                'error_code' => 'SUBSCRIPTION_REQUIRED',
-                'chapter_id' => $chapterId,
-                'chapter_title' => $chapter->title,
-                'teacher_name' => $chapter->teacher->name,
-                'suggested_action' => 'subscribe'
-            ], 402); // Payment Required status code
-        }
-
-        // Check if subscription is still valid
-        if ($subscription->expires_at <= now()) {
-            $subscription->update(['is_active' => false]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Votre abonnement a expiré',
-                'error_code' => 'SUBSCRIPTION_EXPIRED',
-                'expired_at' => $subscription->expires_at,
-                'chapter_id' => $chapterId,
-                'suggested_action' => 'renew'
-            ], 402);
-        }
-
-        // Update last accessed time
-        $subscription->touch('last_accessed_at');
-
-        // Store subscription info in request for further use
-        $request->merge([
-            'subscription' => $subscription,
-            'chapter' => $chapter
-        ]);
 
         return $next($request);
     }
 
     /**
-     * Extract chapter ID from route parameters
+     * Extract teacher UUID from route parameters or request
      */
-    private function extractChapterId(Request $request): ?int
+    private function extractTeacherUuid(Request $request): ?string
     {
         // Try different route parameter names
-        $chapterId = $request->route('chapter')
-                  ?? $request->route('chapterId')
-                  ?? $request->route('chapter_id');
+        $teacherUuid = $request->route('teacher_uuid')
+                    ?? $request->route('teacherUuid')
+                    ?? $request->route('teacher');
 
-        // If it's a model binding, get the ID
-        if (is_object($chapterId)) {
-            return $chapterId->id;
+        // If it's a model binding, get the UUID
+        if (is_object($teacherUuid) && method_exists($teacherUuid, 'getAttribute')) {
+            return $teacherUuid->getAttribute('uuid');
         }
 
-        // If it's from a course route, get chapter through course
-        $courseId = $request->route('course') ?? $request->route('courseId');
-        if ($courseId) {
-            if (is_object($courseId)) {
-                $courseId = $courseId->id;
-            }
-
-            $course = Course::find($courseId);
-            if ($course) {
-                return $course->chapter_id;
-            }
+        // Check request body for teacher_uuid
+        if ($request->has('teacher_uuid')) {
+            return $request->input('teacher_uuid');
         }
 
-        // Check request body for chapter_id
-        if ($request->has('chapter_id')) {
-            return $request->input('chapter_id');
-        }
-
-        return $chapterId ? (int)$chapterId : null;
+        return $teacherUuid;
     }
 }

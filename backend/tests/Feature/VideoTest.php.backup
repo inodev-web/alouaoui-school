@@ -54,7 +54,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacher->id, // Add required teacher_id
+            'teacher_uuid' => $teacher->uuid, // Updated to teacher_uuid
             'year_target' => '2AM', // Use correct column name
         ]);
 
@@ -86,7 +86,7 @@ class VideoTest extends TestCase
 
         $teacherEntity = \App\Models\Teacher::create([
             'name' => 'Regular Teacher',
-            'email' => 'teacher@example.com', 
+            'email' => 'teacher@example.com',
             'phone' => '0555999887',
             'specialization' => 'General Studies',
             'is_alouaoui_teacher' => false,
@@ -96,7 +96,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
+            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -143,7 +143,7 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_id' => $teacherEntity->id,
+            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 

@@ -7,7 +7,6 @@ use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Gate;
 
 class TeacherController extends Controller
 {
@@ -27,17 +26,13 @@ class TeacherController extends Controller
         $query = Teacher::query();
 
         if ($search) {
-            $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%");
+            });
         }
 
-        $teachers = $query->with(['chapters' => function($query) {
-            $query->select('id', 'title', 'teacher_id');
-        }])
-        ->withCount('chapters')
-        ->orderBy('name')
-        ->paginate($perPage);
+        $teachers = $query->orderBy('name')->paginate($perPage);
 
         return response()->json([
             'data' => $teachers->items(),
@@ -57,11 +52,13 @@ class TeacherController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:teachers',
-            'phone' => 'required|string|max:20|unique:teachers',
-            'specialization' => 'required|string|max:255',
-            'bio' => 'sometimes|string|max:1000',
-            'is_active' => 'sometimes|boolean',
+            'phone' => 'required|string|max:20|unique:teachers,phone',
+            'module' => 'sometimes|string|max:255',
+            'year' => 'sometimes|string|max:10',
+            'is_online_publisher' => 'sometimes|boolean',
+            'price_subscription' => 'sometimes|numeric|min:0',
+            'price_session' => 'sometimes|numeric|min:0',
+            'percent_school' => 'sometimes|integer|min:0|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -71,14 +68,7 @@ class TeacherController extends Controller
             ], 422);
         }
 
-        $teacher = Teacher::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'specialization' => $request->specialization,
-            'bio' => $request->bio,
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        $teacher = Teacher::create($validator->validated());
 
         return response()->json([
             'message' => 'Teacher created successfully',
@@ -91,15 +81,6 @@ class TeacherController extends Controller
      */
     public function show(Teacher $teacher): JsonResponse
     {
-        $teacher->load([
-            'chapters' => function($query) {
-                $query->with(['course:id,title'])
-                      ->select('id', 'title', 'description', 'teacher_id', 'course_id', 'video_url', 'created_at');
-            }
-        ]);
-
-        $teacher->loadCount('chapters');
-
         return response()->json([
             'data' => $teacher
         ]);
@@ -112,11 +93,13 @@ class TeacherController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:teachers,email,' . $teacher->id,
-            'phone' => 'sometimes|string|max:20|unique:teachers,phone,' . $teacher->id,
-            'specialization' => 'sometimes|string|max:255',
-            'bio' => 'sometimes|string|max:1000',
-            'is_active' => 'sometimes|boolean',
+            'phone' => 'sometimes|string|max:20|unique:teachers,phone,' . $teacher->uuid . ',uuid',
+            'module' => 'sometimes|string|max:255',
+            'year' => 'sometimes|string|max:10',
+            'is_online_publisher' => 'sometimes|boolean',
+            'price_subscription' => 'sometimes|numeric|min:0',
+            'price_session' => 'sometimes|numeric|min:0',
+            'percent_school' => 'sometimes|integer|min:0|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -126,9 +109,7 @@ class TeacherController extends Controller
             ], 422);
         }
 
-        $teacher->update($request->only([
-            'name', 'email', 'phone', 'specialization', 'bio', 'is_active'
-        ]));
+        $teacher->update($validator->validated());
 
         return response()->json([
             'message' => 'Teacher updated successfully',
@@ -141,13 +122,6 @@ class TeacherController extends Controller
      */
     public function destroy(Teacher $teacher): JsonResponse
     {
-        // Vérifier s'il y a des chapitres associés
-        if ($teacher->chapters()->count() > 0) {
-            return response()->json([
-                'message' => 'Cannot delete teacher with associated chapters. Please reassign or delete chapters first.'
-            ], 422);
-        }
-
         $teacher->delete();
 
         return response()->json([
@@ -158,56 +132,5 @@ class TeacherController extends Controller
     /**
      * Toggle teacher active status
      */
-    public function toggleStatus(Teacher $teacher): JsonResponse
-    {
-        $teacher->update([
-            'is_active' => !$teacher->is_active
-        ]);
-
-        return response()->json([
-            'message' => 'Teacher status updated successfully',
-            'data' => [
-                'id' => $teacher->id,
-                'name' => $teacher->name,
-                'is_active' => $teacher->is_active
-            ]
-        ]);
-    }
-
-    /**
-     * Get teacher statistics
-     */
-    public function statistics(Teacher $teacher): JsonResponse
-    {
-        $stats = [
-            'total_chapters' => $teacher->chapters()->count(),
-            'active_chapters' => $teacher->chapters()->where('is_active', true)->count(),
-            'total_courses' => $teacher->chapters()
-                ->join('courses', 'chapters.course_id', '=', 'courses.id')
-                ->distinct('courses.id')
-                ->count(),
-            'recent_chapters' => $teacher->chapters()
-                ->where('created_at', '>=', now()->subDays(30))
-                ->count(),
-        ];
-
-        return response()->json([
-            'data' => $stats
-        ]);
-    }
-
-    /**
-     * Get all active teachers (simple list)
-     */
-    public function active(): JsonResponse
-    {
-        $teachers = Teacher::where('is_active', true)
-            ->select('id', 'name', 'specialization')
-            ->orderBy('name')
-            ->get();
-
-        return response()->json([
-            'data' => $teachers
-        ]);
-    }
+    // Removed toggleStatus, statistics, active endpoints due to simplified schema.
 }

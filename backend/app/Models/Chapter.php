@@ -21,7 +21,6 @@ class Chapter extends Model
         'description',
         'teacher_name',
         'year_target',
-        'is_free',
     ];
 
     /**
