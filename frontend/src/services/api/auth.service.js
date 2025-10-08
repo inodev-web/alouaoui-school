@@ -262,12 +262,29 @@ class AuthService {
 
     handleError(error) {
         if (error.response) {
-            const message = error.response.data.message || 'Une erreur est survenue';
+            let message = error.response.data.message || 'Une erreur est survenue';
+            
+            // Traduire les messages d'erreur en arabe
+            message = this.translateErrorMessage(message);
             
             if (error.response.status === 422 && error.response.data.errors) {
-                // Create a detailed error object for validation errors
+                // Traduire aussi les erreurs de validation
+                const translatedErrors = {};
+                Object.keys(error.response.data.errors).forEach(field => {
+                    const fieldErrors = error.response.data.errors[field];
+                    translatedErrors[field] = Array.isArray(fieldErrors) 
+                        ? fieldErrors.map(err => this.translateErrorMessage(err))
+                        : [this.translateErrorMessage(fieldErrors)];
+                });
+                
                 const err = new Error(message);
-                err.response = error.response;
+                err.response = {
+                    ...error.response,
+                    data: {
+                        ...error.response.data,
+                        errors: translatedErrors
+                    }
+                };
                 return err;
             }
 
@@ -276,6 +293,40 @@ class AuthService {
             return err;
         }
         return error;
+    }
+
+    translateErrorMessage(message) {
+        const translations = {
+            // Messages d'authentification
+            'The provided credentials are incorrect.': 'البيانات المدخلة غير صحيحة',
+            'Validation failed': 'فشل في التحقق من البيانات',
+            'Une erreur est survenue': 'حدث خطأ',
+            
+            // Erreurs de champs
+            'The login field is required.': 'حقل الهاتف مطلوب',
+            'The password field is required.': 'حقل كلمة المرور مطلوب',
+            'The phone field is required.': 'رقم الهاتف مطلوب',
+            'The firstname field is required.': 'الاسم الأول مطلوب',
+            'The lastname field is required.': 'اسم العائلة مطلوب',
+            'The password confirmation does not match.': 'تأكيد كلمة المرور غير متطابق',
+            'The phone has already been taken.': 'رقم الهاتف مستخدم من قبل',
+            
+            // Messages généraux
+            'Non authentifié': 'غير مسجل الدخول',
+            'Unauthorized': 'غير مخول',
+            'Forbidden': 'ممنوع الوصول',
+            'Not Found': 'غير موجود',
+            
+            // Messages de device
+            'Device restriction violation': 'انتهاك قيود الجهاز',
+            'Single device login required': 'تسجيل الدخول من جهاز واحد فقط',
+            
+            // Messages d'abonnement
+            'Active subscription required': 'اشتراك نشط مطلوب',
+            'Access denied': 'تم رفض الوصول'
+        };
+
+        return translations[message] || message;
     }
 }
 

@@ -18,7 +18,7 @@ Unifier et simplifier le modèle métier :
 ## 2. SYNTHÈSE DES CHANGEMENTS
 | Domaine | Avant | Après |
 |--------|-------|-------|
-| Users | base | + free_subscriber, free_subscriber_reason |
+| Users | base | + free_subscriber default 0, free_subscriber_reason nullable |
 | Teachers | price_subscription | + price_session |
 | Subscriptions | amount, flags, status | (user_uuid, teacher_uuid, starts_at, ends_at) |
 | Sessions | titre, description, type, meeting_link, max_participants | start_time, end_time, price (optionnel), status limité |
@@ -219,3 +219,6 @@ Mettre à jour :
 
 ---
 Fin du plan. Exécuter à partir de 4.2.
+
+
+check in , models migrations like teachers 

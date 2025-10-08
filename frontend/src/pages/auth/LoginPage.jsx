@@ -64,10 +64,21 @@ const LoginPage = () => {
         const backendErrors = error.response.data.errors
         const formattedErrors = {}
         Object.keys(backendErrors).forEach(key => {
-          formattedErrors[key] = Array.isArray(backendErrors[key]) 
+          // Mapper le champ 'login' du backend vers 'phone' du frontend
+          const frontendKey = key === 'login' ? 'phone' : key
+          formattedErrors[frontendKey] = Array.isArray(backendErrors[key]) 
             ? backendErrors[key][0] 
             : backendErrors[key]
         })
+        
+        // Si c'est une erreur de credentials, l'afficher comme erreur générale
+        if (backendErrors.login && backendErrors.login.includes('incorrect')) {
+          formattedErrors.submit = Array.isArray(backendErrors.login) 
+            ? backendErrors.login[0] 
+            : backendErrors.login
+          delete formattedErrors.phone // Ne pas afficher l'erreur sur le champ phone dans ce cas
+        }
+        
         setErrors(formattedErrors)
       } else if (error.cause?.details?.errors) {
         // Erreurs de validation Laravel (old format)
@@ -218,6 +229,15 @@ const LoginPage = () => {
                 </Link>
               </div>
             </div>
+
+            {/* General Error Message */}
+            {(errors.submit || errors.login) && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-700 text-right">
+                  {errors.submit || errors.login}
+                </p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div>
