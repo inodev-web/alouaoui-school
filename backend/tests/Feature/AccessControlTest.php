@@ -127,18 +127,32 @@ class AccessControlTest extends TestCase
         $session = $this->createSession($teacher);
         $service = new AccessControlService();
 
-        // Create active subscription
-        $subscription = Subscription::create([
+        // Seed Alouaoui teacher first
+        $this->artisan('db:seed', ['--class' => 'TeacherSeeder']);
+
+        // Create active subscription with Alouaoui (for video access)
+        $alouaouiTeacher = Teacher::getAlouaoui();
+        $this->assertNotNull($alouaouiTeacher, 'Alouaoui teacher should exist after seeding');
+
+        $alouaouiSubscription = Subscription::create([
+            'user_uuid' => $user->uuid,
+            'teacher_uuid' => $alouaouiTeacher->uuid,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addMonth(),
+        ]);
+
+        // User with Alouaoui subscription should have video access (online content)
+        $this->assertTrue($service->hasVideoAccess($user, $teacher->uuid));
+
+        // For session access, create subscription with the actual session teacher
+        $teacherSubscription = Subscription::create([
             'user_uuid' => $user->uuid,
             'teacher_uuid' => $teacher->uuid,
             'starts_at' => now()->subDay(),
             'ends_at' => now()->addMonth(),
         ]);
 
-        // User with active subscription should have video access
-        $this->assertTrue($service->hasVideoAccess($user, $teacher->uuid));
-
-        // User with active subscription should have session access
+        // User with teacher subscription should have session access (présentiel)
         $this->assertTrue($service->hasSessionAccess($user, $session));
     }
 
@@ -181,16 +195,29 @@ class AccessControlTest extends TestCase
         ]);
         $service = new AccessControlService();
 
-        // Create session pass (same day only)
-        $subscription = Subscription::create([
+        // Seed Alouaoui teacher for video access tests
+        $this->artisan('db:seed', ['--class' => 'TeacherSeeder']);
+        $alouaouiTeacher = Teacher::getAlouaoui();
+        $this->assertNotNull($alouaouiTeacher, 'Alouaoui teacher should exist after seeding');
+
+        // Create session pass with Alouaoui (for video access)
+        $alouaouiSubscription = Subscription::create([
+            'user_uuid' => $user->uuid,
+            'teacher_uuid' => $alouaouiTeacher->uuid,
+            'starts_at' => $today->copy()->startOfDay(),
+            'ends_at' => $today->copy()->endOfDay(),
+        ]);
+
+        // User should have video access (because they have Alouaoui subscription)
+        $this->assertTrue($service->hasVideoAccess($user, $teacher->uuid));
+
+        // Create session pass with the actual session teacher (for session access)
+        $teacherSubscription = Subscription::create([
             'user_uuid' => $user->uuid,
             'teacher_uuid' => $teacher->uuid,
             'starts_at' => $today->copy()->startOfDay(),
             'ends_at' => $today->copy()->endOfDay(),
         ]);
-
-        // User should have video access for today
-        $this->assertTrue($service->hasVideoAccess($user, $teacher->uuid));
 
         // User should have session access for today's session
         $this->assertTrue($service->hasSessionAccess($user, $session));
@@ -206,6 +233,8 @@ class AccessControlTest extends TestCase
 
     /**
      * Test access for different teachers with specific subscription.
+     * New business logic: Video access is ONLY through Alouaoui subscription.
+     * Session access is teacher-specific.
      */
     public function test_access_limited_to_specific_teacher(): void
     {
@@ -214,21 +243,32 @@ class AccessControlTest extends TestCase
         $teacher2 = $this->createTeacher(['name' => 'Physics Teacher']);
         $service = new AccessControlService();
 
-        // Create subscription only for teacher1
-        $subscription = Subscription::create([
+        // Seed Alouaoui teacher
+        $this->artisan('db:seed', ['--class' => 'TeacherSeeder']);
+        $alouaouiTeacher = Teacher::getAlouaoui();
+        $this->assertNotNull($alouaouiTeacher, 'Alouaoui teacher should exist after seeding');
+
+        // Create subscription with Alouaoui (for video access)
+        $alouaouiSubscription = Subscription::create([
+            'user_uuid' => $user->uuid,
+            'teacher_uuid' => $alouaouiTeacher->uuid,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addMonth(),
+        ]);
+
+        // User should have video access for ANY teacher (because online content is Alouaoui-only)
+        $this->assertTrue($service->hasVideoAccess($user, $teacher1->uuid));
+        $this->assertTrue($service->hasVideoAccess($user, $teacher2->uuid));
+
+        // For session access, create subscription only for teacher1
+        $teacher1Subscription = Subscription::create([
             'user_uuid' => $user->uuid,
             'teacher_uuid' => $teacher1->uuid,
             'starts_at' => now()->subDay(),
             'ends_at' => now()->addMonth(),
         ]);
 
-        // User should have access to teacher1
-        $this->assertTrue($service->hasVideoAccess($user, $teacher1->uuid));
-
-        // User should NOT have access to teacher2
-        $this->assertFalse($service->hasVideoAccess($user, $teacher2->uuid));
-
-        // Test session access
+        // Test session access - should be teacher-specific
         $session1 = $this->createSession($teacher1);
         $session2 = $this->createSession($teacher2);
 

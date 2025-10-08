@@ -62,6 +62,11 @@ class Teacher extends Model
     public const YEARS = ['1AM', '2AM', '3AM', '4AM', '1AS', '2AS', '3AS'];
 
     /**
+     * Alouaoui teacher UUID (fixed)
+     */
+    public const ALOUAOUI_UUID = 'alouaoui-teacher-uuid-fixed';
+
+    /**
      * Boot model to generate uuid on create if missing
      */
     protected static function boot(): void
@@ -105,5 +110,29 @@ class Teacher extends Model
     public function isOnlinePublisher(): bool
     {
         return $this->is_online_publisher;
+    }
+
+    /**
+     * Get Alouaoui teacher instance
+     */
+    public static function getAlouaoui(): ?Teacher
+    {
+        return static::where('uuid', static::ALOUAOUI_UUID)->first();
+    }
+
+    /**
+     * Get Alouaoui teacher instance (alias)
+     */
+    public static function alouaoui(): ?Teacher
+    {
+        return static::getAlouaoui();
+    }
+
+    /**
+     * Check if this teacher is Alouaoui
+     */
+    public function isAlouaoui(): bool
+    {
+        return $this->uuid === static::ALOUAOUI_UUID;
     }
 }

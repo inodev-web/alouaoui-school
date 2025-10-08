@@ -30,14 +30,19 @@ class VideoTest extends TestCase
 
     /**
      * Helper method to create a teacher entity
-     * Créer un vrai Teacher pour les subscriptions et relations
+     * Using the simplified Teacher model (removed obsolete fields)
      */
     protected function createTeacher(array $attributes = []): Teacher
     {
         return Teacher::create(array_merge([
-            'name' => 'Alouaoui Teacher',
+            'name' => 'Test Teacher',
             'phone' => '0555' . random_int(100000, 999999),
-            'uuid' => \Illuminate\Support\Str::uuid(),
+            'module' => 'Mathematics',
+            'year' => '2AM',
+            'is_online_publisher' => false, // Only Alouaoui publishes online
+            'price_subscription' => 1500.00,
+            'price_session' => 400.00,
+            'percent_school' => 15,
         ], $attributes));
     }
 
@@ -157,7 +162,6 @@ class VideoTest extends TestCase
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_name' => 'Alouaoui',
             'year_target' => '2AM',
         ]);
 
@@ -179,6 +183,7 @@ class VideoTest extends TestCase
 
     /**
      * Test student with active subscription can access video.
+     * Business logic: Videos are Alouaoui's online content, requires Alouaoui subscription.
      */
     public function test_student_with_subscription_can_access_video(): void
     {
@@ -187,23 +192,22 @@ class VideoTest extends TestCase
             'year_of_study' => '2AM',
         ]);
 
-        $teacher = $this->createTeacher();
+        // Seed Alouaoui teacher for subscription
+        $this->artisan('db:seed', ['--class' => 'TeacherSeeder']);
+        $alouaouiTeacher = Teacher::getAlouaoui();
+        $this->assertNotNull($alouaouiTeacher, 'Alouaoui teacher should exist after seeding');
 
-        // Create active subscription with correct fields
+        // Create active subscription with Alouaoui (required for video access)
         $subscription = Subscription::create([
             'user_uuid' => $student->uuid,
-            'teacher_uuid' => $teacher->uuid,
-            'amount' => 2000,
-            'videos_access' => true,
+            'teacher_uuid' => $alouaouiTeacher->uuid,
             'starts_at' => now()->toDateString(),
             'ends_at' => now()->addMonth()->toDateString(),
-            'status' => 'active',
         ]);
 
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_name' => $teacher->name,
             'year_target' => '2AM',
         ]);
 
@@ -248,22 +252,21 @@ class VideoTest extends TestCase
 
     /**
      * Test student can access free video without subscription.
+     * Business logic: Free subscribers can access all content.
      */
     public function test_student_can_access_free_video_without_subscription(): void
     {
         $student = $this->createUser([
             'role' => 'student',
             'year_of_study' => '2AM',
+            'free_subscriber' => true,
+            'free_subscriber_reason' => 'Staff exemption'
         ]);
-
-        $teacher = $this->createTeacher();
 
         $chapter = Chapter::create([
             'title' => 'Free Chapter',
             'description' => 'Free Chapter Description',
-            'teacher_uuid' => $teacher->uuid,
             'year_target' => '2AM',
-            'is_free' => true, // Free content
         ]);
 
         $video = Course::create([
@@ -271,7 +274,6 @@ class VideoTest extends TestCase
             'chapter_id' => $chapter->id,
             'video_path' => 'videos/free-video.mp4',
             'video_ref' => 'videos/free-video/playlist.m3u8',
-            'year_target' => '2AM',
         ]);
 
         $headers = $this->authenticateUser($student);
@@ -293,12 +295,9 @@ class VideoTest extends TestCase
             'role' => 'admin',
         ]);
 
-        $teacherEntity = $this->createTeacher();
-
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -306,14 +305,12 @@ class VideoTest extends TestCase
             'title' => 'Original Title',
             'chapter_id' => $chapter->id,
             'video_path' => 'videos/test-video.mp4',
-            'year_target' => '2AM',
         ]);
 
         $headers = $this->authenticateUser($teacher);
 
         $response = $this->putJson("/api/videos/{$video->id}", [
             'title' => 'Updated Title',
-            'year_target' => '3AM',
         ], $headers);
 
         $response->assertStatus(200)
@@ -346,12 +343,9 @@ class VideoTest extends TestCase
             'role' => 'admin',
         ]);
 
-        $teacherEntity = $this->createTeacher();
-
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -359,7 +353,6 @@ class VideoTest extends TestCase
             'title' => 'Test Video',
             'chapter_id' => $chapter->id,
             'video_path' => 'videos/test-video.mp4',
-            'year_target' => '2AM',
         ]);
 
         $headers = $this->authenticateUser($teacher);
@@ -385,12 +378,9 @@ class VideoTest extends TestCase
             'role' => 'admin',
         ]);
 
-        $teacherEntity = $this->createTeacher();
-
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -400,7 +390,6 @@ class VideoTest extends TestCase
                 'title' => "Test Video {$i}",
                 'chapter_id' => $chapter->id,
                 'video_path' => "videos/test-video-{$i}.mp4",
-                'year_target' => '2AM',
             ]);
         }
 
@@ -430,12 +419,9 @@ class VideoTest extends TestCase
             'role' => 'admin',
         ]);
 
-        $teacherEntity = $this->createTeacher();
-
         $chapter = Chapter::create([
             'title' => 'Test Chapter',
             'description' => 'Test Chapter Description',
-            'teacher_uuid' => $teacherEntity->uuid,
             'year_target' => '2AM',
         ]);
 
@@ -444,14 +430,12 @@ class VideoTest extends TestCase
             'title' => 'Mathematics Lesson 1',
             'chapter_id' => $chapter->id,
             'video_path' => 'videos/math1.mp4',
-            'year_target' => '2AM',
         ]);
 
         Course::create([
             'title' => 'Physics Lesson 1',
             'chapter_id' => $chapter->id,
             'video_path' => 'videos/physics1.mp4',
-            'year_target' => '2AM',
         ]);
 
         $headers = $this->authenticateUser($teacher);

@@ -7,42 +7,27 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        // Users (skip if existing from earlier migration)
-        if (!Schema::hasTable('users')) {
-            Schema::create('users', function (Blueprint $table) {
-                $table->uuid('uuid')->primary();
-                $table->string('firstname')->nullable();
-                $table->string('lastname')->nullable();
-                $table->date('birth_date')->nullable();
-                $table->string('address')->nullable();
-                $table->string('school_name')->nullable();
-                $table->string('phone')->unique();
-                $table->string('password');
-                $table->string('year_of_study')->nullable();
-                $table->string('role')->default('student');
-                $table->string('device_uuid')->nullable();
-                $table->boolean('free_subscriber')->default(false);
-                $table->string('free_subscriber_reason')->nullable();
-                $table->rememberToken();
-                $table->timestamps();
-                $table->index(['role','year_of_study']);
-            });
-        } else {
-            // Ensure new nullable columns exist if legacy users table structure persists
-            Schema::table('users', function (Blueprint $table) {
-                foreach ([
-                    ['free_subscriber','boolean', false],
-                    ['free_subscriber_reason','string', null],
-                    ['device_uuid','string', null],
-                ] as $col) {
-                    [$name,$type,$default] = $col;
-                    if (!Schema::hasColumn('users', $name)) {
-                        if ($type === 'boolean') $table->boolean($name)->default($default);
-                        else $table->$type($name)->nullable();
-                    }
-                }
-            });
-        }
+        // Users
+        Schema::create('users', function (Blueprint $table) {
+            $table->uuid('uuid')->primary();
+            $table->string('firstname');
+            $table->string('lastname');
+            $table->date('birth_date')->nullable();
+            $table->string('address')->nullable();
+            $table->string('school_name')->nullable();
+            $table->string('phone')->unique();
+            $table->string('password');
+            $table->string('year_of_study')->nullable();
+            $table->string('role')->default('student');
+            $table->string('device_uuid')->nullable();
+            $table->string('qr_token')->nullable();
+            $table->boolean('free_subscriber')->default(false);
+            $table->string('free_subscriber_reason')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+            $table->index(['role', 'year_of_study']);
+            $table->index(['qr_token']);
+        });
 
         // Teachers
         Schema::create('teachers', function (Blueprint $table) {
@@ -53,8 +38,8 @@ return new class extends Migration {
             $table->string('module')->nullable();
             $table->string('year')->nullable();
             $table->boolean('is_online_publisher')->default(false);
-            $table->decimal('price_subscription',8,2)->nullable();
-            $table->decimal('price_session',8,2)->nullable();
+            $table->decimal('price_subscription', 8, 2)->nullable();
+            $table->decimal('price_session', 8, 2)->nullable();
             $table->unsignedInteger('percent_school')->nullable();
             $table->timestamps();
             $table->index(['is_online_publisher']);
@@ -65,7 +50,6 @@ return new class extends Migration {
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('teacher_name')->nullable();
             $table->string('year_target')->nullable();
             $table->timestamps();
             $table->index(['year_target']);
@@ -90,13 +74,13 @@ return new class extends Migration {
             $table->string('year_target')->nullable();
             $table->dateTime('start_time')->nullable();
             $table->dateTime('end_time')->nullable();
-            $table->string('status')->default('completed'); // completed|cancelled
+            $table->string('status')->default('completed');
             $table->timestamps();
             $table->foreign('teacher_uuid')->references('uuid')->on('teachers')->onDelete('cascade');
-            $table->index(['teacher_uuid','start_time']);
+            $table->index(['teacher_uuid', 'start_time']);
         });
 
-        // Subscriptions
+        // Subscriptions (simplified - time window based only)
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
             $table->uuid('user_uuid');
@@ -106,8 +90,8 @@ return new class extends Migration {
             $table->timestamps();
             $table->foreign('user_uuid')->references('uuid')->on('users')->onDelete('cascade');
             $table->foreign('teacher_uuid')->references('uuid')->on('teachers')->onDelete('cascade');
-            $table->index(['user_uuid','teacher_uuid']);
-            $table->index(['starts_at','ends_at']);
+            $table->index(['user_uuid', 'teacher_uuid']);
+            $table->index(['starts_at', 'ends_at']);
         });
 
         // Attendances
@@ -120,8 +104,8 @@ return new class extends Migration {
             $table->timestamps();
             $table->foreign('student_uuid')->references('uuid')->on('users')->onDelete('cascade');
             $table->foreign('teacher_uuid')->references('uuid')->on('teachers')->onDelete('cascade');
-            $table->unique(['student_uuid','session_id']);
-            $table->index(['student_uuid','created_at']);
+            $table->unique(['student_uuid', 'session_id']);
+            $table->index(['student_uuid', 'created_at']);
             $table->index(['teacher_uuid']);
         });
 
@@ -139,7 +123,7 @@ return new class extends Migration {
             $table->json('metadata')->nullable();
             $table->timestamps();
             $table->foreign('user_uuid')->references('uuid')->on('users')->onDelete('cascade');
-            $table->index(['user_uuid','course_id']);
+            $table->index(['user_uuid', 'course_id']);
         });
 
         // Testimonials

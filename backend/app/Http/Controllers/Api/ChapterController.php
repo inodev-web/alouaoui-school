@@ -8,7 +8,6 @@ use App\Services\AccessControlService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class ChapterController extends Controller
 {
@@ -75,7 +74,6 @@ class ChapterController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'sometimes|string|max:1000',
             'year_target' => 'required|string|in:1AM,2AM,3AM,4AM,1AS,2AS,3AS',
-            'is_free' => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -86,17 +84,12 @@ class ChapterController extends Controller
         }
 
         $chapterData = $request->only([
-            'title', 'description', 'year_target', 'is_free'
+            'title', 'description', 'year_target'
         ]);
 
         // Tous les chapitres appartiennent automatiquement à Alouaoui
-        $chapterData['teacher_name'] = 'Alouaoui';
-        if ($request->hasFile('video_file')) {
-            $videoPath = $request->file('video_file')->store('chapters/videos', 's3');
-            $chapterData['video_url'] = $videoPath; // Store path, not full URL
-        }
+        // Plus besoin de teacher_name car il est implicite
 
-        // Set default order if not provided
         $chapter = Chapter::create($chapterData);
         $chapter->load(['courses']);
 
@@ -154,17 +147,6 @@ class ChapterController extends Controller
         }
 
         $updateData = $request->only(['title','description','year_target']);
-
-        // Upload new video file if provided
-        if ($request->hasFile('video_file')) {
-            // Delete old video file if exists
-            if ($chapter->video_url && str_contains($chapter->video_url, 'chapters/videos/')) {
-                Storage::disk('s3')->delete($chapter->video_url);
-            }
-
-            $videoPath = $request->file('video_file')->store('chapters/videos', 's3');
-            $updateData['video_url'] = $videoPath; // Store path, not full URL
-        }
 
         $chapter->update($updateData);
         return response()->json([

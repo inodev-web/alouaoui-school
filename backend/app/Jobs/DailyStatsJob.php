@@ -90,7 +90,6 @@ class DailyStatsJob implements ShouldQueue
         return [
             'total_users' => User::count(),
             'new_registrations' => User::whereBetween('created_at', [$startOfDay, $endOfDay])->count(),
-            'active_users' => User::whereBetween('last_login_at', [$startOfDay, $endOfDay])->count(),
             'users_by_role' => User::select('role', DB::raw('count(*) as count'))
                 ->groupBy('role')
                 ->pluck('count', 'role')
@@ -100,8 +99,7 @@ class DailyStatsJob implements ShouldQueue
                 ->groupBy('year_of_study')
                 ->pluck('count', 'year_of_study')
                 ->toArray(),
-            'total_balance' => User::sum('balance'),
-            'average_balance' => round(User::avg('balance'), 2),
+            'free_subscribers' => User::where('free_subscriber', true)->count(),
         ];
     }
 
@@ -115,13 +113,12 @@ class DailyStatsJob implements ShouldQueue
 
         return [
             'total_teachers' => Teacher::count(),
-            'active_teachers' => Teacher::where('is_active', true)->count(),
-            'alouaoui_teachers' => Teacher::where('is_alouaoui_teacher', true)->count(),
-            'regular_teachers' => Teacher::where('is_alouaoui_teacher', false)->count(),
+            'online_publishers' => Teacher::where('is_online_publisher', true)->count(),
             'new_teachers' => Teacher::whereBetween('created_at', [$startOfDay, $endOfDay])->count(),
-            'teachers_by_specialization' => Teacher::select('specialization', DB::raw('count(*) as count'))
-                ->groupBy('specialization')
-                ->pluck('count', 'specialization')
+            'teachers_by_year' => Teacher::select('year', DB::raw('count(*) as count'))
+                ->whereNotNull('year')
+                ->groupBy('year')
+                ->pluck('count', 'year')
                 ->toArray(),
         ];
     }
@@ -176,23 +173,13 @@ class DailyStatsJob implements ShouldQueue
 
         return [
             'total_subscriptions' => Subscription::count(),
-            'active_subscriptions' => Subscription::where('status', 'active')->count(),
+            'active_subscriptions' => Subscription::where('starts_at', '<=', now())
+                ->where('ends_at', '>=', now())
+                ->count(),
             'new_subscriptions' => Subscription::whereBetween('created_at', [$startOfDay, $endOfDay])->count(),
-            'expired_subscriptions' => Subscription::where('status', 'expired')->count(),
-            'subscriptions_by_access_level' => Subscription::select('access_level', DB::raw('count(*) as count'))
-                ->groupBy('access_level')
-                ->pluck('count', 'access_level')
-                ->toArray(),
-            'most_popular_chapters' => Subscription::select('chapter_id', DB::raw('count(*) as count'))
-                ->groupBy('chapter_id')
-                ->orderByDesc('count')
-                ->with('chapter:id,title')
-                ->limit(10)
-                ->get()
-                ->mapWithKeys(function ($item) {
-                    return [$item->chapter->title ?? "Chapter {$item->chapter_id}" => $item->count];
-                })
-                ->toArray(),
+            'expired_subscriptions' => Subscription::where('ends_at', '<', now())->count(),
+            'monthly_subscriptions' => Subscription::whereRaw('DATEDIFF(ends_at, starts_at) >= 28')->count(),
+            'session_passes' => Subscription::whereRaw('DATEDIFF(ends_at, starts_at) < 2')->count(),
         ];
     }
 
@@ -207,19 +194,12 @@ class DailyStatsJob implements ShouldQueue
         return [
             'daily_checkins' => Attendance::whereBetween('created_at', [$startOfDay, $endOfDay])->count(),
             'unique_attendees' => Attendance::whereBetween('created_at', [$startOfDay, $endOfDay])
-                ->distinct('user_id')
-                ->count('user_id'),
+                ->distinct('student_uuid')
+                ->count('student_uuid'),
             'sessions_held' => Attendance::whereBetween('created_at', [$startOfDay, $endOfDay])
                 ->distinct('session_id')
                 ->count('session_id'),
             'average_attendance_per_session' => $this->calculateAverageAttendancePerSession($startOfDay, $endOfDay),
-            'attendance_by_chapter' => Attendance::whereBetween('created_at', [$startOfDay, $endOfDay])
-                ->join('sessions', 'attendances.session_id', '=', 'sessions.id')
-                ->join('chapters', 'sessions.chapter_id', '=', 'chapters.id')
-                ->select('chapters.title', DB::raw('count(*) as count'))
-                ->groupBy('chapters.id', 'chapters.title')
-                ->pluck('count', 'title')
-                ->toArray(),
         ];
     }
 
@@ -240,18 +220,9 @@ class DailyStatsJob implements ShouldQueue
                 'estimated_storage_gb' => $this->estimateStorageUsage(),
             ],
             'engagement_metrics' => [
-                'daily_active_users' => User::whereBetween('last_login_at', [
-                    $this->date->startOfDay(),
-                    $this->date->endOfDay()
-                ])->count(),
-                'weekly_active_users' => User::whereBetween('last_login_at', [
-                    $this->date->subDays(7),
-                    $this->date
-                ])->count(),
-                'monthly_active_users' => User::whereBetween('last_login_at', [
-                    $this->date->subDays(30),
-                    $this->date
-                ])->count(),
+                'daily_active_users' => 0, // Removed last_login_at logic
+                'total_chapters' => Chapter::count(),
+                'total_courses' => Course::count(),
             ]
         ];
     }

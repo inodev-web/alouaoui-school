@@ -19,7 +19,6 @@ class Chapter extends Model
     protected $fillable = [
         'title',
         'description',
-        'teacher_name',
         'year_target',
     ];
 
@@ -31,10 +30,7 @@ class Chapter extends Model
     /**
      * Get the teacher name (always Alouaoui)
      */
-    public function getTeacherNameAttribute($value): string
-    {
-        return $value ?? 'Alouaoui';
-    }
+   
 
     /**
      * Chapter has many courses

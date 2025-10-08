@@ -11,10 +11,105 @@ use App\Models\Chapter;
 class AccessControlService
 {
     /**
-     * Determine if user has video access to a teacher's content.
-     * Rule: free_subscriber OR active subscription time-window with that teacher.
+     * Determine if user has video access (online content).
+     * Rule: ONLY Alouaoui provides online content (videos, lives).
+     * Access requires: free_subscriber OR active subscription with Alouaoui.
      */
-    public function hasVideoAccess(User $user, string $teacherUuid): bool
+    public function hasVideoAccess(User $user, string $teacherUuid = null): bool
+    {
+        if ($user->isFree()) {
+            return true;
+        }
+
+        // Online content is ONLY available from Alouaoui
+        $alouaouiTeacher = Teacher::getAlouaoui();
+        if (!$alouaouiTeacher) {
+            return false; // No Alouaoui found
+        }
+
+        return Subscription::where('user_uuid', $user->uuid)
+            ->where('teacher_uuid', $alouaouiTeacher->uuid)
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now())
+            ->exists();
+    }
+
+    /**
+     * Determine if user can access a specific session (présentiel).
+     * Rule: free_subscriber OR active subscription with the specific teacher of the session.
+     * Each teacher (including Alouaoui) can have présentiel sessions.
+     */
+    public function hasSessionAccess(User $user, Session $session): bool
+    {
+        if ($user->isFree()) {
+            return true;
+        }
+
+        $teacherUuid = $session->teacher_uuid;
+        if (!$teacherUuid) {
+            return false; // No teacher assigned to session
+        }
+
+        $sessionTime = $session->start_time ?? now();
+
+        return Subscription::where('user_uuid', $user->uuid)
+            ->where('teacher_uuid', $teacherUuid)
+            ->where('starts_at', '<=', $sessionTime)
+            ->where('ends_at', '>=', $sessionTime)
+            ->exists();
+    }
+
+    /**
+     * Return chapters the user can access.
+     * Rule: All chapters are Alouaoui's online content.
+     * Access requires: free_subscriber OR active subscription with Alouaoui.
+     */
+    public function getAccessibleChapters(User $user)
+    {
+        if ($user->isFree()) {
+            return Chapter::all();
+        }
+
+        // All chapters belong to Alouaoui (online content)
+        $alouaouiTeacher = Teacher::getAlouaoui();
+        if (!$alouaouiTeacher) {
+            return collect(); // No Alouaoui found
+        }
+
+        $hasAlouaouiSubscription = Subscription::where('user_uuid', $user->uuid)
+            ->where('teacher_uuid', $alouaouiTeacher->uuid)
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now())
+            ->exists();
+
+        return $hasAlouaouiSubscription ? Chapter::all() : collect();
+    }
+
+    /**
+     * Check if user has any active subscription with Alouaoui (online content access).
+     */
+    public function hasAlouaouiAccess(User $user): bool
+    {
+        if ($user->isFree()) {
+            return true;
+        }
+
+        $alouaouiTeacher = Teacher::getAlouaoui();
+        if (!$alouaouiTeacher) {
+            return false;
+        }
+
+        return Subscription::where('user_uuid', $user->uuid)
+            ->where('teacher_uuid', $alouaouiTeacher->uuid)
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now())
+            ->exists();
+    }
+
+    /**
+     * Check if user has access to a specific teacher's présentiel content.
+     */
+    public function hasTeacherAccess(User $user, string $teacherUuid): bool
     {
         if ($user->isFree()) {
             return true;
@@ -25,49 +120,5 @@ class AccessControlService
             ->where('starts_at', '<=', now())
             ->where('ends_at', '>=', now())
             ->exists();
-    }
-
-    /**
-     * Determine if user can access (attend) a specific session.
-     * Rule: free_subscriber OR active subscription covering session start_time day OR same-day session pass.
-     */
-    public function hasSessionAccess(User $user, Session $session): bool
-    {
-        if ($user->isFree()) {
-            return true;
-        }
-
-        $teacherUuid = $session->teacher_uuid;
-        $ts = $session->start_time ?? now();
-
-        return Subscription::where('user_uuid', $user->uuid)
-            ->where('teacher_uuid', $teacherUuid)
-            ->where('starts_at', '<=', $ts)
-            ->where('ends_at', '>=', $ts)
-            ->exists();
-    }
-
-    /**
-     * Return IDs (or models) of chapters the user can access.
-     * Simplified rule: free user => all chapters; otherwise chapters where user has active subscription for the chapter's teacher.
-     * Returns collection of Chapter models for convenience.
-     */
-    public function getAccessibleChapters(User $user)
-    {
-        if ($user->isFree()) {
-            return Chapter::query()->get();
-        }
-
-        $now = now();
-        $teacherUuids = Subscription::where('user_uuid', $user->uuid)
-            ->where('starts_at', '<=', $now)
-            ->where('ends_at', '>=', $now)
-            ->pluck('teacher_uuid');
-
-        if ($teacherUuids->isEmpty()) {
-            return collect();
-        }
-
-        return Chapter::whereIn('teacher_uuid', $teacherUuids)->get();
     }
 }

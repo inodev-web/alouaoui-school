@@ -215,6 +215,7 @@ class CourseController extends Controller
 
     /**
      * Generate stream token for video access.
+     * Business logic: All videos are Alouaoui's online content.
      */
     public function streamToken(Course $course)
     {
@@ -229,22 +230,15 @@ class CourseController extends Controller
             ]);
         }
 
-        // For students, check subscription and videos_access
+        // For students, use AccessControlService to check video access
         if ($user->role === 'student') {
-            // Load the course's chapter
-            $course->load('chapter');
+            $accessControlService = new \App\Services\AccessControlService();
             
-            // Check if user has active subscription with videos access
-            $subscription = \App\Models\Subscription::where('user_uuid', $user->uuid)
-                ->where('status', 'active')
-                ->where('videos_access', true)
-                ->where('starts_at', '<=', now()->toDateString())
-                ->where('ends_at', '>=', now()->toDateString())
-                ->first();
-
-            if (!$subscription) {
+            // All videos are online content (Alouaoui's), check hasVideoAccess
+            if (!$accessControlService->hasVideoAccess($user, null)) {
                 return response()->json([
-                    'message' => 'Active subscription with video access required'
+                    'message' => 'Abonnement actif à Alouaoui requis pour accéder au contenu vidéo',
+                    'error_code' => 'ALOUAOUI_SUBSCRIPTION_REQUIRED'
                 ], 403);
             }
 
