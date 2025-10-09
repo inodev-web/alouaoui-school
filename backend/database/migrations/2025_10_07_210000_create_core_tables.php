@@ -36,7 +36,6 @@ return new class extends Migration {
             $table->string('phone')->nullable();
             $table->string('picture')->nullable();
             $table->string('module')->nullable();
-            $table->string('year')->nullable();
             $table->boolean('is_online_publisher')->default(false);
             $table->decimal('price_subscription', 8, 2)->nullable();
             $table->decimal('price_session', 8, 2)->nullable();

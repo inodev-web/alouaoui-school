@@ -93,7 +93,20 @@ class SubscriptionController extends Controller
         if ($request->filled('teacher_uuid')) {
             $query->where('teacher_uuid', $request->teacher_uuid);
         }
-        $subs = $query->orderBy('ends_at')->get();
+        $subs = $query->orderBy('ends_at')->get()->map(function ($sub) {
+            // enrich with teacher info and computed fields
+            $teacher = $sub->teacher;
+            return [
+                'id' => $sub->id,
+                'teacher_uuid' => $sub->teacher_uuid,
+                'teacher_name' => $teacher?->name,
+                'starts_at' => $sub->starts_at,
+                'ends_at' => $sub->ends_at,
+                'days_remaining' => $sub->daysRemaining(),
+                'is_monthly' => $sub->isMonthly(),
+                'is_alouaoui' => $teacher?->isAlouaoui() ?? false,
+            ];
+        });
         return response()->json([
             'data' => [
                 'subscriptions' => $subs,

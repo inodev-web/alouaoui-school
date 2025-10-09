@@ -137,6 +137,13 @@ class AuthController extends Controller
         // Créer le token d'authentification avec device UUID comme nom
         $token = $user->createToken($deviceUuid, [$user->role])->plainTextToken;
 
+        \Log::info("Login token created", [
+            'user_id' => $user->id,
+            'device_uuid' => $deviceUuid,
+            'token_prefix' => substr($token, 0, 10) . '...',
+            'tokens_after_creation' => $user->tokens()->count()
+        ]);
+
         // Retourner les informations utilisateur sans token Sanctum
         return response()->json([
             'message' => 'Login successful',
@@ -221,6 +228,9 @@ class AuthController extends Controller
                 'device_uuid' => $user->device_uuid,
                 'free_subscriber' => $user->isFree(),
                 'free_subscriber_reason' => $user->free_subscriber_reason,
+                // return full picture URL if available
+                'picture' => $user->picture ? asset('storage/' . $user->picture) : null,
+                'last_profile_update_at' => $user->last_profile_update_at,
             ]
         ]);
     }
@@ -232,6 +242,13 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        // Daily modification limit: only one successful modification per 24h
+        if ($user->last_profile_update_at && now()->diffInHours($user->last_profile_update_at) < 24) {
+            return response()->json([
+                'message' => 'لقد قمت بتعديل معلوماتك اليوم، الرجاء المحاولة غداً'
+            ], 429);
+        }
+
         $validator = Validator::make($request->all(), [
             'firstname' => 'sometimes|string|max:255',
             'lastname' => 'sometimes|string|max:255',
@@ -241,6 +258,8 @@ class AuthController extends Controller
             'school_name' => 'sometimes|string|max:255',
             'year_of_study' => 'sometimes|string|max:10',
             'password' => 'sometimes|string|min:6|confirmed',
+            'current_password' => 'sometimes|string',
+            'picture' => 'sometimes|file|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -250,14 +269,43 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $dataToUpdate = $validator->validated();
+        $data = $validator->validated();
 
-        // Hasher le mot de passe si fourni
+        // If user is trying to update any sensitive fields (not just picture), require current_password verification
+        $sensitiveKeys = collect(['firstname','lastname','phone','birth_date','address','school_name','year_of_study','password']);
+        $isSensitiveUpdate = $sensitiveKeys->some(function ($key) use ($data) {
+            return array_key_exists($key, $data);
+        });
+
+        if ($isSensitiveUpdate) {
+            if (empty($data['current_password']) || !Hash::check($data['current_password'], $user->password)) {
+                return response()->json([
+                    'message' => 'كلمة المرور الحالية غير صحيحة'
+                ], 422);
+            }
+        }
+
+        // Handle picture upload if provided (does not require current_password by itself)
+        if ($request->hasFile('picture')) {
+            $path = $request->file('picture')->store('students', 'public');
+            $user->picture = $path;
+        }
+
+        // Update other fields
+        $dataToUpdate = $data;
+        unset($dataToUpdate['current_password'], $dataToUpdate['picture']);
+
         if (isset($dataToUpdate['password'])) {
             $dataToUpdate['password'] = Hash::make($dataToUpdate['password']);
         }
 
-        $user->update($dataToUpdate);
+        if (!empty($dataToUpdate)) {
+            $user->fill($dataToUpdate);
+        }
+
+        // Mark daily modification timestamp
+        $user->last_profile_update_at = now();
+        $user->save();
 
         return response()->json([
             'message' => 'Profile updated successfully',
@@ -274,6 +322,8 @@ class AuthController extends Controller
                 'qr_token' => $user->uuid,
                 'free_subscriber' => $user->isFree(),
                 'free_subscriber_reason' => $user->free_subscriber_reason,
+                'picture' => $user->picture ? asset('storage/' . $user->picture) : null,
+                'last_profile_update_at' => $user->last_profile_update_at,
             ]
         ]);
     }
@@ -304,7 +354,8 @@ class AuthController extends Controller
         }
 
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
+            'last_profile_update_at' => now(),
         ]);
 
         // Invalider tous les autres tokens
@@ -428,17 +479,33 @@ class AuthController extends Controller
      */
     private function enforceSingleDeviceWithTokenInvalidation(User $user, string $deviceUuid): void
     {
+        \Log::info("Enforcing single device with token invalidation", [
+            'user_id' => $user->id,
+            'current_device_uuid' => $user->device_uuid,
+            'new_device_uuid' => $deviceUuid,
+            'tokens_before' => $user->tokens()->count()
+        ]);
+
         // Si l'utilisateur a déjà un device_uuid différent, invalider tous les tokens existants
         if ($user->device_uuid && $user->device_uuid !== $deviceUuid) {
             // Supprimer tous les tokens existants
+            $deletedCount = $user->tokens()->count();
             $user->tokens()->delete();
+            \Log::info("Deleted existing tokens due to device change", [
+                'user_id' => $user->id,
+                'deleted_tokens' => $deletedCount,
+                'old_device' => $user->device_uuid,
+                'new_device' => $deviceUuid
+            ]);
         }
         
         // Mettre à jour le device_uuid
         $user->update(['device_uuid' => $deviceUuid]);
-    }
-
-    /**
+        \Log::info("Updated user device_uuid", [
+            'user_id' => $user->id,
+            'device_uuid' => $deviceUuid
+        ]);
+    }    /**
      * Enforce single device login (deprecated - kept for compatibility)
      */
     private function enforceSingleDevice(User $user, string $deviceUuid): void

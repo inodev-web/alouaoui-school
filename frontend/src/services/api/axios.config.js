@@ -5,7 +5,8 @@ const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
     headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
     }
 });
 
@@ -20,6 +21,9 @@ axiosInstance.interceptors.request.use(
             const token = localStorage.getItem('token');
             if (token) {
                 config.headers['Authorization'] = `Bearer ${token}`;
+                console.debug('🔑 Auth header added:', token.substring(0, 20) + '...');
+            } else {
+                console.warn('⚠️ No token found in localStorage for protected route:', config.url);
             }
         }
         
@@ -27,6 +31,8 @@ axiosInstance.interceptors.request.use(
         const deviceUUID = localStorage.getItem('device_uuid');
         if (deviceUUID) {
             config.headers['X-Device-UUID'] = deviceUUID;
+        } else {
+            console.warn('⚠️ No device_uuid found in localStorage for route:', config.url);
         }
         
         // Debug logging for auth requests
@@ -37,6 +43,22 @@ axiosInstance.interceptors.request.use(
                 hasToken: !isAuthRoute && !!localStorage.getItem('token'),
                 deviceUUID: deviceUUID,
                 isAuthRoute: isAuthRoute
+            });
+        }
+        // Additional debug for protected endpoints like subscriptions
+        if (config.url.includes('/subscriptions')) {
+            const hasAuthHeader = !!config.headers['Authorization'];
+            const tokenSample = localStorage.getItem('token')?.slice(0, 20) || null;
+            console.debug('🔐 Protected Request:', {
+                url: config.url,
+                method: config.method,
+                hasAuthHeader,
+                tokenSample,
+                deviceUUID: deviceUUID,
+                headers: {
+                    'Authorization': config.headers['Authorization'] ? 'Bearer ***' : 'MISSING',
+                    'X-Device-UUID': config.headers['X-Device-UUID'] || 'MISSING'
+                }
             });
         }
         
@@ -61,21 +83,39 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     async (error) => {
+        const url = error.config?.url;
+        const status = error.response?.status;
         console.error('❌ API Error:', {
-            url: error.config?.url,
-            status: error.response?.status,
+            url,
+            status,
             data: error.response?.data,
             message: error.message
         });
         
-        if (error.response?.status === 401) {
-            console.log('🚫 401 Error - Clearing auth and redirecting to login');
-            // Si le token est invalide ou expiré, déconnectez l'utilisateur
+        if (status === 409 && error.response?.data?.error_code === 'DEVICE_CONFLICT') {
+            console.log('⚠️ 409 DEVICE_CONFLICT - Forcing re-login but preserving device UUID');
+            // Conserver device_uuid pour la prochaine connexion
+            const device = localStorage.getItem('device_uuid');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            localStorage.removeItem('device_uuid');
-            // Redirect to login page
+            if (device) localStorage.setItem('device_uuid', device);
             window.location.href = '/login';
+        } else if (status === 401) {
+            // Be less aggressive: only auto-logout when profile endpoint fails (token invalid)
+            const path = typeof url === 'string' ? url : '';
+            const isProfileCall = path.includes('/auth/profile');
+            if (isProfileCall) {
+                console.log('🚫 401 on /auth/profile - Clearing token/user');
+                const device = localStorage.getItem('device_uuid');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                if (device) localStorage.setItem('device_uuid', device);
+                if (window.location.pathname !== '/login') {
+                    window.location.href = '/login';
+                }
+            } else {
+                console.warn('401 received on non-profile endpoint, skipping auto-logout');
+            }
         }
         return Promise.reject(error);
     }

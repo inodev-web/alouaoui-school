@@ -6,28 +6,29 @@ import StudentLayout from '../components/common/Layout/StudentLayout'
 import AdminLayout from '../components/common/Layout/AdminLayout'
 
 // Lazy load components for better performance
-const HomePage = lazy(() => import('../pages/public/HomePage'))
-const LoginPage = lazy(() => import('../pages/auth/LoginPage'))
-const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'))
+const HomePage = lazy(() => import('@/pages/public/HomePage.jsx'))
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage.jsx'))
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage.jsx'))
 
 // Student pages
-const StudentProfilePage = lazy(() => import('../pages/student/ProfilePage'))
-const StudentChaptersPage = lazy(() => import('../pages/student/ChaptersPage'))
-const StudentCoursePage = lazy(() => import('../pages/student/CoursePage'))
-const StudentLivesPage = lazy(() => import('../pages/student/LivesPage'))
+const StudentProfilePage = lazy(() => import('@/pages/student/ProfilePage.jsx'))
+const StudentChaptersPage = lazy(() => import('@/pages/student/ChaptersPage.jsx'))
+const StudentCoursePage = lazy(() => import('@/pages/student/CoursePage.jsx'))
+const StudentLivesPage = lazy(() => import('@/pages/student/LivesPage.jsx'))
+const StudentSettingsPage = lazy(() => import('@/pages/student/SettingsPage.jsx'))
 
 // Admin pages
-const AdminDashboardPage = lazy(() => import('../pages/admin/DashboardPage'))
-const AdminStudentsPage = lazy(() => import('../pages/admin/StudentsPage'))
-const AdminTeachersPage = lazy(() => import('../pages/admin/TeachersPage'))
-const AdminSessionsPage = lazy(() => import('../pages/admin/SessionsPage'))
-const AdminChaptersPage = lazy(() => import('../pages/admin/ChaptersAdminPage'))
-const AdminCheckInPage = lazy(() => import('../pages/admin/CheckInPage'))
-const AdminEventsPage = lazy(() => import('../pages/admin/EventsPage'))
+const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage.jsx'))
+const AdminStudentsPage = lazy(() => import('@/pages/admin/StudentsPage.jsx'))
+const AdminTeachersPage = lazy(() => import('@/pages/admin/TeachersPage.jsx'))
+const AdminSessionsPage = lazy(() => import('@/pages/admin/SessionsPage.jsx'))
+const AdminChaptersPage = lazy(() => import('@/pages/admin/ChaptersAdminPage.jsx'))
+const AdminCheckInPage = lazy(() => import('@/pages/admin/CheckInPage.jsx'))
+const AdminEventsPage = lazy(() => import('@/pages/admin/EventsPage.jsx'))
 
 // Error pages
-const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
-const UnauthorizedPage = lazy(() => import('../pages/UnauthorizedPage'))
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage.jsx'))
+const UnauthorizedPage = lazy(() => import('@/pages/UnauthorizedPage.jsx'))
 
 // Loading component
 const LoadingSpinner = () => (
@@ -75,6 +76,10 @@ const router = createBrowserRouter([
       {
         path: 'lives',
         element: <StudentLivesPage />,
+      },
+      {
+        path: 'settings',
+        element: <StudentSettingsPage />,
       },
     ],
   },

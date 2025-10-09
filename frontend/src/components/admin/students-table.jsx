@@ -1,97 +1,121 @@
-import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { StudentDetailsModal } from "@/components/admin/student-details-modal"
-import { MoreHorizontal, Eye, Edit, Trash2, Phone, Mail } from "lucide-react"
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StudentDetailsModal } from "@/components/admin/student-details-modal";
+import studentsService from "../../services/api/students.service";
 
-const students = [
-  {
-    id: "STU001",
-    name: "أحمد حسن",
-    phone: "+20 123 456 7890",
-    email: "ahmed.hassan@email.com",
-    subscriptionStatus: "نشط",
-    teacher: "د. سارة جونسون",
-    module: "الرياضيات",
-    joinDate: "2024-01-15",
-    lastSession: "2024-01-20",
-    totalSessions: 24,
-  },
-  {
-    id: "STU002",
-    name: "فاطمة الزهراء",
-    phone: "+20 123 456 7891",
-    email: "fatima.alzahra@email.com",
-    subscriptionStatus: "نشط",
-    teacher: "أ.د. مايكل تشين",
-    module: "الفيزياء",
-    joinDate: "2024-01-10",
-    lastSession: "2024-01-19",
-    totalSessions: 18,
-  },
-  {
-    id: "STU003",
-    name: "عمر محمود",
-    phone: "+20 123 456 7892",
-    email: "omar.mahmoud@email.com",
-    subscriptionStatus: "منتهي",
-    teacher: "أ. إيميلي ديفيس",
-    module: "الكيمياء",
-    joinDate: "2023-12-20",
-    lastSession: "2024-01-05",
-    totalSessions: 32,
-  },
-  {
-    id: "STU004",
-    name: "نور إبراهيم",
-    phone: "+20 123 456 7893",
-    email: "nour.ibrahim@email.com",
-    subscriptionStatus: "تجريبي",
-    teacher: "د. جيمس ويلسون",
-    module: "الأحياء",
-    joinDate: "2024-01-18",
-    lastSession: "2024-01-20",
-    totalSessions: 3,
-  },
-  {
-    id: "STU005",
-    name: "يوسف علي",
-    phone: "+20 123 456 7894",
-    email: "youssef.ali@email.com",
-    subscriptionStatus: "نشط",
-    teacher: "أ.د. ليزا أندرسون",
-    module: "اللغة الإنجليزية",
-    joinDate: "2024-01-12",
-    lastSession: "2024-01-19",
-    totalSessions: 15,
-  },
-]
+// Simple debounce hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-export function StudentsTable() {
-  const [selectedStudent, setSelectedStudent] = useState(null)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "نشط":
-        return "default"
-      case "منتهي":
-        return "destructive"
-      case "تجريبي":
-        return "secondary"
-      case "ملغي":
-        return "outline"
-      default:
-        return "outline"
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+export function StudentsTable({ searchQuery = "" }) {
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Debounce search query to avoid too many API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Optimized fetch function with caching
+  const fetchStudents = useCallback(async (page = 1, search = "") => {
+    const key = `${search}-${page}`;
+    
+    try {
+      setLoading(true);
+      setCurrentPage(page); // Update page state immediately
+
+      const params = { 
+        page,
+        per_page: 20
+      };
+      
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await studentsService.getStudents(params);
+
+      setStudents(response.data);
+      setTotalPages(response.last_page);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+      setError('فشل في تحميل بيانات الطلاب');
+    } finally {
+      setLoading(false);
     }
+  }, []); // No dependencies to avoid infinite re-renders
+
+  // Effect for search changes
+  useEffect(() => {
+    fetchStudents(1, debouncedSearchQuery);
+  }, [debouncedSearchQuery, fetchStudents]);
+
+  // Handle row click to show student details
+  const handleRowClick = useCallback(async (studentId) => {
+    try {
+      const studentDetails = await studentsService.getStudent(studentId);
+      setSelectedStudent(studentDetails);
+    } catch (err) {
+      console.error('Error fetching student details:', err);
+      alert('فشل في تحميل تفاصيل الطالب');
+    }
+  }, []);
+
+  // Optimized pagination handlers
+  const handlePreviousPage = useCallback(() => {
+    if (currentPage > 1) {
+      const newPage = currentPage - 1;
+      fetchStudents(newPage, debouncedSearchQuery);
+    }
+  }, [currentPage, debouncedSearchQuery, fetchStudents]);
+
+  const handleNextPage = useCallback(() => {
+    if (currentPage < totalPages) {
+      const newPage = currentPage + 1;
+      fetchStudents(newPage, debouncedSearchQuery);
+    }
+  }, [currentPage, totalPages, debouncedSearchQuery, fetchStudents]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="mr-2 text-sm text-muted-foreground">جاري التحميل...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-sm text-red-700 text-right">{error}</p>
+        <Button 
+          onClick={() => fetchStudents(currentPage, debouncedSearchQuery)}
+          className="mt-2"
+          variant="outline"
+          size="sm"
+        >
+          إعادة المحاولة
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -99,84 +123,74 @@ export function StudentsTable() {
       <Table dir="rtl">
         <TableHeader>
           <TableRow>
-            <TableHead className="text-right">رقم الطالب</TableHead>
             <TableHead className="text-right">الاسم</TableHead>
-            <TableHead className="text-right">التواصل</TableHead>
-            <TableHead className="text-right">المعلم</TableHead>
-            <TableHead className="text-right">المادة</TableHead>
-            <TableHead className="text-right">الحالة</TableHead>
-            <TableHead className="text-right">الجلسات</TableHead>
-            <TableHead className="text-right">آخر نشاط</TableHead>
-            <TableHead className="text-left">الإجراءات</TableHead>
+            <TableHead className="text-right">اللقب</TableHead>
+            <TableHead className="text-right">رقم الهاتف</TableHead>
+            <TableHead className="text-right">تاريخ الميلاد</TableHead>
+            <TableHead className="text-right">السنة الدراسية</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {students.map((student) => (
-            <TableRow key={student.id}>
-              <TableCell className="font-medium">{student.id}</TableCell>
-              <TableCell>
-                <div className="text-right">
-                  <div className="font-medium">{student.name}</div>
-                  <div className="text-sm text-muted-foreground">انضم في {student.joinDate}</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1 text-right">
-                  <div className="flex items-center gap-2 text-sm justify-end">
-                    <Phone className="h-3 w-3" />
-                    {student.phone}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground justify-end">
-                    <Mail className="h-3 w-3" />
-                    {student.email}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell className="text-right">{student.teacher}</TableCell>
-              <TableCell className="text-right">{student.module}</TableCell>
-              <TableCell className="text-center">
-                <Badge variant={getStatusColor(student.subscriptionStatus)}>{student.subscriptionStatus}</Badge>
-              </TableCell>
-              <TableCell className="text-center">{student.totalSessions}</TableCell>
-              <TableCell className="text-center">{student.lastSession}</TableCell>
-              <TableCell className="text-left">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">فتح القائمة</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" dir="rtl">
-                    <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => setSelectedStudent(student)}>
-                      <Eye className="ml-2 h-4 w-4" />
-                      عرض التفاصيل
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Edit className="ml-2 h-4 w-4" />
-                      تعديل الطالب
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="ml-2 h-4 w-4" />
-                      حذف الطالب
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+            <TableRow 
+              key={student.id} 
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => handleRowClick(student.id)}
+            >
+              <TableCell className="text-right font-medium">{student.firstname}</TableCell>
+              <TableCell className="text-right">{student.lastname}</TableCell>
+              <TableCell className="text-right">{student.phone}</TableCell>
+              <TableCell className="text-right">{student.birth_date || 'غير محدد'}</TableCell>
+              <TableCell className="text-right">{student.year_of_study || 'غير محدد'}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-muted-foreground">
+            صفحة {currentPage} من {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              variant="outline"
+              size="sm"
+            >
+              السابق
+            </Button>
+            <Button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              variant="outline"
+              size="sm"
+            >
+              التالي
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Student Details Modal */}
       {selectedStudent && (
         <StudentDetailsModal
           student={selectedStudent}
           open={!!selectedStudent}
-          onOpenChange={(open) => !open && setSelectedStudent(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedStudent(null);
+            }
+          }}
+          onUpdate={() => {
+            // Refresh current page when student is updated
+            fetchStudents(currentPage, debouncedSearchQuery);
+            setSelectedStudent(null);
+          }}
         />
       )}
     </>
-  )
+  );
 }

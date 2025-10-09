@@ -20,9 +20,16 @@ class EnsureSingleDevice
         $user = Auth::user();
 
         if (!$user) {
+            \Log::warning("EnsureSingleDevice: No authenticated user found", [
+                'url' => $request->url(),
+                'has_bearer_token' => $request->bearerToken() ? 'yes' : 'no',
+                'device_uuid_header' => $request->header('X-Device-UUID'),
+                'ip' => $request->ip()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Non authentifié'
+                'message' => 'Non authentifié',
+                'debug' => 'EnsureSingleDevice: Auth::user() returned null'
             ], 401);
         }
 
