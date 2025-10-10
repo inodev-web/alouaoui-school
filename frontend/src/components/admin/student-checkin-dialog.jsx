@@ -6,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { User, Clock, CheckCircle, XCircle, CreditCard, Calendar, Loader2 } from "lucide-react"
 import { checkinService } from "@/services/api/checkin.service"
+import { subscriptionService } from "@/services/api/subscription.service"
 import { toast } from "sonner"
 
 export function StudentCheckinDialog({ student, open, onOpenChange }) {
   const [todaysSessions, setTodaysSessions] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [checkingIn, setCheckingIn] = useState({})
+  const [studentSubscriptions, setStudentSubscriptions] = useState(student?.subscriptions || [])
 
   useEffect(() => {
     if (open && student) {
@@ -19,12 +21,16 @@ export function StudentCheckinDialog({ student, open, onOpenChange }) {
       if (student.todays_sessions) {
         setTodaysSessions(student.todays_sessions)
       }
+      // Update subscriptions
+      if (student.subscriptions) {
+        setStudentSubscriptions(student.subscriptions)
+      }
     }
   }, [open, student])
 
   const isSubscribedToTeacher = (teacherUuid) => {
     // Check if student has active subscription for this teacher
-    return student.subscriptions?.some(sub => 
+    return studentSubscriptions.some(sub => 
       sub.teacher_uuid === teacherUuid && 
       new Date(sub.ends_at) >= new Date()
     ) || false
@@ -35,23 +41,54 @@ export function StudentCheckinDialog({ student, open, onOpenChange }) {
     setCheckingIn(prev => ({ ...prev, [key]: true }))
 
     try {
-      await checkinService.scanQr({
+      // First, create subscription if needed
+      let subscriptionCreated = null
+      if (mode === 'monthly') {
+        try {
+          subscriptionCreated = await subscriptionService.createMonthlySubscription(teacherUuid)
+          toast.success('تم إنشاء الاشتراك الشهري بنجاح')
+        } catch (subError) {
+          console.error('Error creating monthly subscription:', subError)
+          const errorMessage = subError.response?.data?.message || 'فشل في إنشاء الاشتراك الشهري'
+          toast.error(errorMessage)
+          // Continue with attendance even if subscription creation fails
+        }
+      } else if (mode === 'session_pass') {
+        try {
+          subscriptionCreated = await subscriptionService.createSessionPassSubscription(teacherUuid, sessionId)
+          toast.success('تم إنشاء اشتراك الجلسة بنجاح')
+        } catch (subError) {
+          console.error('Error creating session pass subscription:', subError)
+          const errorMessage = subError.response?.data?.message || 'فشل في إنشاء اشتراك الجلسة'
+          toast.error(errorMessage)
+          // Continue with attendance even if subscription creation fails
+        }
+      }
+
+      // Then, register attendance
+      const attendanceResponse = await checkinService.scanQr({
         user_uuid: student.student.uuid,
         teacher_uuid: teacherUuid,
         session_id: sessionId,
-        mode: mode
+        mode: mode === 'attendance_only' ? 'monthly' : mode // Use monthly mode for attendance only
       })
 
-      toast.success('تم تسجيل الحضور بنجاح')
+      if (attendanceResponse.data?.already_checked_in) {
+        toast.info('الطالب مسجل مسبقاً في هذه الجلسة')
+      } else {
+        toast.success('تم تسجيل الحضور بنجاح')
+      }
       
       // Update subscription status locally
-      if (mode === 'monthly' || mode === 'session_pass') {
-        // Update the session status to show as subscribed
-        setTodaysSessions(prev => prev.map(session => 
-          session.teacher.uuid === teacherUuid 
-            ? { ...session, has_subscription: true }
-            : session
-        ))
+      if (subscriptionCreated) {
+        // Update the student's subscriptions array
+        const newSubscription = {
+          teacher_uuid: teacherUuid,
+          starts_at: subscriptionCreated.data?.subscription?.starts_at,
+          ends_at: subscriptionCreated.data?.subscription?.ends_at
+        }
+        
+        setStudentSubscriptions(prev => [...prev, newSubscription])
       }
     } catch (error) {
       console.error('Error checking in:', error)
@@ -62,7 +99,7 @@ export function StudentCheckinDialog({ student, open, onOpenChange }) {
   }
 
   const formatTime = (timeString) => {
-    return new Date(timeString).toLocaleTimeString('ar-SA', {
+    return new Date(timeString).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit'
     })
@@ -160,7 +197,7 @@ export function StudentCheckinDialog({ student, open, onOpenChange }) {
                         <div className="flex gap-2 justify-end">
                           {subscriptionStatus.isSubscribed ? (
                             <Button
-                              onClick={() => handleCheckIn(session.teacher.uuid, session.id, 'monthly')}
+                              onClick={() => handleCheckIn(session.teacher.uuid, session.id, 'attendance_only')}
                               disabled={checkingIn[checkInKey]}
                               className="bg-green-600 hover:bg-green-700"
                             >

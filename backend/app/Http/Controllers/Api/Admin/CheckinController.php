@@ -94,6 +94,34 @@ class CheckinController extends Controller
             }
         }
 
+        // Check if attendance already exists
+        $existingAttendance = Attendance::where('student_uuid', $student->uuid)
+            ->where('teacher_uuid', $teacher->uuid)
+            ->when($session, function($query) use ($session) {
+                return $query->where('session_id', $session->id);
+            })
+            ->first();
+
+        if ($existingAttendance) {
+            return response()->json([
+                'message' => 'Student already checked in for this session',
+                'data' => [
+                    'student' => [
+                        'uuid' => $student->uuid,
+                        'firstname' => $student->firstname,
+                        'lastname' => $student->lastname,
+                        'free_subscriber' => $student->isFree(),
+                    ],
+                    'teacher' => [
+                        'uuid' => $teacher->uuid,
+                        'name' => $teacher->name ?? 'Teacher',
+                    ],
+                    'attendance' => $existingAttendance,
+                    'already_checked_in' => true,
+                ]
+            ], 200);
+        }
+
         // Create attendance (student_uuid, teacher_uuid, session_id optional)
         $attendance = Attendance::create([
             'student_uuid' => $student->uuid,

@@ -39,11 +39,12 @@ class SubscriptionController extends Controller
         }
 
         $user = $request->user();
-        if ($user->isFree()) {
-            return response()->json([
-                'message' => 'Free subscriber does not need subscriptions'
-            ], 422);
-        }
+        // Allow free subscribers to create subscriptions for testing purposes
+        // if ($user->isFree()) {
+        //     return response()->json([
+        //         'message' => 'Free subscriber does not need subscriptions'
+        //     ], 422);
+        // }
 
         $teacher = Teacher::where('uuid', $request->teacher_uuid)->firstOrFail();
         $mode = $request->mode;

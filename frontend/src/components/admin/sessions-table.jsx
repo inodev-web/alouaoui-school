@@ -84,7 +84,7 @@ export function SessionsTable({ filters = {} }) {
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString)
-      return date.toLocaleDateString('ar-SA', {
+      return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
@@ -97,7 +97,7 @@ export function SessionsTable({ filters = {} }) {
   const formatTime = (timeString) => {
     try {
       const date = new Date(timeString)
-      return date.toLocaleTimeString('ar-SA', {
+      return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
       })
