@@ -1,11 +1,18 @@
+import { useState, useCallback } from "react"
+import { Calendar, Clock, Users, DollarSign } from "lucide-react"
 import { SessionsTable } from "@/components/admin/sessions-table"
 import { AddSessionModal } from "@/components/admin/add-session-modal"
 import { SessionsFilters } from "@/components/admin/sessions-filters"
 import { TodaysSessions } from "@/components/admin/todays-sessions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, Clock, Users, DollarSign } from "lucide-react"
 
 export default function AdminSessionsPage() {
+  const [filters, setFilters] = useState({})
+
+  const handleFiltersChange = useCallback((newFilters) => {
+    setFilters(newFilters)
+  }, [])
+
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
@@ -13,10 +20,9 @@ export default function AdminSessionsPage() {
           <h1 className="text-3xl font-bold text-foreground text-right">الجلسات</h1>
           <p className="text-muted-foreground text-right">جدولة وإدارة جلسات التدريس</p>
         </div>
-        <AddSessionModal />
+        <AddSessionModal onSessionAdded={() => window.location.reload()} />
       </div>
-
-      {/* Session Stats */}
+            {/* Session Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -62,7 +68,6 @@ export default function AdminSessionsPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Today's Sessions Highlight */}
       <div>
         <TodaysSessions />
@@ -75,8 +80,8 @@ export default function AdminSessionsPage() {
           <CardDescription className="text-right">عرض وإدارة جميع الجلسات المجدولة</CardDescription>
         </CardHeader>
         <CardContent>
-          <SessionsFilters />
-          <SessionsTable />
+          <SessionsFilters onFiltersChange={handleFiltersChange} />
+          <SessionsTable filters={filters} />
         </CardContent>
       </Card>
     </div>

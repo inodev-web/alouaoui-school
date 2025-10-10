@@ -1,84 +1,79 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarDateRangePicker } from "@/components/admin/date-range-picker"
+// import { CalendarDateRangePicker } from "@/components/admin/date-range-picker"
 import { Search, X } from "lucide-react"
+import { teacherService } from "@/services/api/teacher.service"
 
-export function SessionsFilters() {
+export function SessionsFilters({ onFiltersChange }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTeacher, setSelectedTeacher] = useState("")
-  const [selectedModule, setSelectedModule] = useState("")
-  const [sessionType, setSessionType] = useState("")
+  const [teachers, setTeachers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchTeachers()
+  }, [])
+
+  useEffect(() => {
+    // Notify parent component of filter changes
+    const filters = {
+      search: searchTerm,
+      teacher_uuid: selectedTeacher !== "all" ? selectedTeacher : undefined,
+    }
+    onFiltersChange?.(filters)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, selectedTeacher]) // onFiltersChange is intentionally omitted to prevent infinite loops
+
+  const fetchTeachers = async () => {
+    try {
+      setLoading(true)
+      const response = await teacherService.getTeachers()
+      setTeachers(response.data || [])
+    } catch (error) {
+      console.error('Error fetching teachers:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const clearFilters = () => {
     setSearchTerm("")
     setSelectedTeacher("")
-    setSelectedModule("")
-    setSessionType("")
   }
 
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-4 mb-6" dir="rtl">
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by session ID, teacher, or module..."
+            placeholder="البحث برقم الجلسة، المعلم، أو المادة..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pr-10"
           />
         </div>
-        <Button variant="outline" onClick={clearFilters} className="shrink-0 bg-transparent">
-          <X className="h-4 w-4 mr-2" />
-          Clear Filters
-        </Button>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4">
+        
         <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
           <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Filter by Teacher" />
+            <SelectValue placeholder="تصفية بالمعلم" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Teachers</SelectItem>
-            <SelectItem value="sarah-johnson">Dr. Sarah Johnson</SelectItem>
-            <SelectItem value="michael-chen">Prof. Michael Chen</SelectItem>
-            <SelectItem value="emily-davis">Ms. Emily Davis</SelectItem>
-            <SelectItem value="james-wilson">Dr. James Wilson</SelectItem>
-            <SelectItem value="lisa-anderson">Prof. Lisa Anderson</SelectItem>
+            <SelectItem value="all">جميع المعلمين</SelectItem>
+            {teachers.map((teacher) => (
+              <SelectItem key={teacher.uuid} value={teacher.uuid}>
+                {teacher.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-
-        <Select value={selectedModule} onValueChange={setSelectedModule}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Filter by Module" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Modules</SelectItem>
-            <SelectItem value="mathematics">Mathematics</SelectItem>
-            <SelectItem value="physics">Physics</SelectItem>
-            <SelectItem value="chemistry">Chemistry</SelectItem>
-            <SelectItem value="biology">Biology</SelectItem>
-            <SelectItem value="english">English</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={sessionType} onValueChange={setSessionType}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Session Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="subscription">Subscription</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="free">Free</SelectItem>
-            <SelectItem value="ma3fi">Ma3fi</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <CalendarDateRangePicker />
+        
+        <Button variant="outline" onClick={clearFilters} className="shrink-0 bg-transparent">
+          <X className="h-4 w-4 ml-2" />
+          مسح المرشحات
+        </Button>
       </div>
     </div>
   )

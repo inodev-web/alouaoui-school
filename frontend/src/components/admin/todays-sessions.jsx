@@ -1,49 +1,52 @@
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Clock, Users, Play, Pause } from "lucide-react"
-
-const todaysSessions = [
-  {
-    id: "SES101",
-    teacher: "Dr. Sarah Johnson",
-    module: "Advanced Mathematics",
-    time: "10:00 AM - 12:00 PM",
-    type: "subscription",
-    students: 25,
-    status: "ongoing",
-    room: "Room A1",
-  },
-  {
-    id: "SES102",
-    teacher: "Prof. Michael Chen",
-    module: "Quantum Physics",
-    time: "2:00 PM - 3:30 PM",
-    type: "paid",
-    students: 18,
-    status: "upcoming",
-    room: "Room B2",
-  },
-  {
-    id: "SES103",
-    teacher: "Ms. Emily Davis",
-    module: "Organic Chemistry",
-    time: "4:00 PM - 6:00 PM",
-    type: "free",
-    students: 30,
-    status: "upcoming",
-    room: "Room C1",
-  },
-]
+import { Clock, Users, Play, Pause, Loader2 } from "lucide-react"
+import { sessionService } from "@/services/api/session.service"
 
 export function TodaysSessions() {
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    fetchTodaysSessions()
+    
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  const fetchTodaysSessions = async () => {
+    try {
+      if (isMountedRef.current) {
+        setLoading(true)
+        setError(null)
+      }
+      const response = await sessionService.getTodaysSessions()
+      if (isMountedRef.current) {
+        setSessions(response.data || [])
+      }
+    } catch (err) {
+      console.error('Error fetching today\'s sessions:', err)
+      if (isMountedRef.current) {
+        setError('فشل في تحميل جلسات اليوم')
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
+    }
+  }
   const getStatusColor = (status) => {
     switch (status) {
-      case "ongoing":
+      case "جارية":
         return "default"
-      case "upcoming":
+      case "قادمة":
         return "secondary"
-      case "completed":
+      case "مكتملة":
         return "outline"
       default:
         return "outline"
@@ -52,50 +55,97 @@ export function TodaysSessions() {
 
   const getTypeColor = (type) => {
     switch (type) {
-      case "subscription":
+      case "اشتراك":
         return "default"
-      case "paid":
+      case "مدفوعة":
         return "secondary"
-      case "free":
+      case "مجانية":
         return "outline"
-      case "ma3fi":
+      case "معفي":
         return "destructive"
       default:
         return "outline"
     }
   }
 
+  if (loading) {
+    return (
+      <Card dir="rtl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-right">
+            <Clock className="h-5 w-5" />
+            جلسات اليوم
+          </CardTitle>
+          <CardDescription className="text-right">وصول سريع للجلسات المجدولة لليوم</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="mr-2">جاري التحميل...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card dir="rtl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-right">
+            <Clock className="h-5 w-5" />
+            جلسات اليوم
+          </CardTitle>
+          <CardDescription className="text-right">وصول سريع للجلسات المجدولة لليوم</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-red-500">
+            <p>{error}</p>
+            <Button onClick={fetchTodaysSessions} className="mt-4">
+              إعادة المحاولة
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <Card>
+    <Card dir="rtl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-right">
           <Clock className="h-5 w-5" />
-          Today's Sessions
+          جلسات اليوم
         </CardTitle>
-        <CardDescription>Quick access to today's scheduled sessions</CardDescription>
+        <CardDescription className="text-right">وصول سريع للجلسات المجدولة لليوم</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-3">
-          {todaysSessions.map((session) => (
-            <Card key={session.id} className="border-2">
+        {sessions.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>لا توجد جلسات مجدولة لليوم</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {sessions.map((session) => (
+            <Card key={session.id} className="border-2" dir="rtl">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{session.teacher}</CardTitle>
+                  <CardTitle className="text-lg text-right">{session.teacher}</CardTitle>
                   <Badge variant={getStatusColor(session.status)}>{session.status}</Badge>
                 </div>
-                <CardDescription>{session.module}</CardDescription>
+                <CardDescription className="text-right">{session.module}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Time:</span>
+                  <span className="text-muted-foreground">الوقت:</span>
                   <span className="font-medium">{session.time}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Room:</span>
+                  <span className="text-muted-foreground">القاعة:</span>
                   <span className="font-medium">{session.room}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Students:</span>
+                  <span className="text-muted-foreground">الطلاب:</span>
                   <div className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
                     <span className="font-medium">{session.students}</span>
@@ -104,15 +154,15 @@ export function TodaysSessions() {
                 <div className="flex items-center justify-between">
                   <Badge variant={getTypeColor(session.type)}>{session.type}</Badge>
                   <Button size="sm" variant="outline">
-                    {session.status === "ongoing" ? (
+                    {session.status === "جارية" ? (
                       <>
-                        <Pause className="h-3 w-3 mr-1" />
-                        Manage
+                        <Pause className="h-3 w-3 ml-1" />
+                        إدارة
                       </>
                     ) : (
                       <>
-                        <Play className="h-3 w-3 mr-1" />
-                        Start
+                        <Play className="h-3 w-3 ml-1" />
+                        بدء
                       </>
                     )}
                   </Button>
@@ -120,7 +170,8 @@ export function TodaysSessions() {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

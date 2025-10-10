@@ -387,4 +387,121 @@ class CheckinController extends Controller
             ]
         ], 201);
     }
+
+    /**
+     * Get student information by UUID for QR scanner
+     */
+    public function getStudentInfo(Request $request, $uuid): JsonResponse
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $student = User::where('uuid', $uuid)
+            ->where('role', 'student')
+            ->first();
+
+        if (!$student) {
+            return response()->json([
+                'message' => 'Student not found'
+            ], 404);
+        }
+
+        // Get active subscriptions
+        $subscriptions = $student->activeSubscriptions()
+            ->with('teacher:uuid,name,module')
+            ->get();
+
+        return response()->json([
+            'uuid' => $student->uuid,
+            'firstname' => $student->firstname,
+            'lastname' => $student->lastname,
+            'phone' => $student->phone,
+            'year_of_study' => $student->year_of_study,
+            'free_subscriber' => $student->isFree(),
+            'subscriptions' => $subscriptions->map(function ($sub) {
+                return [
+                    'id' => $sub->id,
+                    'teacher_uuid' => $sub->teacher_uuid,
+                    'teacher_name' => $sub->teacher->name ?? 'Unknown',
+                    'teacher_module' => $sub->teacher->module ?? '',
+                    'starts_at' => $sub->starts_at,
+                    'ends_at' => $sub->ends_at,
+                    'is_active' => $sub->isActive()
+                ];
+            })
+        ]);
+    }
+
+    /**
+     * Get today's sessions with student subscription status
+     */
+    public function getTodaysSessionsWithStudent(Request $request, $studentUuid): JsonResponse
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $student = User::where('uuid', $studentUuid)
+            ->where('role', 'student')
+            ->first();
+
+        if (!$student) {
+            return response()->json([
+                'message' => 'Student not found'
+            ], 404);
+        }
+
+        // Get today's sessions
+        $todaysSessions = Session::with(['teacher:uuid,name,module'])
+            ->whereDate('start_time', today())
+            ->orderBy('start_time')
+            ->get();
+
+        // Get active subscriptions
+        $subscriptions = $student->activeSubscriptions()
+            ->with('teacher:uuid,name,module')
+            ->get();
+
+        // Check subscription status for each session
+        $sessionsWithStatus = $todaysSessions->map(function ($session) use ($student, $subscriptions) {
+            $hasActiveSubscription = $subscriptions->where('teacher_uuid', $session->teacher_uuid)->isNotEmpty();
+            
+            return [
+                'id' => $session->id,
+                'start_time' => $session->start_time,
+                'end_time' => $session->end_time,
+                'status' => $session->status,
+                'teacher' => [
+                    'uuid' => $session->teacher->uuid,
+                    'name' => $session->teacher->name,
+                    'module' => $session->teacher->module
+                ],
+                'has_subscription' => $hasActiveSubscription
+            ];
+        });
+
+        return response()->json([
+            'student' => [
+                'uuid' => $student->uuid,
+                'firstname' => $student->firstname,
+                'lastname' => $student->lastname,
+                'phone' => $student->phone,
+                'year_of_study' => $student->year_of_study,
+                'free_subscriber' => $student->isFree(),
+            ],
+            'subscriptions' => $subscriptions->map(function ($sub) {
+                return [
+                    'id' => $sub->id,
+                    'teacher_uuid' => $sub->teacher_uuid,
+                    'teacher_name' => $sub->teacher->name ?? 'Unknown',
+                    'teacher_module' => $sub->teacher->module ?? '',
+                    'starts_at' => $sub->starts_at,
+                    'ends_at' => $sub->ends_at,
+                    'is_active' => $sub->isActive()
+                ];
+            }),
+            'todays_sessions' => $sessionsWithStatus
+        ]);
+    }
 }

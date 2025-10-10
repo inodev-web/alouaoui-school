@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,94 +13,119 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { CalendarPlus } from "lucide-react"
+import { CalendarPlus, Loader2 } from "lucide-react"
+import { sessionService } from "@/services/api/session.service"
+import { teacherService } from "@/services/api/teacher.service"
 
-export function AddSessionModal() {
+export function AddSessionModal({ onSessionAdded }) {
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [teachers, setTeachers] = useState([])
   const [formData, setFormData] = useState({
     teacher: "",
-    module: "",
+    year_target: "1AM",
     date: "",
     time: "",
     duration: "",
-    type: "",
-    price: "",
-    room: "",
-    description: "",
   })
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (open) {
+      fetchTeachers()
+    }
+  }, [open])
+
+  const fetchTeachers = async () => {
+    try {
+      const response = await teacherService.getTeachers()
+      setTeachers(response.data || [])
+    } catch (error) {
+      console.error('Error fetching teachers:', error)
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // In a real app, this would submit to an API
-    console.log("Adding session:", formData)
-    setOpen(false)
-    setFormData({
-      teacher: "",
-      module: "",
-      date: "",
-      time: "",
-      duration: "",
-      type: "",
-      price: "",
-      room: "",
-      description: "",
-    })
+    setLoading(true)
+    
+    try {
+      const sessionData = sessionService.transformSessionForSubmission(formData)
+      await sessionService.createSession(sessionData)
+      
+      setOpen(false)
+      setFormData({
+        teacher: "",
+        year_target: "1AM",
+        date: "",
+        time: "",
+        duration: "",
+      })
+      
+      onSessionAdded?.()
+    } catch (error) {
+      console.error('Error creating session:', error)
+      alert('فشل في إنشاء الجلسة')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <CalendarPlus className="mr-2 h-4 w-4" />
-          Add Session
+          <CalendarPlus className="ml-2 h-4 w-4" />
+          إضافة جلسة
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle>Schedule New Session</DialogTitle>
-          <DialogDescription>Create a new teaching session with all the necessary details.</DialogDescription>
+          <DialogTitle className="text-right">جدولة جلسة جديدة</DialogTitle>
+          <DialogDescription className="text-right">إنشاء جلسة تدريس جديدة مع جميع التفاصيل اللازمة.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="teacher" className="text-right">
-                Teacher
+                المعلم
               </Label>
               <Select value={formData.teacher} onValueChange={(value) => setFormData({ ...formData, teacher: value })}>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select teacher" />
+                  <SelectValue placeholder="اختر المعلم" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sarah-johnson">Dr. Sarah Johnson</SelectItem>
-                  <SelectItem value="michael-chen">Prof. Michael Chen</SelectItem>
-                  <SelectItem value="emily-davis">Ms. Emily Davis</SelectItem>
-                  <SelectItem value="james-wilson">Dr. James Wilson</SelectItem>
-                  <SelectItem value="lisa-anderson">Prof. Lisa Anderson</SelectItem>
+                  {teachers.map((teacher) => (
+                    <SelectItem key={teacher.uuid} value={teacher.uuid}>
+                      {teacher.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="module" className="text-right">
-                Module
+              <Label htmlFor="year_target" className="text-right">
+                السنة المستهدفة
               </Label>
-              <Select value={formData.module} onValueChange={(value) => setFormData({ ...formData, module: value })}>
+              <Select value={formData.year_target} onValueChange={(value) => setFormData({ ...formData, year_target: value })}>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select module" />
+                  <SelectValue placeholder="اختر السنة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="mathematics">Mathematics</SelectItem>
-                  <SelectItem value="physics">Physics</SelectItem>
-                  <SelectItem value="chemistry">Chemistry</SelectItem>
-                  <SelectItem value="biology">Biology</SelectItem>
-                  <SelectItem value="english">English</SelectItem>
+                  <SelectItem value="1AM">الأولى متوسط</SelectItem>
+                  <SelectItem value="2AM">الثانية متوسط</SelectItem>
+                  <SelectItem value="3AM">الثالثة متوسط</SelectItem>
+                  <SelectItem value="4AM">الرابعة متوسط</SelectItem>
+                  <SelectItem value="1AS">الأولى ثانوي</SelectItem>
+                  <SelectItem value="2AS">الثانية ثانوي</SelectItem>
+                  <SelectItem value="3AS">الثالثة ثانوي</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">
-                Date
+                التاريخ
               </Label>
               <Input
                 id="date"
@@ -114,7 +139,7 @@ export function AddSessionModal() {
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="time" className="text-right">
-                Time
+                الوقت
               </Label>
               <Input
                 id="time"
@@ -128,92 +153,40 @@ export function AddSessionModal() {
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="duration" className="text-right">
-                Duration
+                المدة
               </Label>
               <Select
                 value={formData.duration}
                 onValueChange={(value) => setFormData({ ...formData, duration: value })}
               >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select duration" />
+                  <SelectValue placeholder="اختر المدة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1h">1 hour</SelectItem>
-                  <SelectItem value="1.5h">1.5 hours</SelectItem>
-                  <SelectItem value="2h">2 hours</SelectItem>
-                  <SelectItem value="2.5h">2.5 hours</SelectItem>
-                  <SelectItem value="3h">3 hours</SelectItem>
+                  <SelectItem value="1h">1 ساعة</SelectItem>
+                  <SelectItem value="1.5h">1.5 ساعة</SelectItem>
+                  <SelectItem value="2h">2 ساعة</SelectItem>
+                  <SelectItem value="2.5h">2.5 ساعة</SelectItem>
+                  <SelectItem value="3h">3 ساعات</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">
-                Type
-              </Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select session type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="subscription">Subscription</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="ma3fi">Ma3fi</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="price" className="text-right">
-                Price
-              </Label>
-              <div className="col-span-3 flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">$</span>
-                <Input
-                  id="price"
-                  type="number"
-                  min="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="flex-1"
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="room" className="text-right">
-                Room
-              </Label>
-              <Input
-                id="room"
-                value={formData.room}
-                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                className="col-span-3"
-                placeholder="Room A1"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="description" className="text-right mt-2">
-                Description
-              </Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="col-span-3"
-                placeholder="Optional session description..."
-                rows={3}
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              إلغاء
             </Button>
-            <Button type="submit">Schedule Session</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  جاري الإنشاء...
+                </>
+              ) : (
+                'جدولة الجلسة'
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

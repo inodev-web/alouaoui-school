@@ -20,44 +20,49 @@ import { Video, FileText, Clock, ExternalLink, Download } from "lucide-react";
 
 export function CourseDetailsModal({ course, open, onOpenChange }) {
   const handleWatchVideo = () => {
-    window.open(course.videoLink, "_blank");
+    window.open(course.video_ref || course.videoLink, "_blank");
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadSummaryPDF = () => {
     // In a real app, this would trigger PDF download
-    console.log("Downloading PDF:", course.pdfUrl);
+    console.log("Downloading Summary PDF:", course.pdf_summary || course.summaryPdf);
+  };
+
+  const handleDownloadExercisesPDF = () => {
+    // In a real app, this would trigger PDF download
+    console.log("Downloading Exercises PDF:", course.exercises_pdf || course.exercisesPdf);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-right">
             <Video className="h-5 w-5" />
             {course.title}
           </DialogTitle>
-          <DialogDescription>Course ID: {course.id}</DialogDescription>
+          <DialogDescription className="text-right">معرف الدرس: {course.id}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Course Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Course Information</CardTitle>
+              <CardTitle className="text-lg text-right">معلومات الدرس</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">
-                  Description
+                <h4 className="text-sm font-medium text-muted-foreground mb-2 text-right">
+                  الوصف
                 </h4>
-                <p className="text-sm">{course.description}</p>
+                <p className="text-sm text-right">{course.description}</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">{course.duration}</span>
                 </div>
-                <Badge variant="outline">Video Course</Badge>
+                <Badge variant="outline">درس فيديو</Badge>
               </div>
             </CardContent>
           </Card>
@@ -65,61 +70,92 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
           {/* Video Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2 text-right">
                 <Video className="h-5 w-5" />
-                Video Content
+                محتوى الفيديو
               </CardTitle>
-              <CardDescription>Main course video lesson</CardDescription>
+              <CardDescription className="text-right">الدرس الرئيسي بالفيديو</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">Video Lesson</p>
+                <div className="text-right">
+                  <p className="font-medium">درس الفيديو</p>
                   <p className="text-sm text-muted-foreground">
-                    Duration: {course.duration}
+                    المدة: {course.duration}
                   </p>
                 </div>
                 <Button onClick={handleWatchVideo}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Watch Video
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                  مشاهدة الفيديو
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* PDF Materials */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                PDF Materials
-              </CardTitle>
-              <CardDescription>
-                Supplementary materials and exercises
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">Course Summary & Exercises</p>
-                  <p className="text-sm text-muted-foreground">
-                    PDF document with key concepts and practice problems
-                  </p>
+          {/* Summary PDF */}
+          {(course.pdf_summary || course.summaryPdf) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2 text-right">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                  ملخص الدرس
+                </CardTitle>
+                <CardDescription className="text-right">
+                  ملف PDF يحتوي على ملخص المفاهيم الرئيسية
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-right">
+                    <p className="font-medium text-blue-800">ملخص الدرس</p>
+                    <p className="text-sm text-blue-600">
+                      ملف PDF للمراجعة السريعة
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleDownloadSummaryPDF} className="border-blue-300 text-blue-700 hover:bg-blue-100">
+                    <Download className="h-4 w-4 ml-2" />
+                    تحميل الملخص
+                  </Button>
                 </div>
-                <Button variant="outline" onClick={handleDownloadPDF}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Exercises PDF */}
+          {(course.exercises_pdf || course.exercisesPdf) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2 text-right">
+                  <FileText className="h-5 w-5 text-green-600" />
+                  تمارين الدرس
+                </CardTitle>
+                <CardDescription className="text-right">
+                  ملف PDF يحتوي على التمارين والمسائل
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-right">
+                    <p className="font-medium text-green-800">تمارين الدرس</p>
+                    <p className="text-sm text-green-600">
+                      ملف PDF للتدريب والممارسة
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={handleDownloadExercisesPDF} className="border-green-300 text-green-700 hover:bg-green-100">
+                    <Download className="h-4 w-4 ml-2" />
+                    تحميل التمارين
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Actions */}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
+              إغلاق
             </Button>
-            <Button>Edit Course</Button>
+            <Button>تعديل الدرس</Button>
           </div>
         </div>
       </DialogContent>

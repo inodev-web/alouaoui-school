@@ -103,6 +103,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/attendance-stats', [CheckinController::class, 'attendanceStats'])->name('attendance-stats');
         Route::get('/student/{student}/history', [CheckinController::class, 'studentHistory'])->name('student-history');
         Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
+        Route::get('/student/{uuid}/info', [CheckinController::class, 'getStudentInfo'])->name('student-info');
+        Route::get('/student/{uuid}/sessions', [CheckinController::class, 'getTodaysSessionsWithStudent'])->name('student-sessions');
     });
 
     // Course management
@@ -137,6 +139,19 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [CourseController::class, 'store'])->name('store');
             Route::put('/{course}', [CourseController::class, 'update'])->name('update');
             Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
+        });
+    });
+
+    // Session management (admin only, no device check needed)
+    Route::middleware('abilities:admin')->group(function () {
+        Route::prefix('sessions')->name('sessions.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Api\SessionController::class, 'index'])->name('index');
+            Route::post('/', [App\Http\Controllers\Api\SessionController::class, 'store'])->name('store');
+            Route::get('/today', [App\Http\Controllers\Api\SessionController::class, 'today'])->name('today');
+            Route::get('/stats', [App\Http\Controllers\Api\SessionController::class, 'stats'])->name('stats');
+            Route::get('/{session}', [App\Http\Controllers\Api\SessionController::class, 'show'])->name('show');
+            Route::put('/{session}', [App\Http\Controllers\Api\SessionController::class, 'update'])->name('update');
+            Route::delete('/{session}', [App\Http\Controllers\Api\SessionController::class, 'destroy'])->name('destroy');
         });
     });
 
