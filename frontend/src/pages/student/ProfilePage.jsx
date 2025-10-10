@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AuthService from '../../services/api/auth.service';
+import api from '../../services/api/axios.config';
 // استخدام أيقونات من مكتبة lucide-react
-import { Phone, Camera, BookOpen, Clock, Users, Star, Play, Calendar } from 'lucide-react';
+import { Phone, Camera, BookOpen, Calendar, Info } from 'lucide-react';
 
 // --- المكون الرئيسي لصفحة تعريف الطالب ---
 const StudentProfilePage = () => {
@@ -9,6 +10,8 @@ const StudentProfilePage = () => {
   const storedUser = AuthService.getCurrentUser() || null;
   const [currentUser, setCurrentUser] = useState(storedUser || null);
   const [loading, setLoading] = useState(false);
+  const [subs, setSubs] = useState([]);
+  const [subsLoading, setSubsLoading] = useState(false);
 
   useEffect(() => {
     // If we don't have a filled user in localStorage, try to fetch the profile
@@ -26,73 +29,76 @@ const StudentProfilePage = () => {
         .finally(() => setLoading(false));
     }
   }, []);
-  const student = (() => {
+  const student = useMemo(() => {
     const u = currentUser || {};
     return {
       // Concaténer firstname/lastname si disponibles, sinon utiliser name ou téléphone
       name: `${u.firstname || ''} ${u.lastname || ''}`.trim() || u.name || `طالب ${u.id || ''}`,
-      id: u.id ? `S-${String(u.id).padStart(6, '0')}` : 'S-000000',
+      id: u.id ? `S-${String(u.id).toString().slice(0,6).padStart(6, '0')}` : 'S-000000',
       phone: u.phone || '+213 000 000 000',
       grade: u.year_of_study || 'غير محدد',
       gradeLevel: 'student',
-      profilePic: u.profilePic || 'https://i.pinimg.com/736x/2d/a6/7e/2da67e0882ff0aa1d407d33c9b937e0d.jpg',
-  // Generate QR from the user's public UUID if available, otherwise fall back to numeric id
-  qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${u.uuid ? `${u.uuid}` : (u.id ? `StudentID-${u.id}` : 'unknown')}`,
-  idShort: u.uuid ? `S-${String(u.uuid).slice(0,8)}` : (u.id ? `S-${String(u.id).padStart(6, '0')}` : 'S-000000'),
+      profilePic: u.picture || u.profilePic || null,
+      // Generate QR from the user's public UUID if available
+      qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${u.uuid ? `${u.uuid}` : (u.id ? `StudentID-${u.id}` : 'unknown')}`,
+      idShort: u.uuid ? `S-${String(u.uuid).slice(0,8)}` : (u.id ? `S-${String(u.id).toString().slice(0,6).padStart(6, '0')}` : 'S-000000'),
+      birth_date: u.birth_date || '',
+      address: u.address || '',
+      school_name: u.school_name || '',
+      free_subscriber: u.free_subscriber || false,
     };
-  })();
+  }, [currentUser]);
 
-  // بيانات الدورات المسجلة
-  const enrolledClasses = [
-    {
-      id: 1,
-      title: "الفيزياء الأساسية",
-      instructor: "أستاذ اسماعيل علواوي",
-      progress: 75,
-      totalLessons: 12,
-      completedLessons: 9,
-      nextClass: "15/01/2025",
-      status: "active",
-      thumbnail: "/api/placeholder/300/200",
-      rating: 4.8,
-      students: 45
-    },
-    {
-      id: 2,
-      title: "الرياضيات المتقدمة",
-      instructor: "أستاذ أحمد محمد",
-      progress: 60,
-      totalLessons: 15,
-      completedLessons: 9,
-      nextClass: "16/01/2025",
-      status: "active",
-      thumbnail: "/api/placeholder/300/200",
-      rating: 4.9,
-      students: 32
+  useEffect(() => {
+    // fetch active subscriptions when user is ready
+    if (!currentUser?.uuid) {
+      console.debug('⏳ Skipping subscriptions fetch - no user UUID yet');
+      return;
     }
-  ];
+    
+    const token = localStorage.getItem('token');
+    const deviceUuid = localStorage.getItem('device_uuid');
+    
+    if (!token) {
+      console.warn('⚠️ No token available for subscriptions fetch');
+      return;
+    }
+    
+    if (!deviceUuid) {
+      console.warn('⚠️ No device UUID available for subscriptions fetch');
+      return;
+    }
+    
+    console.debug('🚀 Fetching subscriptions for user:', currentUser.uuid);
+    
+    // Debug: vérifier le token et device UUID
+    const token = localStorage.getItem('token');
+    const deviceUuid = localStorage.getItem('device_uuid');
+    console.debug('🔑 Token:', token ? token.substring(0, 20) + '...' : 'NONE');
+    console.debug('📱 Device UUID:', deviceUuid || 'NONE');
+    
+    setSubsLoading(true);
+    api.get('/subscriptions/active')
+      .then((res) => {
+        const list = res?.data?.data?.subscriptions || [];
+        console.debug('✅ Subscriptions loaded:', list.length);
+        setSubs(list);
+      })
+      .catch((e) => {
+        console.warn('❌ Failed to load active subscriptions:', e.response?.status, e.response?.data);
+      })
+      .finally(() => setSubsLoading(false));
+  }, [currentUser?.uuid]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "مكتمل";
-    return dateString;
+  const daysToExpire = (sub) => {
+    return typeof sub.days_remaining === 'number' ? sub.days_remaining : 0;
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'paused': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'active': return 'نشط';
-      case 'completed': return 'مكتمل';
-      case 'paused': return 'متوقف';
-      default: return 'غير محدد';
-    }
+  const cardStyle = (sub) => {
+    const days = daysToExpire(sub);
+    if (days <= 3) return 'border-yellow-400 bg-yellow-50';
+    if (sub.is_alouaoui) return 'border-amber-500 bg-amber-50';
+    return 'border-green-400 bg-green-50';
   };
 
   return (
@@ -107,11 +113,17 @@ const StudentProfilePage = () => {
           
           {/* الصورة الشخصية */}
           <div className="relative group flex-shrink-0">
-            <img
-              src={student.profilePic}
-              alt="الصورة الشخصية"
-              className="w-40 h-40 rounded-full object-cover border-4 border-white/50 shadow-xl"
-            />
+            {student.profilePic ? (
+              <img
+                src={student.profilePic}
+                alt="الصورة الشخصية"
+                className="w-40 h-40 rounded-full object-cover border-4 border-white/50 shadow-xl"
+              />
+            ) : (
+              <div className="w-40 h-40 rounded-full bg-white/30 border-4 border-white/50 shadow-xl flex items-center justify-center text-white text-3xl">
+                {student.name?.charAt(0) || 'طالب'}
+              </div>
+            )}
             <div className="absolute inset-0 bg-black bg-opacity-60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
               <Camera size={36} />
               <span className="text-sm mt-1">تغيير الصورة</span>
@@ -145,74 +157,75 @@ const StudentProfilePage = () => {
         </div>
       </div>
       
-      {/* ## قسم الدورات المسجلة ## */}
-      <div className="max-w-6xl mx-auto my-0 lg:my-10">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">الدورات المسجلة</h2>
-            <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-gray-500">
-              <BookOpen className="w-5 h-5" />
-              <span>{enrolledClasses.length} دورة</span>
+          {/* ## قسم معلومات الطالب ## */}
+          <div className="max-w-6xl mx-auto my-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center gap-2 mb-4 text-gray-700">
+                <Info className="w-5 h-5" />
+                <h2 className="text-xl font-semibold">معلومات الطالب</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-800 text-sm">
+                <div><span className="text-gray-500">الاسم:</span> {student.name}</div>
+                <div><span className="text-gray-500">الهاتف:</span> {student.phone}</div>
+                <div><span className="text-gray-500">السنة الدراسية:</span> {student.grade}</div>
+                <div><span className="text-gray-500">المدرسة:</span> {student.school_name || '—'}</div>
+                <div><span className="text-gray-500">تاريخ الميلاد:</span> {student.birth_date || '—'}</div>
+                <div><span className="text-gray-500">العنوان:</span> {student.address || '—'}</div>
+              </div>
             </div>
           </div>
 
-           <div className="space-y-4">
-             {enrolledClasses.map((course) => (
-               <div key={course.id} className="border border-gray-200 rounded-lg p-4 md:p-6 hover:shadow-md transition-shadow duration-300 bg-white">
-                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                   {/* Course Info */}
-                   <div className="flex-1">
-                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 rtl:sm:space-x-reverse mb-3 gap-2">
-                       <h3 className="text-lg md:text-xl font-semibold text-gray-900 text-center sm:text-right">{course.title}</h3>
-                       <span className={`px-3 py-1 rounded-full text-xs font-medium w-fit mx-auto sm:mx-0 ${getStatusColor(course.status)}`}>
-                         {getStatusText(course.status)}
-                       </span>
-                     </div>
-                     <p className="text-gray-600 mb-3 text-sm md:text-base text-center sm:text-right">{course.instructor}</p>
-                     
-                     {/* Course Stats */}
-                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 rtl:gap-4 text-sm text-gray-500">
-                       <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                         <Star className="w-4 h-4 text-yellow-400" />
-                         <span>{course.rating}</span>
-                       </div>
-                       <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                         <Users className="w-4 h-4" />
-                         <span>{course.students} طالب</span>
-                       </div>
-                       <div className="flex items-center space-x-1 rtl:space-x-reverse">
-                         <BookOpen className="w-4 h-4" />
-                         <span>{course.totalLessons} درس</span>
-                       </div>
-                     </div>
-                   </div>
-
-                   {/* Next Class Info */}
-                   <div className="text-center sm:text-right">
-                     <div className="flex items-center justify-center sm:justify-start space-x-2 rtl:space-x-reverse text-sm text-gray-600 mb-2">
-                       <Calendar className="w-4 h-4 text-gray-400" />
-                       <span>
-                         {course.nextClass ? `الدرس التالي: ${formatDate(course.nextClass)}` : 'تم إكمال الدورة'}
-                       </span>
-                     </div>
-                     <div className="text-xs text-gray-500">
-                       {course.completedLessons} من {course.totalLessons} درس مكتمل
-                     </div>
-                   </div>
-                 </div>
-               </div>
-             ))}
-           </div>
+          {/* ## قسم الاشتراكات النشطة ## */}
+      <div className="max-w-6xl mx-auto my-0 lg:my-10">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">الاشتراكات النشطة</h2>
+                <div className="flex items-center space-x-2 rtl:space-x-reverse text-sm text-gray-500">
+                  <BookOpen className="w-5 h-5" />
+                  <span>{subs.length} اشتراك</span>
+                </div>
+          </div>
+              {subsLoading && (
+                <div className="text-center text-gray-500">جارٍ تحميل الاشتراكات...</div>
+              )}
+              <div className="space-y-4">
+                {!subsLoading && subs.map((sub) => (
+                  <div key={sub.id} className={`border rounded-lg p-4 md:p-6 hover:shadow-md transition-shadow duration-300 ${cardStyle(sub)}`}>
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 text-center sm:text-right">{sub.teacher_name || 'أستاذ'}</h3>
+                        <div className="text-gray-700 text-sm mt-2 text-center sm:text-right">
+                          <span>تاريخ الانتهاء: </span>
+                          <span className="font-medium">{new Date(sub.ends_at).toLocaleDateString('ar-DZ')}</span>
+                          <span className="mx-2">•</span>
+                          <span>متبقي: {daysToExpire(sub)} يوم</span>
+                        </div>
+                        {daysToExpire(sub) <= 3 && (
+                          <div className="text-xs text-yellow-700 mt-2">سينتهي اشتراكك قريبًا، يرجى التجديد لتجنب انقطاع الوصول.</div>
+                        )}
+                        {daysToExpire(sub) > 3 && sub.is_alouaoui && (
+                          <div className="text-xs text-amber-700 mt-2">يمكنك الوصول إلى كل المحتوى الإلكتروني بدون قيود</div>
+                        )}
+                      </div>
+                      <div className="text-center sm:text-right">
+                        <div className="flex items-center justify-center sm:justify-start space-x-2 rtl:space-x-reverse text-sm text-gray-600 mb-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span>
+                            {sub.is_monthly ? 'اشتراك شهري' : 'بطاقة حصة'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
           {/* Empty State (if no courses) */}
-          {enrolledClasses.length === 0 && (
+          {!subsLoading && subs.length === 0 && (
             <div className="text-center py-12">
               <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">لا توجد دورات مسجلة</h3>
-              <p className="text-gray-500 mb-6">ابدأ رحلتك التعليمية بتسجيل أول دورة</p>
-              <button className="bg-gradient-to-r from-red-400 to-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300">
-                تصفح الدورات
-              </button>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">لا توجد اشتراكات نشطة</h3>
+              <p className="text-gray-500 mb-6">قم بالاشتراك للوصول إلى المحتوى</p>
             </div>
           )}
         </div>

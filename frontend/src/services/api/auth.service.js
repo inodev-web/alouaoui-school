@@ -13,18 +13,16 @@ class AuthService {
             }
             this.isLoggingIn = true;
 
-            // Utiliser / persister un device_uuid pour cohérence avec le backend
-            let deviceUuid = localStorage.getItem('device_uuid');
-            if (!deviceUuid) {
-                deviceUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'dev-' + Math.random().toString(36).substring(2, 15);
-                localStorage.setItem('device_uuid', deviceUuid);
-            }
+            // Generate a fresh device UUID for each login to avoid conflicts
+            const deviceUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'dev-' + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('device_uuid', deviceUuid);
+            console.log('🔄 Generated fresh device UUID for login:', deviceUuid);
 
             const payload = {
                 login: phone,          // le backend attend 'login'
                 password,
                 device_uuid: deviceUuid,
-                single_device: options.single_device ?? true
+                single_device: false // Change to false to avoid aggressive token deletion
             };
 
             const response = await api.post('/auth/login', payload);
@@ -179,7 +177,13 @@ class AuthService {
                     phone: profileData.phone || '',
                     role: profileData.role || 'student',
                     year_of_study: profileData.year_of_study || '',
-                    qr_token: profileData.qr_token || profileData.uuid || profileData.id || ''
+                    qr_token: profileData.qr_token || profileData.uuid || profileData.id || '',
+                    picture: profileData.picture || null,
+                    birth_date: profileData.birth_date || '',
+                    address: profileData.address || '',
+                    school_name: profileData.school_name || '',
+                    free_subscriber: profileData.free_subscriber || false,
+                    last_profile_update_at: profileData.last_profile_update_at || null,
                 };
                 formattedProfile.qr_token = formattedProfile.uuid;
                 localStorage.setItem('user', JSON.stringify(formattedProfile));
@@ -193,7 +197,13 @@ class AuthService {
 
     async updateProfile(profileData) {
         try {
-            const response = await api.put('/auth/profile', profileData);
+            let payload = profileData;
+            let headers = {};
+            if (profileData instanceof FormData) {
+                payload = profileData;
+                headers = { 'Content-Type': 'multipart/form-data' };
+            }
+            const response = await api.put('/auth/profile', payload, { headers });
             const updatedProfile = response.data.data;
             if (updatedProfile) {
                 const formattedProfile = {
@@ -204,7 +214,13 @@ class AuthService {
                     phone: updatedProfile.phone || '',
                     role: updatedProfile.role || 'student',
                     year_of_study: updatedProfile.year_of_study || '',
-                    qr_token: updatedProfile.qr_token || updatedProfile.uuid || updatedProfile.id || ''
+                    qr_token: updatedProfile.qr_token || updatedProfile.uuid || updatedProfile.id || '',
+                    picture: updatedProfile.picture || null,
+                    birth_date: updatedProfile.birth_date || '',
+                    address: updatedProfile.address || '',
+                    school_name: updatedProfile.school_name || '',
+                    free_subscriber: updatedProfile.free_subscriber || false,
+                    last_profile_update_at: updatedProfile.last_profile_update_at || null,
                 };
                 formattedProfile.qr_token = formattedProfile.uuid;
                 localStorage.setItem('user', JSON.stringify(formattedProfile));

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\Admin\CheckinController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\StreamController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -51,13 +52,24 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    // User/Student management (Admin only, no device check needed)
+    Route::prefix('users')->name('users.')->middleware('abilities:admin')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/stats', [UserController::class, 'stats'])->name('stats');
+        Route::post('/', [UserController::class, 'store'])->name('store');
+        Route::get('/{user}', [UserController::class, 'show'])->name('show');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        Route::post('/{user}/toggle-free-subscriber', [UserController::class, 'toggleFreeSubscriber'])->name('toggle-free-subscriber');
+    });
+
     // Teacher management (Admin routes don't need device check)
     Route::prefix('teachers')->name('teachers.')->group(function () {
         // Public routes (need device check for students)
         Route::middleware('ensure.single.device')->group(function () {
             Route::get('/active', [TeacherController::class, 'active'])->name('active');
         });
-        
+
         // Admin only routes (no device check needed)
         Route::middleware('abilities:admin')->group(function () {
             Route::get('/', [TeacherController::class, 'index'])->name('index');
@@ -65,6 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{teacher}', [TeacherController::class, 'show'])->name('show');
             Route::put('/{teacher}', [TeacherController::class, 'update'])->name('update');
             Route::delete('/{teacher}', [TeacherController::class, 'destroy'])->name('destroy');
+            Route::get('/{teacher}/students-count', [TeacherController::class, 'getStudentsCount'])->name('students-count');
             Route::patch('/{teacher}/toggle-status', [TeacherController::class, 'toggleStatus'])->name('toggle-status');
             Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics'])->name('statistics');
         });
@@ -90,10 +103,10 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Subscription management (needs device check for students)
-    Route::prefix('subscriptions')->name('subscriptions.')->middleware('ensure.single.device')->group(function () {
-        Route::post('/', [SubscriptionController::class, 'store'])->name('store');
-        Route::get('/active', [SubscriptionController::class, 'active'])->name('active');
-        Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show');
+    Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
+        Route::post('/', [SubscriptionController::class, 'store'])->name('store')->middleware('ensure.single.device');
+        Route::get('/active', [SubscriptionController::class, 'active'])->name('active')->middleware('ensure.single.device'); // Restored device check
+        Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show')->middleware('ensure.single.device');
     });
 
     // Admin check-in management (no device check needed for admin)

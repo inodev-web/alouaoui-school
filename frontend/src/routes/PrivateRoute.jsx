@@ -72,20 +72,22 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
               }
               
               // Clear all auth data
+              const device = localStorage.getItem('device_uuid')
               dispatch(logout())
               localStorage.removeItem('token')
               localStorage.removeItem('user')
-              localStorage.removeItem('device_uuid')
+              if (device) localStorage.setItem('device_uuid', device)
             } else if (e.response?.status === 400 && isMounted) {
               // Handle missing device UUID or other bad requests
               const errorCode = e.response?.data?.error_code
               
               if (errorCode === 'DEVICE_UUID_REQUIRED') {
                 console.log('Device UUID missing - clearing auth and forcing re-login')
+                const device = localStorage.getItem('device_uuid')
                 dispatch(logout())
                 localStorage.removeItem('token')
                 localStorage.removeItem('user')
-                localStorage.removeItem('device_uuid')
+                if (device) localStorage.setItem('device_uuid', device)
               } else {
                 // For other 400 errors, try to use cached user
                 const cachedUser = localStorage.getItem('user')
@@ -99,6 +101,13 @@ const PrivateRoute = ({ children, allowedRoles = [] }) => {
                   }
                 }
               }
+            } else if (e.response?.status === 409 && isMounted) {
+              // Device conflict as per middleware; preserve device UUID and force relogin
+              const device = localStorage.getItem('device_uuid')
+              dispatch(logout())
+              localStorage.removeItem('token')
+              localStorage.removeItem('user')
+              if (device) localStorage.setItem('device_uuid', device)
             } else if (isMounted) {
               // For other errors (500, network issues), use cached user from localStorage
               const cachedUser = localStorage.getItem('user')

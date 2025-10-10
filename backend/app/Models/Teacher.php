@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Teacher extends Model
 {
@@ -37,7 +38,6 @@ class Teacher extends Model
         'phone',
         'picture',
         'module',
-        'year',
         'is_online_publisher',
         'price_subscription',
         'price_session',
@@ -105,6 +105,22 @@ class Teacher extends Model
     }
 
     /**
+     * Teacher years relationship (pivot table)
+     */
+    public function teacherYears(): HasMany
+    {
+        return $this->hasMany(TeacherYear::class, 'teacher_uuid', 'uuid');
+    }
+
+    /**
+     * Get all year codes this teacher teaches (using pivot table)
+     */
+    public function years(): array
+    {
+        return $this->teacherYears()->pluck('year_code')->toArray();
+    }
+
+    /**
      * Check if teacher publishes online content
      */
     public function isOnlinePublisher(): bool
@@ -134,5 +150,119 @@ class Teacher extends Model
     public function isAlouaoui(): bool
     {
         return $this->uuid === static::ALOUAOUI_UUID;
+    }
+
+    /**
+     * Get all years this teacher teaches
+     *
+     * @return array
+     */
+    public function getTeachingYears(): array
+    {
+        return $this->years();
+    }
+
+    /**
+     * Set the years this teacher teaches
+     *
+     * @param array $years
+     * @return void
+     */
+    public function setTeachingYears(array $years): void
+    {
+        // Supprimer les anciens years
+        TeacherYear::where('teacher_uuid', $this->uuid)->delete();
+
+        // Ajouter les nouveaux years
+        foreach (array_unique($years) as $year) {
+            TeacherYear::create([
+                'teacher_uuid' => $this->uuid,
+                'year_code' => $year
+            ]);
+        }
+    }
+
+    /**
+     * Add a year to the teaching years
+     *
+     * @param string $year
+     * @return void
+     */
+    public function addTeachingYear(string $year): void
+    {
+        TeacherYear::firstOrCreate([
+            'teacher_uuid' => $this->uuid,
+            'year_code' => $year
+        ]);
+    }
+
+    /**
+     * Remove a year from the teaching years
+     *
+     * @param string $year
+     * @return void
+     */
+    public function removeTeachingYear(string $year): void
+    {
+        TeacherYear::where('teacher_uuid', $this->uuid)
+                   ->where('year_code', $year)
+                   ->delete();
+    }
+
+    /**
+     * Check if teacher teaches a specific year
+     *
+     * @param string $year
+     * @return bool
+     */
+    public function teachesYear(string $year): bool
+    {
+        return TeacherYear::where('teacher_uuid', $this->uuid)
+                         ->where('year_code', $year)
+                         ->exists();
+    }
+
+    /**
+     * Get formatted years string for display
+     *
+     * @return string
+     */
+    public function getFormattedYears(): string
+    {
+        $years = $this->getTeachingYears();
+        if (empty($years)) {
+            return 'غير محدد';
+        }
+
+        return implode(', ', $years);
+    }
+
+    /**
+     * Get formatted years with Arabic labels
+     *
+     * @return string
+     */
+    public function getFormattedYearsWithLabels(): string
+    {
+        $years = $this->getTeachingYears();
+        if (empty($years)) {
+            return 'غير محدد';
+        }
+
+        $labels = array_map(function($year) {
+            return TeacherYear::getYearLabel($year);
+        }, $years);
+
+        return implode(', ', $labels);
+    }
+
+    /**
+     * Scope to filter teachers by year
+     */
+    public function scopeTeachingYear($query, string $year)
+    {
+        return $query->whereHas('teacherYears', function($q) use ($year) {
+            $q->where('year_code', $year);
+        });
     }
 }

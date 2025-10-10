@@ -39,6 +39,8 @@ class User extends Authenticatable
         // New simplified access model fields
         'free_subscriber',
         'free_subscriber_reason',
+        'picture', // lien vers l'image de profil
+        'last_profile_update_at', // suivi limitation modification quotidienne
     ];
 
     /**
@@ -74,6 +76,7 @@ class User extends Authenticatable
             'birth_date' => 'date',
             'password' => 'hashed',
             'free_subscriber' => 'boolean',
+            'last_profile_update_at' => 'datetime',
         ];
     }
 
