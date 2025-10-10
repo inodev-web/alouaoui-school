@@ -19,6 +19,8 @@ class Course extends Model
         'chapter_id',
         'title',
         'video_ref',
+        'description',
+        'duration',
         'pdf_summary',
         'exercises_pdf',
     ];

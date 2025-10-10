@@ -8,103 +8,140 @@ const AdminRoute = ({ children }) => {
   const { user, token } = useSelector((state) => state.auth)
   const dispatch = useDispatch()
   const location = useLocation()
-  const [checking, setChecking] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
-    let isMounted = true
-    const syncAuth = async () => {
+    const initializeAuth = async () => {
       try {
-        const storedToken = token || localStorage.getItem('token')
+        // Get stored values
+        const storedToken = localStorage.getItem('token')
         const storedUserStr = localStorage.getItem('user')
         
-        console.log('🔍 AdminRoute - syncAuth check:', {
-          hasToken: !!storedToken,
+        console.log('🔍 AdminRoute - Initializing auth:', {
+          hasStoredToken: !!storedToken,
           hasReduxUser: !!user,
           hasStoredUser: !!storedUserStr
         })
-        
+
+        // If no token, redirect to login
         if (!storedToken) {
-          if (isMounted) setChecking(false)
+          console.log('❌ No token found, redirecting to login')
+          setIsLoading(false)
           return
         }
-        
-        // Si l'utilisateur Redux est absent, try localStorage first
-        if (!user) {
-          // First try to use cached user from localStorage (faster, no API call)
-          if (storedUserStr) {
-            try {
-              const cachedUser = JSON.parse(storedUserStr)
-              console.log('✅ AdminRoute - Using cached user from localStorage')
-              dispatch(loginSuccess({ token: storedToken, user: cachedUser }))
-              if (isMounted) setChecking(false)
-              return // Don't fetch profile if we have cached user
-            } catch (parseError) {
-              console.warn('AdminRoute - Failed to parse cached user, will fetch from API:', parseError)
-            }
-          }
-          
-          // Only fetch profile if no cached user available and user is admin
+
+        // If we already have a user in Redux, we're good
+        if (user) {
+          console.log('✅ User already in Redux, proceeding')
+          setIsLoading(false)
+          return
+        }
+
+        // If we have a stored user, validate the token
+        if (storedUserStr) {
           try {
-            console.log('📡 AdminRoute - Fetching profile from API...')
+            const storedUser = JSON.parse(storedUserStr)
+            
+            // Validate token with API
+            console.log('📡 Validating token with API...')
             const profile = await authService.getProfile()
-            if (profile && isMounted) {
+            
+            // If API call succeeds, use the fresh profile data
+            if (profile) {
+              console.log('✅ Token valid, updating Redux with fresh data')
               dispatch(loginSuccess({ token: storedToken, user: profile }))
+              setIsLoading(false)
+              return
             }
-          } catch (e) {
-            console.warn('AdminRoute - Profile fetch failed:', e)
+          } catch (apiError) {
+            console.warn('⚠️ API validation failed:', apiError)
             
-            // For admins, be more lenient with API failures
-            // Try to use cached user even if profile fetch fails
-            if (storedUserStr) {
-              try {
-                const cachedUser = JSON.parse(storedUserStr)
-                if (cachedUser.role === 'admin') {
-                  console.log('✅ AdminRoute - Using cached admin user despite API failure')
-                  dispatch(loginSuccess({ token: storedToken, user: cachedUser }))
-                  if (isMounted) setChecking(false)
-                  return
-                }
-              } catch (parseError) {
-                console.error('AdminRoute - Failed to parse cached user:', parseError)
-              }
-            }
-            
-            // Only logout if it's a real auth error (401) 
-            if (e.response?.status === 401 && isMounted) {
-              console.log('AdminRoute - 401 Unauthorized - clearing auth state')
+            // If 401, token is invalid
+            if (apiError.response?.status === 401) {
+              console.log('❌ Token invalid (401), clearing auth state')
               dispatch(logout())
               localStorage.removeItem('token')
               localStorage.removeItem('user')
               localStorage.removeItem('device_uuid')
+              setIsLoading(false)
+              return
+            }
+            
+            // For other errors, try using stored user as fallback
+            try {
+              const storedUser = JSON.parse(storedUserStr)
+              if (storedUser.role === 'admin') {
+                console.log('⚠️ Using stored admin user as fallback')
+                dispatch(loginSuccess({ token: storedToken, user: storedUser }))
+                setIsLoading(false)
+                return
+              }
+            } catch (parseError) {
+              console.error('❌ Failed to parse stored user:', parseError)
             }
           }
         }
+
+        // If we get here, something went wrong
+        console.log('❌ No valid authentication found, clearing state')
+        dispatch(logout())
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('device_uuid')
+        
+      } catch (error) {
+        console.error('❌ Auth initialization error:', error)
+        dispatch(logout())
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('device_uuid')
       } finally {
-        if (isMounted) setChecking(false)
+        setIsLoading(false)
+        setIsInitialized(true)
       }
     }
-    syncAuth()
-    return () => { isMounted = false }
-  }, [user, token, dispatch])
 
-  // Pendant vérification, on peut afficher un loader minimal
-  if (checking) {
-    return <div className="w-full h-screen flex items-center justify-center text-sm text-muted-foreground">Chargement...</div>
+    // Only run once when component mounts
+    if (!isInitialized) {
+      initializeAuth()
+    }
+  }, []) // Empty dependency array - only run once
+
+  // Show loading while initializing
+  if (isLoading || !isInitialized) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+        </div>
+      </div>
+    )
   }
 
-  const effectiveUser = user || (() => {
-    try { return JSON.parse(localStorage.getItem('user')) } catch { return null }
+  // Check if user is authenticated
+  const currentUser = user || (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'))
+    } catch {
+      return null
+    }
   })()
+
   const hasToken = !!(token || localStorage.getItem('token'))
 
+  // Redirect to login if no token
   if (!hasToken) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (!effectiveUser || effectiveUser.role !== 'admin') {
+  // Redirect to unauthorized if not admin
+  if (!currentUser || currentUser.role !== 'admin') {
     return <Navigate to="/unauthorized" replace />
   }
 
+  // User is authenticated and is admin, render children
   return children
 }
 

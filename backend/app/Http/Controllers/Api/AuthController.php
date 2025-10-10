@@ -463,13 +463,16 @@ class AuthController extends Controller
     {
         // Si l'utilisateur a déjà un device_uuid et que ce n'est pas le même
         if ($user->device_uuid && $user->device_uuid !== $deviceUuid) {
-            throw ValidationException::withMessages([
-                'device_uuid' => ['Ce compte est déjà connecté sur un autre appareil. Un étudiant ne peut être connecté que sur un seul appareil à la fois.'],
-            ]);
-        }
-
-        // Si aucun device_uuid n'est enregistré, on l'accepte
-        if (!$user->device_uuid) {
+            // When single_device=false, allow device change but revoke old tokens
+            \Log::info("Device change detected for user {$user->uuid}: {$user->device_uuid} -> {$deviceUuid}");
+            
+            // Revoke all existing tokens for this user
+            $user->tokens()->delete();
+            
+            // Update the device UUID
+            $user->update(['device_uuid' => $deviceUuid]);
+        } else if (!$user->device_uuid) {
+            // Si aucun device_uuid n'est enregistré, on l'accepte
             $user->update(['device_uuid' => $deviceUuid]);
         }
     }

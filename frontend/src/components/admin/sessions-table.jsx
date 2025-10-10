@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,42 +10,49 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, Play, Users, Clock, Loader2 } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, Users, Clock, Loader2, AlertCircle } from "lucide-react"
 import { sessionService } from "@/services/api/session.service"
 
 export function SessionsTable({ filters = {} }) {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const isMountedRef = useRef(true)
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 20,
+    total: 0
+  })
 
+  // Fetch sessions when component mounts or filters change
   useEffect(() => {
     fetchSessions()
-    
-    return () => {
-      isMountedRef.current = false
-    }
-  }, [filters]) // This is safe as filters is a stable object from parent
+  }, [filters])
 
   const fetchSessions = async () => {
     try {
-      if (isMountedRef.current) {
-        setLoading(true)
-        setError(null)
-      }
+      setLoading(true)
+      setError(null)
+      
+      console.log('📡 Fetching sessions with filters:', filters)
       const response = await sessionService.getSessions(filters)
-      if (isMountedRef.current) {
-        setSessions(response.data || [])
+      
+      console.log('📥 Sessions response:', response)
+      
+      if (response && response.data) {
+        setSessions(response.data)
+        if (response.pagination) {
+          setPagination(response.pagination)
+        }
+      } else {
+        setSessions([])
       }
     } catch (err) {
-      console.error('Error fetching sessions:', err)
-      if (isMountedRef.current) {
-        setError('فشل في تحميل الجلسات')
-      }
+      console.error('❌ Error fetching sessions:', err)
+      setError('فشل في تحميل الجلسات')
+      setSessions([])
     } finally {
-      if (isMountedRef.current) {
-        setLoading(false)
-      }
+      setLoading(false)
     }
   }
 
@@ -54,157 +61,183 @@ export function SessionsTable({ filters = {} }) {
     
     try {
       await sessionService.deleteSession(sessionId)
-      await fetchSessions() // Refresh the list
+      // Refresh the list after deletion
+      await fetchSessions()
     } catch (err) {
-      console.error('Error deleting session:', err)
+      console.error('❌ Error deleting session:', err)
       alert('فشل في حذف الجلسة')
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "جارية":
-        return "default"
-      case "قادمة":
-        return "secondary"
-      case "مكتملة":
-        return "outline"
-      case "مجدولة":
-        return "secondary"
-      case "ملغية":
-        return "destructive"
-      default:
-        return "outline"
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      'مكتملة': { variant: 'default', label: 'مكتملة' },
+      'ملغية': { variant: 'destructive', label: 'ملغية' },
+      'جارية': { variant: 'secondary', label: 'جارية' },
+      'قادمة': { variant: 'outline', label: 'قادمة' }
+    }
+    
+    const config = statusConfig[status] || { variant: 'outline', label: status }
+    return <Badge variant={config.variant}>{config.label}</Badge>
+  }
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('ar-SA', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch {
+      return dateString
     }
   }
 
-  const getTypeColor = (type) => {
-    switch (type) {
-      case "اشتراك":
-        return "default"
-      case "مدفوعة":
-        return "secondary"
-      case "مجانية":
-        return "outline"
-      case "معفي":
-        return "destructive"
-      default:
-        return "outline"
+  const formatTime = (timeString) => {
+    try {
+      const date = new Date(timeString)
+      return date.toLocaleTimeString('ar-SA', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch {
+      return timeString
     }
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="mr-2">جاري التحميل...</span>
+      <div className="w-full flex items-center justify-center py-12">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-sm text-muted-foreground">جاري تحميل الجلسات...</p>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-500">
-        <p>{error}</p>
-        <Button onClick={fetchSessions} className="mt-4">
-          إعادة المحاولة
-        </Button>
+      <div className="w-full flex items-center justify-center py-12">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+          <p className="text-sm text-destructive mb-4">{error}</p>
+          <Button onClick={fetchSessions} variant="outline">
+            إعادة المحاولة
+          </Button>
+        </div>
       </div>
     )
   }
 
   if (sessions.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <p>لا توجد جلسات</p>
+      <div className="w-full flex items-center justify-center py-12">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">لا توجد جلسات</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <Table dir="rtl">
-      <TableHeader>
-        <TableRow>
-          <TableHead className="text-right">الجلسة</TableHead>
-          <TableHead className="text-right">التاريخ والوقت</TableHead>
-          <TableHead className="text-right">المعلم</TableHead>
-          <TableHead className="text-right">المادة</TableHead>
-          <TableHead className="text-right">المدة</TableHead>
-          <TableHead className="text-right">النوع</TableHead>
-          <TableHead className="text-right">الطلاب</TableHead>
-          <TableHead className="text-right">الإيرادات</TableHead>
-          <TableHead className="text-right">الحالة</TableHead>
-          <TableHead className="text-right">الإجراءات</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {sessions.map((session) => (
-          <TableRow key={session.id}>
-            <TableCell className="text-right">
-              <div>
-                <div className="font-medium">{session.id}</div>
-                <div className="text-sm text-muted-foreground">{session.room}</div>
-              </div>
-            </TableCell>
-            <TableCell className="text-right">
-              <div>
-                <div className="font-medium">{session.date}</div>
-                <div className="text-sm text-muted-foreground flex items-center gap-1 justify-end">
-                  <Clock className="h-3 w-3" />
-                  {session.time}
-                </div>
-              </div>
-            </TableCell>
-            <TableCell className="text-right">{session.teacher}</TableCell>
-            <TableCell className="text-right">{session.module}</TableCell>
-            <TableCell className="text-right">{session.duration}</TableCell>
-            <TableCell className="text-right">
-              <Badge variant={getTypeColor(session.type)}>{session.type}</Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex items-center gap-1 justify-end">
-                <Users className="h-3 w-3" />
-                {session.students}
-              </div>
-            </TableCell>
-            <TableCell className="text-right font-medium">{session.revenue}</TableCell>
-            <TableCell className="text-right">
-              <Badge variant={getStatusColor(session.status)}>{session.status}</Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">فتح القائمة</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" dir="rtl">
-                  <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
-                  {session.status === "قادمة" && (
-                    <DropdownMenuItem>
-                      <Play className="ml-2 h-4 w-4" />
-                      بدء الجلسة
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem>
-                    <Edit className="ml-2 h-4 w-4" />
-                    تعديل الجلسة
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="text-destructive"
-                    onClick={() => handleDeleteSession(session.id)}
-                  >
-                    <Trash2 className="ml-2 h-4 w-4" />
-                    حذف الجلسة
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="w-full">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-right">المعلم</TableHead>
+              <TableHead className="text-right">المادة</TableHead>
+              <TableHead className="text-right">السنة المستهدفة</TableHead>
+              <TableHead className="text-right">التاريخ</TableHead>
+              <TableHead className="text-right">الوقت</TableHead>
+              <TableHead className="text-right">المدة</TableHead>
+              <TableHead className="text-right">الحالة</TableHead>
+              <TableHead className="text-right">الطلاب</TableHead>
+              <TableHead className="text-right">الإيرادات</TableHead>
+              <TableHead className="text-right">القاعة</TableHead>
+              <TableHead className="text-right">الإجراءات</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sessions.map((session) => (
+              <TableRow key={session.id}>
+                <TableCell className="font-medium text-right">
+                  {session.teacher_name || 'غير محدد'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {session.module || 'غير محدد'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {session.year_target || 'غير محدد'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatDate(session.date || session.start_time)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatTime(session.time || session.start_time)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {session.duration || 'غير محدد'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {getStatusBadge(session.status)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span>{session.students_count || 0}</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  {session.revenue || '0 دج'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {session.room || 'غير محدد'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">فتح القائمة</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>الإجراءات</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <Edit className="mr-2 h-4 w-4" />
+                        تعديل
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-destructive"
+                        onClick={() => handleDeleteSession(session.id)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        حذف
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      
+      {/* Pagination Info */}
+      {pagination.total > 0 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            عرض {sessions.length} من {pagination.total} جلسة
+          </div>
+          <div className="text-sm text-muted-foreground">
+            الصفحة {pagination.current_page} من {pagination.last_page}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

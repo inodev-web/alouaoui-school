@@ -104,6 +104,8 @@ axiosInstance.interceptors.response.use(
             // Be less aggressive: only auto-logout when profile endpoint fails (token invalid)
             const path = typeof url === 'string' ? url : '';
             const isProfileCall = path.includes('/auth/profile');
+            const isLogoutCall = path.includes('/auth/logout');
+            
             if (isProfileCall) {
                 console.log('🚫 401 on /auth/profile - Clearing token/user');
                 const device = localStorage.getItem('device_uuid');
@@ -113,6 +115,10 @@ axiosInstance.interceptors.response.use(
                 if (window.location.pathname !== '/login') {
                     window.location.href = '/login';
                 }
+            } else if (isLogoutCall) {
+                console.log('🚫 401 on /auth/logout - Token already invalid, proceeding with local cleanup');
+                // Don't redirect on logout 401 - let the logout handler deal with it
+                // This prevents infinite redirects when token is already invalid
             } else {
                 console.warn('401 received on non-profile endpoint, skipping auto-logout');
             }

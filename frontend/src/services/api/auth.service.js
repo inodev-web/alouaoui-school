@@ -156,11 +156,20 @@ class AuthService {
     async logout() {
         try {
             await api.post('/auth/logout');
+        } catch (error) {
+            // If logout fails due to invalid token (401), that's actually fine
+            // The token is already invalid, so we just need to clean up locally
+            if (error.response?.status === 401) {
+                console.warn('Logout failed with 401 - token already invalid, proceeding with local cleanup');
+            } else {
+                // For other errors, still throw them
+                throw this.handleError(error);
+            }
+        } finally {
+            // Always clean up local storage regardless of API response
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             localStorage.removeItem('device_uuid');
-        } catch (error) {
-            throw this.handleError(error);
         }
     }
 

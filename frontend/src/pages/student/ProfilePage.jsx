@@ -72,8 +72,6 @@ const StudentProfilePage = () => {
     console.debug('🚀 Fetching subscriptions for user:', currentUser.uuid);
     
     // Debug: vérifier le token et device UUID
-    const token = localStorage.getItem('token');
-    const deviceUuid = localStorage.getItem('device_uuid');
     console.debug('🔑 Token:', token ? token.substring(0, 20) + '...' : 'NONE');
     console.debug('📱 Device UUID:', deviceUuid || 'NONE');
     

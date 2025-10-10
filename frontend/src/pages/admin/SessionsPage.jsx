@@ -3,7 +3,6 @@ import { Calendar, Clock, Users, DollarSign } from "lucide-react"
 import { SessionsTable } from "@/components/admin/sessions-table"
 import { AddSessionModal } from "@/components/admin/add-session-modal"
 import { SessionsFilters } from "@/components/admin/sessions-filters"
-import { TodaysSessions } from "@/components/admin/todays-sessions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function AdminSessionsPage() {
@@ -67,10 +66,6 @@ export default function AdminSessionsPage() {
             <p className="text-xs text-muted-foreground text-right">من الجلسات المجدولة</p>
           </CardContent>
         </Card>
-      </div>
-      {/* Today's Sessions Highlight */}
-      <div>
-        <TodaysSessions />
       </div>
 
       {/* All Sessions */}

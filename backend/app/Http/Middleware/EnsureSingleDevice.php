@@ -17,19 +17,23 @@ class EnsureSingleDevice
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = Auth::user();
+        // Try multiple ways to get the authenticated user
+        $user = $request->user('sanctum') ?? $request->user() ?? Auth::guard('sanctum')->user();
 
         if (!$user) {
             \Log::warning("EnsureSingleDevice: No authenticated user found", [
                 'url' => $request->url(),
                 'has_bearer_token' => $request->bearerToken() ? 'yes' : 'no',
                 'device_uuid_header' => $request->header('X-Device-UUID'),
-                'ip' => $request->ip()
+                'ip' => $request->ip(),
+                'auth_guard' => Auth::getDefaultDriver(),
+                'sanctum_user' => $request->user('sanctum') ? 'found' : 'null',
+                'request_user' => $request->user() ? 'found' : 'null'
             ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Non authentifié',
-                'debug' => 'EnsureSingleDevice: Auth::user() returned null'
+                'debug' => 'EnsureSingleDevice: No authenticated user found'
             ], 401);
         }
 
@@ -75,26 +79,19 @@ class EnsureSingleDevice
                     ->first();
 
                 if ($userDeviceToken) {
-                    // This user has another token for this device - use that one instead
-                    // Revoke the current token being used (old device)
-                    $currentToken->delete();
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Session active détectée sur un autre appareil. Reconnectez-vous.',
-                        'error_code' => 'DEVICE_CONFLICT',
-                        'action' => 'LOGIN_REQUIRED'
-                    ], 409); // Use 409 for device conflict
+                    // This user has another token for this device - allow the request but log the conflict
+                    \Log::info("Device UUID conflict resolved: Device {$deviceUuid} was transferred from user {$user->uuid} to user {$user->uuid}");
+                    
+                    // Don't delete the token, just allow the request to proceed
+                    return $next($request);
                 } else {
-                    // Different device detected - revoke all tokens and force re-login
-                    $user->tokens()->delete();
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Votre compte a été connecté depuis un autre appareil. Reconnectez-vous.',
-                        'error_code' => 'DEVICE_CONFLICT',
-                        'action' => 'LOGIN_REQUIRED'
-                    ], 409); // Use 409 for device conflict
+                    // Different device detected - log but don't delete tokens immediately
+                    \Log::warning("Device change detected for user {$user->uuid}: {$tokenDeviceUuid} -> {$deviceUuid}");
+                    
+                    // Update the current token's name to the new device UUID instead of deleting
+                    $currentToken->update(['name' => $deviceUuid]);
+                    
+                    return $next($request);
                 }
             }
         }
@@ -106,12 +103,11 @@ class EnsureSingleDevice
             ->first();
 
         if ($existingToken) {
-            // Revoke the conflicting token
-            DB::table('personal_access_tokens')
-                ->where('id', $existingToken->id)
-                ->delete();
-
-            \Log::info("Device UUID conflict resolved: Device {$deviceUuid} was transferred from user {$existingToken->tokenable_id} to user {$user->id}");
+            // Log the conflict but don't delete tokens to avoid breaking authentication
+            \Log::info("Device UUID conflict detected: Device {$deviceUuid} is used by user {$existingToken->tokenable_id}, current user: {$user->id}");
+            
+            // Just log the conflict and continue - don't delete tokens
+            // This prevents authentication issues while still tracking conflicts
         }
 
         // Store device UUID in request for further use

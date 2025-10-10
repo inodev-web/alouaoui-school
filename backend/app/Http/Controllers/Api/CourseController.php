@@ -67,29 +67,42 @@ class CourseController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'chapter_id' => 'required|exists:chapters,id',
-            'video' => 'required|file|mimes:mp4,avi,mov|max:2048000', // Max 2GB
+            'video' => 'sometimes|file|mimes:mp4,avi,mov|max:2048000', // Max 2GB
+            'video_ref' => 'sometimes|string|url|max:500', // YouTube URL or other video URL
+            'description' => 'sometimes|string|max:1000',
+            'duration' => 'sometimes|string|max:50',
         ]);
 
-        // Handle video upload
+        // Handle video upload or URL reference
         $videoRef = null;
         if ($request->hasFile('video')) {
+            // File upload
             $videoPath = $request->file('video')->store('videos', 'public');
             $videoRef = basename($videoPath);
+        } elseif ($request->filled('video_ref')) {
+            // URL reference (YouTube, etc.)
+            $videoRef = $request->video_ref;
+        } else {
+            return response()->json([
+                'message' => 'Either video file or video_ref URL is required'
+            ], 422);
         }
 
         $course = Course::create([
             'title' => $request->title,
             'chapter_id' => $request->chapter_id,
             'video_ref' => $videoRef,
+            'description' => $request->description,
+            'duration' => $request->duration,
         ]);
 
-        // Dispatch transcoding job
-        if ($videoRef) {
+        // Dispatch transcoding job only for uploaded files (not URLs)
+        if ($videoRef && $request->hasFile('video')) {
             Queue::push(new TranscodeVideoJob($course, $videoRef));
         }
 
         return response()->json([
-            'message' => 'Video uploaded successfully',
+            'message' => 'Course created successfully',
             'data' => $course->load('chapter')
         ], 201);
     }

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .step { margin: 10px 0; padding: 10px; border-left: 3px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Comprehensive Authentication Debug</h1>
+    
+    <div class="debug-section">
+        <h2>Step 1: Check Current State</h2>
+        <div id="currentState"></div>
+        <button onclick="checkCurrentState()">Refresh State</button>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Step 2: Test Login Process</h2>
+        <input type="text" id="phone" placeholder="Phone number" value="0585394158">
+        <input type="password" id="password" placeholder="Password" value="password123">
+        <button onclick="testLoginProcess()">Test Complete Login</button>
+        <div id="loginProcessResult"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Step 3: Test API Calls (Like Main App)</h2>
+        <button onclick="testSubscriptionsAPI()">Test Subscriptions API</button>
+        <button onclick="testProfileAPI()">Test Profile API</button>
+        <div id="apiTestResult"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Step 4: Simulate Main App Flow</h2>
+        <button onclick="simulateMainAppFlow()">Simulate Main App</button>
+        <div id="mainAppSimulation"></div>
+    </div>
+
+    <script>
+        // Simulate the axios configuration from the main app
+        function createAxiosInstance() {
+            return {
+                get: async (url, config = {}) => {
+                    const fullUrl = `http://localhost:8000/api${url}`;
+                    const token = localStorage.getItem('token');
+                    const deviceUuid = localStorage.getItem('device_uuid');
+                    
+                    console.log('🔍 Axios GET Request:', {
+                        url: fullUrl,
+                        hasToken: !!token,
+                        deviceUuid: deviceUuid,
+                        tokenPreview: token ? token.substring(0, 20) + '...' : 'NONE'
+                    });
+                    
+                    const headers = {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    
+                    if (deviceUuid) {
+                        headers['X-Device-UUID'] = deviceUuid;
+                    }
+                    
+                    const response = await fetch(fullUrl, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    const data = await response.json();
+                    
+                    return {
+                        data: data,
+                        status: response.status,
+                        statusText: response.statusText
+                    };
+                }
+            };
+        }
+        
+        function checkCurrentState() {
+            const token = localStorage.getItem('token');
+            const deviceUuid = localStorage.getItem('device_uuid');
+            const user = localStorage.getItem('user');
+            
+            const state = document.getElementById('currentState');
+            state.innerHTML = `
+                <div class="step">
+                    <h3>Local Storage Contents:</h3>
+                    <p><strong>Token:</strong> ${token ? '<span class="success">FOUND</span>' : '<span class="error">NOT FOUND</span>'}</p>
+                    <p><strong>Device UUID:</strong> ${deviceUuid || '<span class="error">NOT FOUND</span>'}</p>
+                    <p><strong>User:</strong> ${user ? '<span class="success">FOUND</span>' : '<span class="error">NOT FOUND</span>'}</p>
+                </div>
+                ${token ? `<div class="step"><h3>Token Details:</h3><p>${token.substring(0, 30)}...</p></div>` : ''}
+                ${user ? `<div class="step"><h3>User Details:</h3><pre>${JSON.stringify(JSON.parse(user), null, 2)}</pre></div>` : ''}
+            `;
+        }
+        
+        async function testLoginProcess() {
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            const result = document.getElementById('loginProcessResult');
+            
+            result.innerHTML = '<div class="step"><p class="warning">Starting login process...</p></div>';
+            
+            try {
+                // Step 1: Generate device UUID
+                const deviceUuid = crypto.randomUUID ? crypto.randomUUID() : 'dev-' + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('device_uuid', deviceUuid);
+                
+                result.innerHTML += '<div class="step"><p class="info">✅ Device UUID generated: ' + deviceUuid + '</p></div>';
+                
+                // Step 2: Login
+                const loginResponse = await fetch('http://localhost:8000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        login: phone,
+                        password: password,
+                        device_uuid: deviceUuid,
+                        single_device: false
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                
+                if (loginResponse.ok && loginData.data && loginData.data.token) {
+                    localStorage.setItem('token', loginData.data.token);
+                    localStorage.setItem('user', JSON.stringify(loginData.data.user));
+                    
+                    result.innerHTML += '<div class="step"><p class="success">✅ Login successful!</p></div>';
+                    result.innerHTML += '<div class="step"><p class="info">Token stored: ' + loginData.data.token.substring(0, 30) + '...</p></div>';
+                    result.innerHTML += '<div class="step"><p class="info">User stored: ' + loginData.data.user.firstname + ' ' + loginData.data.user.lastname + '</p></div>';
+                } else {
+                    result.innerHTML += '<div class="step"><p class="error">❌ Login failed: ' + (loginData.message || 'Unknown error') + '</p></div>';
+                    return;
+                }
+                
+                // Step 3: Test API calls
+                result.innerHTML += '<div class="step"><p class="info">Testing API calls...</p></div>';
+                
+                const api = createAxiosInstance();
+                
+                // Test subscriptions
+                try {
+                    const subsResponse = await api.get('/subscriptions/active');
+                    result.innerHTML += '<div class="step"><p class="success">✅ Subscriptions API: ' + subsResponse.status + ' - ' + subsResponse.data.data.subscriptions.length + ' subscriptions</p></div>';
+                } catch (e) {
+                    result.innerHTML += '<div class="step"><p class="error">❌ Subscriptions API failed: ' + e.message + '</p></div>';
+                }
+                
+                // Test profile
+                try {
+                    const profileResponse = await api.get('/auth/profile');
+                    result.innerHTML += '<div class="step"><p class="success">✅ Profile API: ' + profileResponse.status + ' - ' + profileResponse.data.data.firstname + '</p></div>';
+                } catch (e) {
+                    result.innerHTML += '<div class="step"><p class="error">❌ Profile API failed: ' + e.message + '</p></div>';
+                }
+                
+            } catch (error) {
+                result.innerHTML += '<div class="step"><p class="error">❌ Process error: ' + error.message + '</p></div>';
+            }
+        }
+        
+        async function testSubscriptionsAPI() {
+            const result = document.getElementById('apiTestResult');
+            result.innerHTML = '<div class="step"><p class="warning">Testing subscriptions API...</p></div>';
+            
+            try {
+                const api = createAxiosInstance();
+                const response = await api.get('/subscriptions/active');
+                
+                result.innerHTML += '<div class="step"><p class="success">✅ Subscriptions API Success!</p></div>';
+                result.innerHTML += '<div class="step"><pre>' + JSON.stringify(response.data, null, 2) + '</pre></div>';
+            } catch (error) {
+                result.innerHTML += '<div class="step"><p class="error">❌ Subscriptions API Failed: ' + error.message + '</p></div>';
+            }
+        }
+        
+        async function testProfileAPI() {
+            const result = document.getElementById('apiTestResult');
+            result.innerHTML = '<div class="step"><p class="warning">Testing profile API...</p></div>';
+            
+            try {
+                const api = createAxiosInstance();
+                const response = await api.get('/auth/profile');
+                
+                result.innerHTML += '<div class="step"><p class="success">✅ Profile API Success!</p></div>';
+                result.innerHTML += '<div class="step"><pre>' + JSON.stringify(response.data, null, 2) + '</pre></div>';
+            } catch (error) {
+                result.innerHTML += '<div class="step"><p class="error">❌ Profile API Failed: ' + error.message + '</p></div>';
+            }
+        }
+        
+        async function simulateMainAppFlow() {
+            const result = document.getElementById('mainAppSimulation');
+            result.innerHTML = '<div class="step"><p class="warning">Simulating main app flow...</p></div>';
+            
+            // Check if user is logged in
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (!token || !user) {
+                result.innerHTML += '<div class="step"><p class="error">❌ User not logged in. Please login first.</p></div>';
+                return;
+            }
+            
+            result.innerHTML += '<div class="step"><p class="info">✅ User is logged in</p></div>';
+            
+            // Simulate ProfilePage logic
+            const userData = JSON.parse(user);
+            result.innerHTML += '<div class="step"><p class="info">User data: ' + userData.firstname + ' ' + userData.lastname + '</p></div>';
+            
+            // Check if we need to fetch profile
+            const shouldFetch = !userData || !userData.firstname || !userData.lastname || !userData.qr_token;
+            result.innerHTML += '<div class="step"><p class="info">Should fetch profile: ' + shouldFetch + '</p></div>';
+            
+            if (shouldFetch) {
+                result.innerHTML += '<div class="step"><p class="warning">Would call getProfile()...</p></div>';
+                try {
+                    const api = createAxiosInstance();
+                    const profileResponse = await api.get('/auth/profile');
+                    result.innerHTML += '<div class="step"><p class="success">✅ Profile fetched successfully</p></div>';
+                } catch (e) {
+                    result.innerHTML += '<div class="step"><p class="error">❌ Profile fetch failed: ' + e.message + '</p></div>';
+                }
+            }
+            
+            // Test subscriptions loading
+            result.innerHTML += '<div class="step"><p class="info">Testing subscriptions loading...</p></div>';
+            try {
+                const api = createAxiosInstance();
+                const subsResponse = await api.get('/subscriptions/active');
+                result.innerHTML += '<div class="step"><p class="success">✅ Subscriptions loaded: ' + subsResponse.data.data.subscriptions.length + ' items</p></div>';
+            } catch (e) {
+                result.innerHTML += '<div class="step"><p class="error">❌ Subscriptions loading failed: ' + e.message + '</p></div>';
+            }
+        }
+        
+        // Initialize
+        checkCurrentState();
+    </script>
+</body>
+</html>
