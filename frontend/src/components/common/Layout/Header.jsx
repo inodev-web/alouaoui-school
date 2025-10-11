@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, BookOpen, LogOut } from 'lucide-react';
+import { Menu, X, BookOpen, LogOut, User } from 'lucide-react';
 import AuthService from '../../../services/api/auth.service';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout as logoutAction } from '../../../store/slices/authSlice';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const isLoggedIn = !!localStorage.getItem('token');
+  const getAccountLink = () => {
+    if (!isAuthenticated) {
+      return '/login';
+    }
+    return user?.role === 'admin' ? '/admin' : '/student/profile';
+  };
+
+  const handleDiscoverCourses = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    navigate('/student/chapters');
+  };
 
   const handleLogout = async () => {
     try {
@@ -33,8 +47,18 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* CTA Button Desktop */}
           <div className="hidden lg:block">
-            <Link to="/register" className="bg-gradient-to-r from-red-400 to-pink-500 text-white px-6 py-2 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block">
-               سجل الان
+            <Link 
+              to={isAuthenticated ? getAccountLink() : "/login"} 
+              className="bg-gradient-to-r from-red-400 to-pink-500 text-white px-6 py-2 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block flex items-center gap-2"
+            >
+              {isAuthenticated ? (
+                <>
+                  <User className="w-4 h-4" />
+                  <span>حسابي</span>
+                </>
+              ) : (
+                "سجل الان"
+              )}
             </Link>
           </div>
           {/* Desktop Menu */}
@@ -44,12 +68,9 @@ const Navbar = () => {
             <a href="#about" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">عني</a>
             <a href="#courses" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">الاحداث</a>
 
-            {isLoggedIn && (
-              <button onClick={handleLogout} className="flex items-center space-x-2 rtl:space-x-reverse text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">
-                <LogOut className="w-4 h-4" />
-                <span className="text-sm">تسجيل الخروج</span>
-              </button>
-            )}
+            <button onClick={handleDiscoverCourses} className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">
+              اكتشف الدروس
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -81,18 +102,29 @@ const Navbar = () => {
             <a href="#results" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">نتائج و اراء</a>
             <a href="#contact" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">تواصل معي</a>
             <div className="px-4 pt-2">
-              <Link to="/register" className="block w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 text-center">
-                 سجل الان
+              <Link 
+                to={isAuthenticated ? getAccountLink() : "/register"}
+                className="block w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 text-center flex items-center justify-center gap-2"
+              >
+                {isAuthenticated ? (
+                  <>
+                    <User className="w-4 h-4" />
+                    <span>حسابي</span>
+                  </>
+                ) : (
+                  "سجل الان"
+                )}
               </Link>
             </div>
-            {isLoggedIn && (
-              <div className="px-4">
-                <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 py-3 rounded-full font-medium hover:bg-gray-50">
-                  <LogOut className="w-4 h-4" />
-                  تسجيل الخروج
-                </button>
-              </div>
-            )}
+            <div className="px-4">
+              <button 
+                onClick={handleDiscoverCourses}
+                className="block w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-full font-medium hover:bg-gray-50 text-center"
+              >
+                اكتشف الدروس
+              </button>
+            </div>
+
           </div>
         </div>
       </div>

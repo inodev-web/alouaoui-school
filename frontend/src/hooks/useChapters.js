@@ -89,20 +89,66 @@ export const useChapters = () => {
     try {
       setLoading(true)
       setError(null)
-      const response = await courseService.createCourse({
-        ...courseData,
-        chapter_id: chapterId
-      })
-      const newCourse = response.data
+      
+      // Si courseData est déjà un FormData, ajouter juste le chapter_id
+      if (courseData instanceof FormData) {
+        courseData.append('chapter_id', chapterId)
+      } else {
+        // Sinon, créer un nouveau FormData avec toutes les données
+        const formData = new FormData()
+        formData.append('chapter_id', chapterId)
+        
+        Object.entries(courseData).forEach(([key, value]) => {
+          if (value instanceof File) {
+            formData.append(key, value)
+          } else if (value !== null && value !== undefined) {
+            formData.append(key, value.toString())
+          }
+        })
+        
+        courseData = formData
+      }
+      
+      console.log('Creating course with data:', Object.fromEntries(courseData.entries()))
+      const response = await courseService.createCourse(courseData)
+      console.log('Response received in addCourse:', response)
+      
+      // S'assurer que nous avons une réponse valide en vérifiant la structure attendue
+      let courseResponseData = null
+      
+      // Vérifier les différentes structures possibles de la réponse
+      if (response?.data?.data) {
+        // Si la réponse est du type { data: { data: {...} } }
+        courseResponseData = response.data.data
+      } else if (response?.data) {
+        // Si la réponse est du type { data: {...} }
+        courseResponseData = response.data
+      } else if (response) {
+        // Si la réponse est directement les données
+        courseResponseData = response
+      }
+      
+      if (!courseResponseData) {
+        console.error('Invalid response structure:', response)
+        throw new Error('Format de réponse invalide du serveur')
+      }
       
       setChapters(prev => 
-        prev.map(chapter => 
-          chapter.id === chapterId 
-            ? { ...chapter, courses: [...(chapter.courses || []), newCourse] }
-            : chapter
-        )
+        prev.map(chapter => {
+          if (chapter.id === chapterId) {
+            return {
+              ...chapter,
+              courses: [...(chapter.courses || []), {
+                ...courseResponseData,
+                pdf_summary: courseResponseData.pdf_summary || null,
+                exercises_pdf: courseResponseData.exercises_pdf || null
+              }]
+            }
+          }
+          return chapter
+        })
       )
-      return newCourse
+      return courseResponseData
     } catch (err) {
       setError(err.message || 'فشل في إنشاء الدرس')
       console.error('Error creating course:', err)
@@ -172,7 +218,31 @@ export const useChapters = () => {
     try {
       setLoading(true)
       setError(null)
+      console.log('Uploading PDF:', { courseId, type, fileName: file.name })
+      
       const response = await courseService.uploadCoursePDF(courseId, file, type)
+      console.log('Upload response:', response.data)
+      
+      // Mettre à jour le state des chapitres après l'upload réussi
+      // Rechargez les données complètes après l'upload
+      const reloadResponse = await courseService.getCourse(courseId)
+      console.log('Reloaded course data:', reloadResponse.data)
+      
+      setChapters(prev => {
+        const newChapters = prev.map(chapter => {
+          const newCourses = chapter.courses.map(course => {
+            if (course.id === courseId) {
+              // Utilisez les données fraîchement rechargées
+              return reloadResponse.data
+            }
+            return course
+          })
+          return { ...chapter, courses: newCourses }
+        })
+        console.log('New chapters state:', newChapters)
+        return newChapters
+      })
+      
       return response.data
     } catch (err) {
       setError(err.message || 'فشل في رفع ملف PDF')
@@ -181,7 +251,7 @@ export const useChapters = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [setChapters])
 
   const getChapterById = useCallback((chapterId) => {
     return chapters.find(chapter => chapter.id === chapterId)

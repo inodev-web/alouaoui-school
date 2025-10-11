@@ -1,9 +1,24 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, BookOpen} from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, BookOpen, LogOut } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { logout as logoutAction } from '../../../store/slices/authSlice';
+import AuthService from '../../../services/api/auth.service';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+    } catch {
+      console.warn('Logout request failed, clearing local session');
+    }
+    try { dispatch(logoutAction()); } catch { /* noop */ }
+    navigate('/login');
+  };
 
   return (
     <nav className=" bg-white shadow-lg fixed w-full top-0 z-[100]">
@@ -20,6 +35,10 @@ const Navbar = () => {
             <Link to="/student/profile" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">حسابي</Link>
             <Link to="/student/lives" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">لايف</Link>
             <Link to="/student/chapters" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">الدروس</Link>
+            <button onClick={handleLogout} className="flex items-center gap-2 text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm">تسجيل الخروج</span>
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -49,6 +68,13 @@ const Navbar = () => {
             <Link to="/student/chapters" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">الدروس</Link>
             <Link to="/student/lives" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">لايف</Link>
             <Link to="/student/profile" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">حسابي</Link>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-end gap-2 px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>تسجيل الخروج</span>
+            </button>
             <div className="px-4 pt-2">
               <Link to="/register" className="block w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 text-center">
                  سجل الان

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { AddCourseModal } from "@/components/admin/add-course-modal"
+import { EditChapterModal } from "@/components/admin/edit-chapter-modal"
 import { CourseDetailsModal } from "@/components/admin/course-details-modal"
 import { BookOpen, Video, Plus, Eye, Edit, Trash2 } from "lucide-react"
 
@@ -19,6 +19,12 @@ export function ChaptersGrid({
 }) {
   const [selectedChapter, setSelectedChapter] = useState(null)
   const [selectedCourse, setSelectedCourse] = useState(null)
+  const [editChapterOpen, setEditChapterOpen] = useState(false)
+
+  const handleEditChapter = (chapter) => {
+    setSelectedChapter(chapter)
+    setEditChapterOpen(true)
+  }
 
   return (
     <div dir="rtl">
@@ -32,38 +38,18 @@ export function ChaptersGrid({
                   <div>
                     <CardTitle className="text-lg text-right">{chapter.title}</CardTitle>
                     <CardDescription>
-                      <Badge variant="outline" className="mt-1">
-                        {chapter.module}
-                      </Badge>
+                      <Badge variant="outline" className="mt-1">{chapter.year_target}</Badge>
                     </CardDescription>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <AddCourseModal
-                    chapterId={chapter.id}
-                    chapterTitle={chapter.title}
-                    onAddCourse={onAddCourse}
-                    onUploadPDF={onUploadPDF}
-                    trigger={
-                      <Button size="sm" variant="outline">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    }
-                  />
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => onUpdateChapter && onUpdateChapter(chapter.id, chapter)}
+                    onClick={() => handleEditChapter(chapter)}
                   >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => onDeleteChapter && onDeleteChapter(chapter.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
+                    <Edit className="h-4 w-4 ml-2" />
+                    تعديل
                   </Button>
                 </div>
               </div>
@@ -113,6 +99,20 @@ export function ChaptersGrid({
           course={selectedCourse}
           open={!!selectedCourse}
           onOpenChange={(open) => !open && setSelectedCourse(null)}
+        />
+      )}
+
+      {selectedChapter && (
+        <EditChapterModal
+          chapter={selectedChapter}
+          open={editChapterOpen}
+          onOpenChange={setEditChapterOpen}
+          onUpdateChapter={onUpdateChapter}
+          onDeleteChapter={onDeleteChapter}
+          onAddCourse={onAddCourse}
+          onUpdateCourse={onUpdateCourse}
+          onDeleteCourse={onDeleteCourse}
+          onUploadPDF={onUploadPDF}
         />
       )}
     </div>

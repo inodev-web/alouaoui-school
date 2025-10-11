@@ -119,12 +119,18 @@ export function StudentCheckinDialog({ student, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        aria-describedby="student-checkin-description"
+      >
         <DialogHeader>
           <DialogTitle className="text-right flex items-center gap-2">
             <User className="h-5 w-5" />
             معلومات الطالب - {student.student.firstname} {student.student.lastname}
           </DialogTitle>
+          <div id="student-checkin-description" className="sr-only">
+            تفاصيل حضور وجلسات الطالب
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">

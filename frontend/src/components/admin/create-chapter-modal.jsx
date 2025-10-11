@@ -33,7 +33,6 @@ export function CreateChapterModal({ onAddChapter }) {
     title: "",
     description: "",
     icon: "",
-    module: "",
     year_target: "",
   })
 
@@ -47,7 +46,6 @@ export function CreateChapterModal({ onAddChapter }) {
       title: "",
       description: "",
       icon: "",
-      module: "",
       year_target: "",
     })
   }
@@ -60,10 +58,16 @@ export function CreateChapterModal({ onAddChapter }) {
           إضافة فصل جديد
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]" dir="rtl">
+      <DialogContent 
+        className="sm:max-w-[500px]" 
+        dir="rtl"
+        aria-describedby="chapter-create-description"
+      >
         <DialogHeader>
           <DialogTitle className="text-right">إضافة فصل جديد</DialogTitle>
-          <DialogDescription className="text-right">أضف فصلاً جديداً لتنظيم المحتوى التعليمي.</DialogDescription>
+          <DialogDescription id="chapter-create-description" className="text-right">
+            أضف فصلاً جديداً لتنظيم المحتوى التعليمي.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -114,25 +118,7 @@ export function CreateChapterModal({ onAddChapter }) {
               </Select>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="module" className="text-right">
-                المادة
-              </Label>
-              <Select value={formData.module} onValueChange={(value) => setFormData({ ...formData, module: value })}>
-                <SelectTrigger className="col-span-3 text-right">
-                  <SelectValue placeholder="اختر المادة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="الرياضيات">الرياضيات</SelectItem>
-                  <SelectItem value="الفيزياء">الفيزياء</SelectItem>
-                  <SelectItem value="الكيمياء">الكيمياء</SelectItem>
-                  <SelectItem value="الأحياء">الأحياء</SelectItem>
-                  <SelectItem value="اللغة الإنجليزية">اللغة الإنجليزية</SelectItem>
-                  <SelectItem value="التاريخ">التاريخ</SelectItem>
-                  <SelectItem value="الجغرافيا">الجغرافيا</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="year_target" className="text-right">

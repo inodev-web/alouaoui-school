@@ -17,19 +17,20 @@ export default function AdminStudentsPage() {
 
   return (
     <div dir="rtl">
-      <div className="flex items-center justify-between mb-6">
+      {/* <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground text-right">الطلاب</h1>
           <p className="text-muted-foreground text-right">إدارة حسابات الطلاب ومتابعة تقدمهم</p>
         </div>
-        <AddStudentModal />
-      </div>
+      </div> */}
 
       {/* Students Table */}
       <Card>
         <CardHeader>
           <CardTitle className="text-right">دليل الطلاب</CardTitle>
           <CardDescription className="text-right">البحث والتصفية للطلاب حسب معايير مختلفة</CardDescription>
+                   <AddStudentModal />
+
         </CardHeader>
         <CardContent>
           <StudentsFilters 

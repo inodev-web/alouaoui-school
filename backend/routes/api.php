@@ -134,6 +134,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [CourseController::class, 'store'])->name('store');
             Route::put('/{course}', [CourseController::class, 'update'])->name('update');
             Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
+            Route::post('/{course}/upload-pdf', [CourseController::class, 'uploadPDF'])->name('upload-pdf');
+            Route::delete('/{course}/pdf', [CourseController::class, 'deletePDF'])->name('delete-pdf');
         });
     });
 

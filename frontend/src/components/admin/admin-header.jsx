@@ -1,8 +1,9 @@
 "use client";
 
-import { Bell, Search, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Bell, Search, User, Menu } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { useSidebar } from "../../contexts/SidebarContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,12 +11,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "../../components/ui/dropdown-menu";
 
 export function AdminHeader() {
+  const { toggleSidebar } = useSidebar();
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6" dir="rtl">
-      <div className="flex items-center gap-4 flex-1">
+      {/* <div className="flex items-center gap-4 flex-1">
         <div className="relative max-w-md flex-1">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -23,7 +26,7 @@ export function AdminHeader() {
             className="pr-10 bg-background text-right"
           />
         </div>
-      </div>
+      </div> */}
 
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" className="relative">

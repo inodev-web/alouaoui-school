@@ -35,13 +35,19 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
+      <DialogContent 
+        className="max-w-2xl max-h-[80vh] overflow-y-auto" 
+        dir="rtl"
+        aria-describedby="course-details-description"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-right">
             <Video className="h-5 w-5" />
             {course.title}
           </DialogTitle>
-          <DialogDescription className="text-right">معرف الدرس: {course.id}</DialogDescription>
+          <DialogDescription id="course-details-description" className="text-right">
+            تفاصيل الدرس: {course.title} (معرف: {course.id})
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

@@ -45,8 +45,43 @@ export const courseService = {
    */
   async createCourse(courseData) {
     try {
-      const response = await api.post(COURSE_ENDPOINTS.COURSES, courseData)
-      return response.data
+      // Si courseData est déjà un FormData, l'utiliser tel quel
+      // Sinon, créer un nouveau FormData
+      let formData = courseData instanceof FormData ? courseData : new FormData()
+      
+      // Si courseData est un objet simple, ajouter chaque champ au FormData
+      if (!(courseData instanceof FormData)) {
+        Object.entries(courseData).forEach(([key, value]) => {
+          console.log('Adding field to FormData:', key, value)
+          if (value instanceof File) {
+            console.log('Adding file:', key, value.name)
+            formData.append(key, value, value.name)
+          } else if (value !== null && value !== undefined) {
+            formData.append(key, value)
+          }
+        })
+      }
+      
+      // Configurer les en-têtes pour FormData
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+      
+      console.log('Creating course with FormData:', Object.fromEntries(formData.entries()))
+      const response = await api.post(COURSE_ENDPOINTS.COURSES, formData, config)
+      console.log('Course created successfully:', response)
+      
+      // Standardiser la structure de la réponse
+      const responseData = response.data?.data || response.data || response
+      console.log('Standardized response data:', responseData)
+      
+      if (!responseData) {
+        throw new Error('Réponse invalide du serveur')
+      }
+      
+      return responseData
     } catch (error) {
       console.error('Error creating course:', error)
       throw error
@@ -58,7 +93,35 @@ export const courseService = {
    */
   async updateCourse(courseId, courseData) {
     try {
-      const response = await api.put(`${COURSE_ENDPOINTS.COURSES}/${courseId}`, courseData)
+      // Si courseData est déjà un FormData, l'utiliser tel quel
+      // Sinon, créer un nouveau FormData
+      let formData = courseData instanceof FormData ? courseData : new FormData()
+      
+      // Si courseData est un objet simple, ajouter chaque champ au FormData
+      if (!(courseData instanceof FormData)) {
+        Object.entries(courseData).forEach(([key, value]) => {
+          if (value instanceof File) {
+            formData.append(key, value)
+          } else if (value !== null && value !== undefined) {
+            formData.append(key, value.toString())
+          }
+        })
+      }
+      
+      // Configurer les en-têtes pour FormData
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+      
+      console.log('Updating course with FormData:', {
+        courseId,
+        data: Object.fromEntries(formData.entries())
+      })
+
+      const response = await api.put(`${COURSE_ENDPOINTS.COURSES}/${courseId}`, formData, config)
+      console.log('Course updated successfully:', response.data)
       return response.data
     } catch (error) {
       console.error('Error updating course:', error)
@@ -97,15 +160,20 @@ export const courseService = {
    */
   async uploadCoursePDF(courseId, file, type = 'summary') {
     try {
+      console.log('Preparing PDF upload:', { courseId, type, fileName: file.name })
+      
       const formData = new FormData()
       formData.append('file', file)
       formData.append('type', type) // 'summary' or 'exercises'
 
+      console.log('Sending request to:', `${COURSE_ENDPOINTS.COURSES}/${courseId}/upload-pdf`)
       const response = await api.post(`${COURSE_ENDPOINTS.COURSES}/${courseId}/upload-pdf`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
+      
+      console.log('Upload response:', response.data)
       return response.data
     } catch (error) {
       console.error('Error uploading course PDF:', error)
