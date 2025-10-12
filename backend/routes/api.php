@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\CheckinController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\StreamController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -167,6 +168,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{session}', [App\Http\Controllers\Api\SessionController::class, 'update'])->name('update');
             Route::delete('/{session}', [App\Http\Controllers\Api\SessionController::class, 'destroy'])->name('destroy');
         });
+    });
+
+    // Dashboard analytics (admin only, no device check needed)
+    Route::middleware('abilities:admin')->group(function () {
+        Route::get('/dashboard/analytics', [DashboardController::class, 'index'])->name('dashboard.analytics');
     });
 
     // Streaming statistics (admin only, no device check needed)

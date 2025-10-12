@@ -44,13 +44,4 @@ class Course extends Model
     {
         return $this->chapter?->year_target;
     }
-
-    /**
-     * Get the teacher through chapter relationship
-     */
-    public function teacher(): BelongsTo
-    {
-        return $this->belongsTo(Teacher::class, 'teacher_uuid', 'uuid')
-            ->through('chapter');
-    }
 }
