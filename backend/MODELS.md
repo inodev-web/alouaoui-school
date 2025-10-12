@@ -6,7 +6,7 @@
 ```php
 // Relations
 hasMany(Subscription::class, 'student_id')
-hasMany(Payment::class, 'student_id')  
+// Payment system removed  
 hasMany(Attendance::class, 'student_id')
 
 // Méthodes utiles
@@ -20,7 +20,7 @@ activeSubscriptions() : HasMany
 // Relations
 hasMany(Chapter::class)
 hasMany(Subscription::class)
-hasMany(Payment::class)
+// Payment system removed
 hasMany(Session::class)
 hasMany(Attendance::class)
 
@@ -65,23 +65,10 @@ daysRemaining() : int
 PAYMENT_TYPES = ['cash_presentiel', 'online', 'cash_direct']
 ```
 
-### 💰 **Payment** (Paiements)
+### 💰 **Payment** (Paiements) - REMOVED
 ```php
-// Relations
-belongsTo(User::class, 'student_id')
-belongsTo(Teacher::class)
-
-// Méthodes utiles
-isConfirmed() : bool
-isPending() : bool
-isFailed() : bool
-markAsConfirmed() : bool
-markAsFailed() : bool
-
-// Constantes
-METHODS = ['online', 'cash']
-STATUSES = ['pending', 'confirmed', 'failed']
-CONTEXTS = ['subscription', 'session', 'school_entry']
+// Payment system has been completely removed from the application
+// All payment-related functionality has been eliminated
 ```
 
 ### 📅 **Session** (Sessions de cours)
@@ -122,13 +109,13 @@ STATUSES = ['present', 'absent']
 ```
 User (Student)
 ├── hasMany → Subscriptions
-├── hasMany → Payments
+// Payment system removed
 └── hasMany → Attendances
 
 Teacher
 ├── hasMany → Chapters
 ├── hasMany → Subscriptions
-├── hasMany → Payments
+// Payment system removed
 ├── hasMany → Sessions
 └── hasMany → Attendances
 
@@ -147,9 +134,7 @@ Subscription
 ├── belongsTo → User (student)
 └── belongsTo → Teacher
 
-Payment
-├── belongsTo → User (student)
-└── belongsTo → Teacher
+// Payment system removed
 
 Attendance
 ├── belongsTo → User (student)
@@ -170,10 +155,8 @@ Attendance
 - `is_online_publisher` : Publie du contenu en ligne
 - `allows_online_payment` : Accepte les paiements en ligne
 
-### **Paiements contextuels (Payment)**
-- `payment_context` : Contexte du paiement (subscription, session, school_entry)
-- `grants_school_entry` : Donne accès à l'école
-- `processor_reference` : Référence du processeur de paiement
+### **Paiements contextuels (Payment) - REMOVED**
+- Payment system has been completely removed from the application
 
 ## 🔧 Utilisation des modèles
 
@@ -195,16 +178,8 @@ if ($subscription && $subscription->videos_access) {
 }
 ```
 
-### **Créer un paiement et abonnement**
+### **Créer un abonnement (Payment system removed)**
 ```php
-$payment = Payment::create([
-    'student_id' => $student->id,
-    'teacher_uuid' => $teacher->uuid,
-    'amount' => $teacher->price_subscription,
-    'method' => 'online',
-    'status' => 'confirmed',
-]);
-
 $subscription = Subscription::create([
     'student_id' => $student->id,
     'teacher_uuid' => $teacher->uuid,
@@ -238,7 +213,7 @@ php artisan make:model Teacher
 php artisan make:model Chapter
 php artisan make:model Course
 php artisan make:model Subscription
-php artisan make:model Payment
+# Payment model removed
 php artisan make:model Session
 php artisan make:model Attendance
 ```

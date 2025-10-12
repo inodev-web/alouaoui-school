@@ -23,7 +23,7 @@ echo "🚀 Génération des données de test complètes pour le dashboard...\n\n
 echo "1️⃣ Nettoyage des tables existantes...\n";
 Capsule::table('stream_tokens')->truncate();
 Capsule::table('attendances')->truncate();
-Capsule::table('payments')->truncate();
+// Payment system removed
 Capsule::table('subscriptions')->truncate();
 Capsule::table('sessions')->truncate();
 Capsule::table('courses')->truncate();
@@ -294,71 +294,9 @@ foreach (array_chunk($attendances, 50) as $chunk) {
 }
 echo "   ✅ " . count($attendances) . " présences créées\n";
 
-// 8. Créer les paiements
-echo "8️⃣ Création des paiements...\n";
-$payments = [];
-$payment_contexts = ['subscription', 'session', 'school_entry'];
-$payment_methods = ['cash', 'online'];
-$payment_statuses = ['pending', 'confirmed', 'failed'];
-
-// Répartition des paiements sur 6 mois
-for ($month = 5; $month >= 0; $month--) {
-    $month_date = Carbon::now()->subMonths($month);
-    $payments_this_month = rand(15, 35); // Nombre de paiements par mois
-    
-    for ($i = 0; $i < $payments_this_month; $i++) {
-        $student_uuid = $student_uuids[array_rand($student_uuids)];
-        $teacher_uuid = $teacher_uuids[array_rand($teacher_uuids)];
-        
-        $context = $payment_contexts[array_rand($payment_contexts)];
-        $method = $payment_methods[array_rand($payment_methods)];
-        
-        // Statuts réalistes : plus de confirmés, quelques en attente, peu d'échecs
-        $status_weights = ['confirmed' => 70, 'pending' => 20, 'failed' => 10];
-        $rand = rand(1, 100);
-        if ($rand <= 70) {
-            $status = 'confirmed';
-        } elseif ($rand <= 90) {
-            $status = 'pending';
-        } else {
-            $status = 'failed';
-        }
-        
-        // Montants selon le contexte
-        switch ($context) {
-            case 'subscription':
-                $amount = rand(2000, 3500);
-                break;
-            case 'session':
-                $amount = rand(1000, 1800);
-                break;
-            case 'school_entry':
-                $amount = rand(500, 1200);
-                break;
-        }
-        
-        // Date de création dans le mois
-        $payment_date = $month_date->copy()->addDays(rand(1, $month_date->daysInMonth));
-        
-        $payments[] = [
-            'student_uuid' => $student_uuid,
-            'teacher_uuid' => $teacher_uuid,
-            'amount' => $amount,
-            'method' => $method,
-            'status' => $status,
-            'payment_context' => $context,
-            'grants_school_entry' => $context === 'school_entry' && $status === 'confirmed',
-            'processor_reference' => $method === 'online' ? 'TXN_' . Str::random(12) : null,
-            'created_at' => $payment_date,
-            'updated_at' => $payment_date,
-        ];
-    }
-}
-
-foreach (array_chunk($payments, 30) as $chunk) {
-    Capsule::table('payments')->insert($chunk);
-}
-echo "   ✅ " . count($payments) . " paiements créés\n";
+// 8. Payment system removed
+echo "8️⃣ Payment system has been removed...\n";
+// Payment creation code removed
 
 // 9. Créer des tokens de streaming
 echo "9️⃣ Création des tokens de streaming...\n";
@@ -409,7 +347,7 @@ $total_teachers = Capsule::table('teachers')->count();
 $total_subscriptions = Capsule::table('subscriptions')->count();
 $total_sessions = Capsule::table('sessions')->count();
 $total_attendances = Capsule::table('attendances')->count();
-$total_payments = Capsule::table('payments')->count();
+// Payment system removed
 $total_courses = Capsule::table('courses')->count();
 $total_chapters = Capsule::table('chapters')->count();
 $total_tokens = Capsule::table('stream_tokens')->count();
@@ -421,53 +359,10 @@ echo "🎥 Cours: $total_courses\n";
 echo "💳 Abonnements: $total_subscriptions\n";
 echo "🏫 Sessions: $total_sessions\n";
 echo "✅ Présences: $total_attendances\n";
-echo "💰 Paiements: $total_payments\n";
+echo "💰 Paiements: Payment system removed\n";
 echo "🎬 Tokens streaming: $total_tokens\n";
 
-// Statistiques de revenus
-$monthly_revenue = Capsule::table('payments')
-    ->where('status', 'confirmed')
-    ->whereMonth('created_at', Carbon::now()->month)
-    ->whereYear('created_at', Carbon::now()->year)
-    ->sum('amount');
-
-$total_revenue = Capsule::table('payments')
-    ->where('status', 'confirmed')
-    ->sum('amount');
-
-$confirmed_payments = Capsule::table('payments')->where('status', 'confirmed')->count();
-$pending_payments = Capsule::table('payments')->where('status', 'pending')->count();
-$failed_payments = Capsule::table('payments')->where('status', 'failed')->count();
-
-echo "\n💰 ANALYSE DES REVENUS:\n";
-echo "-" . str_repeat("-", 30) . "\n";
-echo "💵 Revenus ce mois: " . number_format($monthly_revenue, 2) . " DZD\n";
-echo "💵 Revenus total: " . number_format($total_revenue, 2) . " DZD\n";
-echo "✅ Paiements confirmés: $confirmed_payments\n";
-echo "⏳ Paiements en attente: $pending_payments\n";
-echo "❌ Paiements échoués: $failed_payments\n";
-
-// Répartition par contexte
-$subscription_revenue = Capsule::table('payments')
-    ->where('status', 'confirmed')
-    ->where('payment_context', 'subscription')
-    ->sum('amount');
-
-$session_revenue = Capsule::table('payments')
-    ->where('status', 'confirmed')
-    ->where('payment_context', 'session')
-    ->sum('amount');
-
-$school_entry_revenue = Capsule::table('payments')
-    ->where('status', 'confirmed')
-    ->where('payment_context', 'school_entry')
-    ->sum('amount');
-
-echo "\n📊 RÉPARTITION DES REVENUS:\n";
-echo "-" . str_repeat("-", 30) . "\n";
-echo "📚 Abonnements: " . number_format($subscription_revenue, 2) . " DZD\n";
-echo "🏫 Sessions: " . number_format($session_revenue, 2) . " DZD\n";
-echo "🎫 Entrées école: " . number_format($school_entry_revenue, 2) . " DZD\n";
+// Payment system removed - no revenue analysis
 
 // Étudiants actifs (avec abonnement en cours)
 $active_students = Capsule::table('users')

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Teacher;
 use App\Models\Subscription;
-use App\Models\Payment;
 use App\Models\Session;
 use App\Models\Attendance;
 use App\Models\Course;
@@ -32,7 +31,6 @@ class DashboardController extends Controller
                 'teachers' => $this->getTeacherPerformance(),
                 'attendance' => $this->getAttendanceMetrics(),
                 'courses' => $this->getCoursePopularity(),
-                'payments' => $this->getPaymentBreakdown(),
                 'predictions' => $this->getPredictiveAnalytics(),
             ]);
         } catch (\Exception $e) {
@@ -53,19 +51,8 @@ class DashboardController extends Controller
                   ->where('ends_at', '>=', now());
             })->count();
 
-        $monthlyRevenue = Payment::where('status', 'confirmed')
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->sum('amount');
-
-        $lastMonthRevenue = Payment::where('status', 'confirmed')
-            ->whereMonth('created_at', now()->subMonth()->month)
-            ->whereYear('created_at', now()->subMonth()->year)
-            ->sum('amount');
-
-        $revenueGrowth = $lastMonthRevenue > 0 
-            ? round((($monthlyRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100, 1)
-            : 0;
+        $monthlyRevenue = 0; // Payment system removed
+        $revenueGrowth = 0; // Payment system removed
 
         $avgEngagement = $this->calculateEngagementRate();
         $retentionRate = $this->calculateRetentionRate();
@@ -99,49 +86,15 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get revenue analytics
+     * Get revenue analytics (Payment system removed)
      */
     private function getRevenueAnalytics(): array
     {
-        $months = collect();
-        for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-            $revenue = Payment::where('status', 'confirmed')
-                ->whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
-                ->sum('amount');
-
-            $subscriptionRevenue = Payment::where('status', 'confirmed')
-                ->where('payment_context', 'subscription')
-                ->whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
-                ->sum('amount');
-
-            $sessionRevenue = Payment::where('status', 'confirmed')
-                ->where('payment_context', 'session')
-                ->whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
-                ->sum('amount');
-
-            $schoolEntryRevenue = Payment::where('status', 'confirmed')
-                ->where('payment_context', 'school_entry')
-                ->whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
-                ->sum('amount');
-
-            $months->push([
-                'month' => $date->format('F'),
-                'month_ar' => $this->getArabicMonth($date->month),
-                'actual' => $revenue,
-                'subscriptions' => $subscriptionRevenue,
-                'sessions' => $sessionRevenue,
-                'school_entry' => $schoolEntryRevenue,
-                'target' => 250000, // Could be dynamic
-                'predicted' => $revenue * 1.15, // Simple prediction
-            ]);
-        }
-
-        return $months->toArray();
+        // Payment system has been removed
+        return [
+            'message' => 'Payment system has been removed',
+            'data' => []
+        ];
     }
 
     /**
@@ -181,10 +134,7 @@ class DashboardController extends Controller
             ->get()
             ->map(function($teacher) {
                 $studentCount = $teacher->subscriptions->count();
-                $revenue = Payment::where('teacher_uuid', $teacher->uuid)
-                    ->where('status', 'confirmed')
-                    ->whereMonth('created_at', now()->month)
-                    ->sum('amount');
+                $revenue = 0; // Payment system removed
 
                 return [
                     'id' => $teacher->uuid,
@@ -264,61 +214,19 @@ class DashboardController extends Controller
             ->toArray();
     }
 
-    /**
-     * Get payment methods breakdown
-     */
-    private function getPaymentBreakdown(): array
-    {
-        $totalAmount = Payment::where('status', 'confirmed')
-            ->whereMonth('created_at', now()->month)
-            ->sum('amount');
-
-        $methods = [
-            'cash' => Payment::where('method', 'cash')
-                ->where('status', 'confirmed')
-                ->whereMonth('created_at', now()->month)
-                ->sum('amount'),
-            'online' => Payment::where('method', 'online')
-                ->where('status', 'confirmed')
-                ->whereMonth('created_at', now()->month)
-                ->sum('amount'),
-        ];
-
-        return [
-            'total_amount' => $totalAmount,
-            'methods' => [
-                [
-                    'name' => 'نقداً في المدرسة',
-                    'amount' => $methods['cash'],
-                    'percentage' => $totalAmount > 0 ? round(($methods['cash'] / $totalAmount) * 100) : 0,
-                ],
-                [
-                    'name' => 'دفع إلكتروني',
-                    'amount' => $methods['online'],
-                    'percentage' => $totalAmount > 0 ? round(($methods['online'] / $totalAmount) * 100) : 0,
-                ],
-            ],
-        ];
-    }
 
     /**
-     * Get predictive analytics
+     * Get predictive analytics (Payment system removed)
      */
     private function getPredictiveAnalytics(): array
     {
-        $currentRevenue = Payment::where('status', 'confirmed')
-            ->whereMonth('created_at', now()->month)
-            ->sum('amount');
-
         return [
-            'next_month_revenue' => $currentRevenue * 1.15,
-            'confidence' => 91.5,
-            'growth_prediction' => 23.5,
+            'message' => 'Payment system has been removed',
             'student_growth' => rand(2000, 2800),
             'scenarios' => [
-                'optimistic' => ['revenue_growth' => 35, 'probability' => 25],
-                'realistic' => ['revenue_growth' => 23, 'probability' => 60],
-                'conservative' => ['revenue_growth' => 12, 'probability' => 15],
+                'optimistic' => ['student_growth' => 35, 'probability' => 25],
+                'realistic' => ['student_growth' => 23, 'probability' => 60],
+                'conservative' => ['student_growth' => 12, 'probability' => 15],
             ],
         ];
     }

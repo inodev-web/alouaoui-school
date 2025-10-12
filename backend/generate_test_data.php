@@ -7,7 +7,6 @@ $app = require_once 'bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 use App\Models\User;
-use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Session;
 use App\Models\Course;
@@ -38,30 +37,8 @@ try {
         echo "  - Abonnement créé pour {$student->phone}\n";
     }
     
-    // 2. Créer des paiements de test
-    echo "\n2. Création de paiements de test...\n";
-    
-    $subscriptions = Subscription::all();
-    
-    foreach ($subscriptions as $subscription) {
-        // Créer 1-3 paiements par abonnement
-        for ($i = 0; $i < rand(1, 3); $i++) {
-            $payment = Payment::create([
-                'id' => \Illuminate\Support\Str::uuid(),
-                'user_id' => $subscription->user_id,
-                'teacher_id' => $subscription->teacher_id,
-                'amount' => $subscription->amount,
-                'context' => 'subscription',
-                'context_id' => $subscription->id,
-                'status' => collect(['confirmed', 'pending', 'failed'])->random(),
-                'payment_method' => collect(['school_cash', 'online'])->random(),
-                'payment_date' => now()->subDays(rand(1, 60)),
-                'created_at' => now()->subDays(rand(1, 60)),
-                'updated_at' => now(),
-            ]);
-            echo "  - Paiement de {$payment->amount} DZD créé\n";
-        }
-    }
+    // 2. Payment system removed
+    echo "\n2. Payment system has been removed...\n";
     
     // 3. Créer des cours de test
     echo "\n3. Création de cours de test...\n";
@@ -121,38 +98,16 @@ try {
     
     $sessions = Session::where('status', 'completed')->take(20)->get();
     
-    foreach ($sessions as $session) {
-        $studentsForSession = User::where('role', 'student')->inRandomOrder()->take(rand(3, 8))->get();
-        
-        foreach ($studentsForSession as $student) {
-            $payment = Payment::create([
-                'id' => \Illuminate\Support\Str::uuid(),
-                'user_id' => $student->id,
-                'teacher_id' => $session->teacher_id,
-                'amount' => $session->price,
-                'context' => 'session',
-                'context_id' => $session->id,
-                'status' => collect(['confirmed', 'pending'])->random(),
-                'payment_method' => collect(['school_cash', 'online'])->random(),
-                'payment_date' => $session->scheduled_at,
-                'created_at' => $session->created_at,
-                'updated_at' => now(),
-            ]);
-        }
-    }
+    // Payment system removed - no payment creation for sessions
     
     echo "\n✅ Données de test générées avec succès!\n";
     
     // Afficher un résumé
     echo "\n=== RÉSUMÉ ===\n";
     echo "Abonnements: " . Subscription::count() . "\n";
-    echo "Paiements: " . Payment::count() . "\n";
     echo "Cours: " . Course::count() . "\n";
     echo "Sessions: " . Session::count() . "\n";
-    echo "Total des paiements confirmés: " . Payment::where('status', 'confirmed')->sum('amount') . " DZD\n";
-    echo "Revenus ce mois: " . Payment::where('status', 'confirmed')
-        ->whereMonth('payment_date', now()->month)
-        ->sum('amount') . " DZD\n";
+    echo "Payment system has been removed\n";
     
 } catch (Exception $e) {
     echo "❌ Erreur: " . $e->getMessage() . "\n";

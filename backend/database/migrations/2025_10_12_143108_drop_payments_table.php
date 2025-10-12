@@ -11,6 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('payments');
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        // Recreate the payments table if needed (for rollback)
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->uuid('student_uuid');
@@ -30,13 +39,5 @@ return new class extends Migration
             $table->index(['status', 'payment_context']);
             $table->index(['created_at']);
         });
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('payments');
     }
 };
