@@ -26,11 +26,12 @@ export default function AdminStudentsPage() {
 
       {/* Students Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-right">دليل الطلاب</CardTitle>
-          <CardDescription className="text-right">البحث والتصفية للطلاب حسب معايير مختلفة</CardDescription>
-                   <AddStudentModal />
-
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-right">دليل الطلاب</CardTitle>
+            <CardDescription className="text-right">البحث والتصفية للطلاب حسب معايير مختلفة</CardDescription>
+          </div>
+          <AddStudentModal />
         </CardHeader>
         <CardContent>
           <StudentsFilters 

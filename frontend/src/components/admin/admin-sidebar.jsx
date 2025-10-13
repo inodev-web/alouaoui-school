@@ -144,7 +144,7 @@ export function AdminSidebar() {
               <Link
                 key={item.name}
                 to={item.href}
-                onClick={handleItemClick}
+                // onClick={handleItemClick}
                 title={item.name}
                 className={cn(
                   "flex items-center gap-3 rounded-lg transition-colors",

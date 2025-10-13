@@ -67,5 +67,16 @@ export const teachersService = {
       console.error('Erreur lors de la récupération du nombre d\'étudiants:', error);
       return { count: 0 };
     }
+  },
+
+  // Récupérer les détails des revenus d'un professeur
+  async getTeacherRevenueDetails(teacherUuid) {
+    try {
+      const response = await axiosInstance.get(`/teachers/${teacherUuid}/revenue-details`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des détails des revenus:', error);
+      throw error;
+    }
   }
 };

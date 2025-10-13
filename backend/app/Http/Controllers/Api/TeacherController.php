@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Teacher;
 use App\Models\TeacherYear;
+use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class TeacherController extends Controller
 {
@@ -152,6 +154,84 @@ class TeacherController extends Controller
         return response()->json([
             'teacher_uuid' => $teacher->uuid,
             'count' => $count
+        ]);
+    }
+
+    /**
+     * Get teacher revenue details for the past month
+     */
+    public function getRevenueDetails(Teacher $teacher): JsonResponse
+    {
+        $oneMonthAgo = Carbon::now()->subMonth();
+        $now = Carbon::now();
+
+        // Get all subscriptions for this teacher in the past month
+        $subscriptions = Subscription::where('teacher_uuid', $teacher->uuid)
+            ->where('starts_at', '>=', $oneMonthAgo)
+            ->where('starts_at', '<=', $now)
+            ->get();
+
+        // Calculate revenue based on subscription prices
+        $totalRevenue = 0;
+        $monthlySubscriptions = 0;
+        $sessionSubscriptions = 0;
+
+        foreach ($subscriptions as $subscription) {
+            if ($subscription->isMonthly()) {
+                $totalRevenue += $teacher->price_subscription ?? 0;
+                $monthlySubscriptions++;
+            } else {
+                $totalRevenue += $teacher->price_session ?? 0;
+                $sessionSubscriptions++;
+            }
+        }
+
+        // Calculate school and teacher cuts
+        $schoolCut = 0;
+        $teacherCut = 0;
+        
+        if ($teacher->percent_school && $totalRevenue > 0) {
+            $schoolCut = ($totalRevenue * $teacher->percent_school) / 100;
+            $teacherCut = $totalRevenue - $schoolCut;
+        } else {
+            $teacherCut = $totalRevenue;
+        }
+
+        // Get current active students count
+        $activeStudentsCount = \App\Models\User::where('role', 'student')
+            ->whereHas('subscriptions', function($query) use ($teacher) {
+                $query->where('teacher_uuid', $teacher->uuid)
+                      ->where('starts_at', '<=', now())
+                      ->where('ends_at', '>=', now());
+            })
+            ->count();
+
+        return response()->json([
+            'teacher_uuid' => $teacher->uuid,
+            'period' => [
+                'from' => $oneMonthAgo->format('Y-m-d'),
+                'to' => $now->format('Y-m-d'),
+                'days' => $oneMonthAgo->diffInDays($now)
+            ],
+            'revenue' => [
+                'total' => round($totalRevenue, 2),
+                'school_cut' => round($schoolCut, 2),
+                'teacher_cut' => round($teacherCut, 2),
+                'school_percentage' => $teacher->percent_school ?? 0
+            ],
+            'subscriptions' => [
+                'total' => $subscriptions->count(),
+                'monthly' => $monthlySubscriptions,
+                'sessions' => $sessionSubscriptions
+            ],
+            'students' => [
+                'active_count' => $activeStudentsCount,
+                'new_this_month' => $subscriptions->count()
+            ],
+            'pricing' => [
+                'subscription_price' => $teacher->price_subscription ?? 0,
+                'session_price' => $teacher->price_session ?? 0
+            ]
         ]);
     }
 

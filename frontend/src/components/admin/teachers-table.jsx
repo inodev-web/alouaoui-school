@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EditTeacherModal } from "@/components/admin/edit-teacher-modal"
-import { Edit, Trash2, Phone, Users, BookOpen, DollarSign, Star, Calendar, RefreshCcw } from "lucide-react"
+import { TeacherDetailsDialog } from "@/components/admin/teacher-details-dialog"
+import { Edit, Trash2, Phone, Users, BookOpen, DollarSign, Calendar, RefreshCcw } from "lucide-react"
 import { teachersService } from "@/services/teachersService"
 
 export function TeachersTable() {
@@ -13,6 +14,7 @@ export function TeachersTable() {
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, per_page: 12, total: 0 })
   const [filtersMeta, setFiltersMeta] = useState({ modules: [], years: [] })
   const [selectedTeacher, setSelectedTeacher] = useState(null)
+  const [selectedTeacherForDetails, setSelectedTeacherForDetails] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
@@ -200,125 +202,110 @@ export function TeachersTable() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading && Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
         {!loading && teachers.map((teacher) => (
-          <Card key={teacher.uuid} className="hover:shadow-lg transition-shadow duration-300 border-0 shadow-md bg-gradient-to-br from-white via-blue-50 to-indigo-50">
+          <Card 
+            key={teacher.uuid} 
+            className="hover:shadow-lg transition-all duration-300 border-0 shadow-md bg-gradient-to-br from-white via-blue-50 to-indigo-50 cursor-pointer"
+            onClick={() => setSelectedTeacherForDetails(teacher)}
+          >
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3 space-x-reverse">
-                  <div className="relative">
-                    <img
-                      src={teacher.picture || getDefaultAvatar(teacher.name)}
-                      alt={teacher.name}
-                      className="w-16 h-16 rounded-full object-cover border-3 border-blue-200 shadow-md"
-                      onError={(e) => {
-                        e.target.src = getDefaultAvatar(teacher.name)
-                      }}
-                    />
-                    {teacher.is_online_publisher && (
-                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
-                        <Star className="w-3 h-3 text-white fill-current" />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-bold text-gray-900 mb-1">
-                      {teacher.name}
-                    </CardTitle>
-                    <Badge 
-                      variant={teacher.is_online_publisher ? "default" : "secondary"}
-                      className={teacher.is_online_publisher ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white" : ""}
-                    >
-                      {teacher.is_online_publisher ? "ناشر إلكتروني" : "أستاذ حضوري"}
-                    </Badge>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold text-gray-900 mb-1">
+                    {teacher.name}
+                  </CardTitle>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setSelectedTeacher(teacher)} className="flex items-center gap-1">
-                    <Edit className="w-4 h-4" /> تعديل
+                <div className="flex gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedTeacher(teacher)
+                    }} 
+                    className="flex items-center gap-1 h-8 px-2"
+                  >
+                    <Edit className="w-3 h-3" /> تعديل
                   </Button>
-                  <Button variant="outline" size="sm" disabled={deleting === teacher.uuid} onClick={() => handleDeleteTeacher(teacher.uuid)} className="flex items-center gap-1 text-red-600">
-                    <Trash2 className="w-4 h-4" /> حذف
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={deleting === teacher.uuid} 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteTeacher(teacher.uuid)
+                    }} 
+                    className="flex items-center gap-1 h-8 px-2 text-red-600"
+                  >
+                    <Trash2 className="w-3 h-3" /> حذف
                   </Button>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              {/* Informations de contact */}
-              <div className="space-y-2">
-                {teacher.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="h-4 w-4 text-blue-500" />
-                    <span>{teacher.phone}</span>
-                  </div>
-                )}
-                
+            <CardContent className="space-y-3">
+              {/* Basic Info - Compact */}
+              <div className="space-y-1">
                 {teacher.module && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <BookOpen className="h-4 w-4 text-purple-500" />
-                    <span>{teacher.module_label || teacher.module}</span>
+                    <BookOpen className="h-3 w-3 text-purple-500" />
+                    <span className="text-xs">{teacher.module_label || teacher.module}</span>
+                  </div>
+                )}
+                {teacher.phone && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone className="h-3 w-3 text-blue-500" />
+                    <span className="text-xs">{teacher.phone}</span>
                   </div>
                 )}
               </div>
 
-              {/* Années d'enseignement */}
-              {teacher.years_labels && (
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-700">السنوات الدراسية:</p>
-                  <p className="text-sm text-gray-600 bg-gray-100 rounded-lg px-3 py-2">
-                    {teacher.years_labels}
-                  </p>
-                </div>
-              )}
-
-              {/* Statistiques */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-lg p-3 border border-blue-200">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-blue-500" />
+              {/* Key Stats - Compact */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-white rounded-lg p-2 border border-blue-200">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-3 w-3 text-blue-500" />
                     <div>
                       <p className="text-xs text-gray-500">الطلاب</p>
-                      <p className="font-bold text-gray-900">{teacher.studentsCount}</p>
+                      <p className="font-bold text-gray-900 text-sm">{teacher.studentsCount}</p>
                     </div>
                   </div>
                 </div>
 
                 {teacher.percent_school && (
-                  <div className="bg-white rounded-lg p-3 border border-green-200">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-green-500" />
+                  <div className="bg-white rounded-lg p-2 border border-green-200">
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-3 w-3 text-green-500" />
                       <div>
                         <p className="text-xs text-gray-500">نسبة المدرسة</p>
-                        <p className="font-bold text-gray-900">{teacher.percent_school}%</p>
+                        <p className="font-bold text-gray-900 text-sm">{teacher.percent_school}%</p>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Prix */}
+              {/* Pricing - Compact */}
               {(teacher.price_subscription || teacher.price_session) && (
-                <div className="space-y-2 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 border border-amber-200">
-                  <p className="text-sm font-medium text-gray-700">الأسعار:</p>
-                  <div className="space-y-1">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-2 border border-amber-200">
+                  <div className="flex justify-between text-xs">
                     {teacher.price_subscription && (
-                      <p className="text-sm text-gray-600">
-                        الاشتراك: <span className="font-bold text-green-600">{teacher.price_subscription} دج</span>
-                      </p>
+                      <span className="text-gray-600">
+                        اشتراك: <span className="font-bold text-green-600">{teacher.price_subscription} دج</span>
+                      </span>
                     )}
                     {teacher.price_session && (
-                      <p className="text-sm text-gray-600">
-                        الحصة: <span className="font-bold text-blue-600">{teacher.price_session} دج</span>
-                      </p>
+                      <span className="text-gray-600">
+                        حصة: <span className="font-bold text-blue-600">{teacher.price_session} دج</span>
+                      </span>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Date de création */}
-              <div className="flex items-center gap-2 text-xs text-gray-500 pt-2 border-t border-gray-200">
-                <Calendar className="h-3 w-3" />
-                <span>انضم في: {new Date(teacher.created_at).toLocaleDateString('ar-DZ')}</span>
+              {/* Click hint */}
+              <div className="text-center">
+                <p className="text-xs text-gray-400">انقر لعرض التفاصيل والإيرادات</p>
               </div>
             </CardContent>
           </Card>
@@ -350,6 +337,14 @@ export function TeachersTable() {
           open={!!selectedTeacher}
           onOpenChange={(open) => !open && setSelectedTeacher(null)}
           onTeacherUpdated={() => { setSelectedTeacher(null); loadTeachers(); }}
+        />
+      )}
+
+      {selectedTeacherForDetails && (
+        <TeacherDetailsDialog
+          teacher={selectedTeacherForDetails}
+          open={!!selectedTeacherForDetails}
+          onOpenChange={(open) => !open && setSelectedTeacherForDetails(null)}
         />
       )}
     </div>

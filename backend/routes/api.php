@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\StreamController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DashboardDataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -78,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{teacher}', [TeacherController::class, 'update'])->name('update');
             Route::delete('/{teacher}', [TeacherController::class, 'destroy'])->name('destroy');
             Route::get('/{teacher}/students-count', [TeacherController::class, 'getStudentsCount'])->name('students-count');
+            Route::get('/{teacher}/revenue-details', [TeacherController::class, 'getRevenueDetails'])->name('revenue-details');
             Route::patch('/{teacher}/toggle-status', [TeacherController::class, 'toggleStatus'])->name('toggle-status');
             Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics'])->name('statistics');
         });
@@ -173,6 +175,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard analytics (admin only, no device check needed)
     Route::middleware('abilities:admin')->group(function () {
         Route::get('/dashboard/analytics', [DashboardController::class, 'index'])->name('dashboard.analytics');
+        
+        // Dashboard data endpoints
+        Route::prefix('dashboard/data')->name('dashboard.data.')->group(function () {
+            Route::get('/summary', [DashboardDataController::class, 'getSummary'])->name('summary');
+            Route::get('/cards', [DashboardDataController::class, 'getDashboardCards'])->name('cards');
+            Route::get('/top-teachers', [DashboardDataController::class, 'getTopTeachers'])->name('top-teachers');
+            Route::get('/revenue-time-series', [DashboardDataController::class, 'getRevenueTimeSeries'])->name('revenue-time-series');
+            Route::get('/teacher-performance', [DashboardDataController::class, 'getTeacherPerformance'])->name('teacher-performance');
+            Route::get('/refresh-status', [DashboardDataController::class, 'getRefreshStatus'])->name('refresh-status');
+        });
     });
 
     // Streaming statistics (admin only, no device check needed)
