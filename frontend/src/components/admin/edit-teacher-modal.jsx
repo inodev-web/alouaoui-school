@@ -99,7 +99,7 @@ export function EditTeacherModal({ teacher, open, onOpenChange, onTeacherUpdated
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]" dir="rtl">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle>تعديل بيانات الأستاذ</DialogTitle>
           <DialogDescription>قم بتحديث المعلومات ثم اضغط حفظ.</DialogDescription>

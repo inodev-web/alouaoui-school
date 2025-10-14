@@ -15,10 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus } from "lucide-react"
 import studentsService from "../../services/api/students.service"
 import branchesService from "../../services/api/branches.service"
+import { useToast } from "../../hooks/use-toast"
 
 export function AddStudentModal({ onStudentAdded }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -87,7 +89,11 @@ export function AddStudentModal({ onStudentAdded }) {
 
       await studentsService.createStudent(userData)
       
-      alert("✅ تم إضافة الطالب بنجاح\n\nكلمة المرور الافتراضية: 00000000")
+      // Show success message
+      toast({
+        title: "تم إضافة الطالب بنجاح",
+        description: `تم إنشاء حساب للطالب ${userData.firstname} ${userData.lastname}. كلمة المرور الافتراضية: 00000000`,
+      })
       
       // Reset form
       setFormData({
@@ -111,7 +117,11 @@ export function AddStudentModal({ onStudentAdded }) {
     } catch (error) {
       console.error('Error adding student:', error)
       const errorMessage = error.response?.data?.message || 'فشل في إضافة الطالب'
-      alert(`❌ خطأ\n\n${errorMessage}`)
+      toast({
+        title: "خطأ في إضافة الطالب",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -139,7 +149,7 @@ export function AddStudentModal({ onStudentAdded }) {
           إضافة طالب جديد
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]" dir="rtl">
+      <DialogContent className="sm:max-w-[500px] h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-right">إضافة طالب جديد</DialogTitle>
           <DialogDescription className="text-right">

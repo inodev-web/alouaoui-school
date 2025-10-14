@@ -17,11 +17,13 @@ import { CalendarPlus, Loader2 } from "lucide-react"
 import { sessionService } from "@/services/api/session.service"
 import { teacherService } from "@/services/api/teacher.service"
 import branchesService from "../../services/api/branches.service"
+import { useToast } from "../../hooks/use-toast"
 
 export function AddSessionModal({ onSessionAdded }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [teachers, setTeachers] = useState([])
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     teacher: "",
     year_target: "1AM",
@@ -79,6 +81,13 @@ export function AddSessionModal({ onSessionAdded }) {
       const sessionData = sessionService.transformSessionForSubmission(formData)
       await sessionService.createSession(sessionData)
       
+      // Show success message
+      const selectedTeacher = teachers.find(t => t.uuid === formData.teacher)
+      toast({
+        title: "تم إضافة الجلسة بنجاح",
+        description: `تم جدولة جلسة جديدة مع ${selectedTeacher?.name || 'المعلم'} في ${formData.date}`,
+      })
+      
       setOpen(false)
       setFormData({
         teacher: "",
@@ -92,7 +101,12 @@ export function AddSessionModal({ onSessionAdded }) {
       onSessionAdded?.()
     } catch (error) {
       console.error('Error creating session:', error)
-      alert('فشل في إنشاء الجلسة')
+      const errorMessage = error.response?.data?.message || 'فشل في إنشاء الجلسة'
+      toast({
+        title: "خطأ في إضافة الجلسة",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }

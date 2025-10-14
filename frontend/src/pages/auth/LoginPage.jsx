@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux'
 import { BookOpen, Eye, EyeOff, Phone, Lock } from 'lucide-react'
 import authService from '../../services/api/auth.service'
 import { loginSuccess } from '../../store/slices/authSlice'
+import { useToast } from '../../hooks/use-toast'
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const LoginPage = () => {
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const { toast } = useToast()
 
   const validateForm = () => {
     const newErrors = {}
@@ -49,6 +51,12 @@ const LoginPage = () => {
       if (response.token && response.user) {
         // Update Redux store
         dispatch(loginSuccess({ token: response.token, user: response.user }))
+        
+        // Show success message
+        toast({
+          title: "تم تسجيل الدخول بنجاح",
+          description: `مرحباً ${response.user.firstname || response.user.name || 'بك'}!`,
+        })
         
         // Navigate based on user role
         console.log('User role after login:', response.user.role)

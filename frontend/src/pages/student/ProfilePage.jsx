@@ -132,12 +132,6 @@ const StudentProfilePage = () => {
           {/* معلومات الطالب */}
           <div className="flex-grow">
             <h1 className="text-3xl md:text-4xl font-bold">{student.name}</h1>
-            <p className="text-white/80 mt-2 text-base md:text-lg">
-              رقم التسجيل: {student.id}
-            </p>
-            <p className="text-white/80 mt-1 text-base md:text-lg">
-              الصف: {student.grade}
-            </p>
             <div className="flex items-center justify-center md:justify-start text-white/90 mt-3">
               <span className="text-sm md:text-base">{student.phone}</span>
               {/* قمنا بتغيير 'mr-2' إلى 'ml-2' ليتناسب مع RTL */}

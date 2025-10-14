@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { loginSuccess } from './store/slices/authSlice'
 import AppRouter from './routes/router'
+import { Toaster } from './components/ui/toaster'
 
 function App() {
   const dispatch = useDispatch()
@@ -33,7 +34,12 @@ function App() {
     }
   }, [dispatch])
 
-  return <AppRouter />
+  return (
+    <>
+      <AppRouter />
+      <Toaster />
+    </>
+  )
 }
 
 export default App

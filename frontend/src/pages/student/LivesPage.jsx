@@ -19,7 +19,10 @@ const StudentLivesPage = () => {
   }
 
   return (
-    <div className="max-w-xl mx-auto lg:p-10 mt-16 lg:mt-20">
+    <div className="relative max-w-xl mx-auto lg:p-10 mt-16 lg:mt-20">
+      <div class="absolute top-0 left-0 w-full h-full bg-black/80 flex items-center justify-center z-10">
+        <h1 class="text-white text-6xl font-bold">...قريبا</h1>
+      </div>
       {/* Single Live Session Card */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
         {/* Session Thumbnail */}

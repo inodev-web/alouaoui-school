@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, BookOpen, LogOut } from 'lucide-react';
-import { useDispatch } from 'react-redux';
+import { Menu, X, BookOpen, LogOut, Home } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout as logoutAction } from '../../../store/slices/authSlice';
 import AuthService from '../../../services/api/auth.service';
 
@@ -9,6 +9,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   const handleLogout = async () => {
     try {
@@ -26,8 +27,18 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* CTA Button Desktop */}
           <div className="hidden lg:block">
-            <Link to="/register" className="bg-gradient-to-r from-red-400 to-pink-500 text-white px-6 py-2 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block">
-               سجل الان
+            <Link 
+              to={isAuthenticated ? "/" : "/register"} 
+              className="bg-gradient-to-r from-red-400 to-pink-500 text-white px-6 py-2 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block flex items-center gap-2"
+            >
+              {isAuthenticated ? (
+                <>
+                  <Home className="w-4 h-4" />
+                  <span>الرئيسية</span>
+                </>
+              ) : (
+                "سجل الان"
+              )}
             </Link>
           </div>
           {/* Desktop Menu */}
@@ -63,7 +74,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Menu */}
-        <div className={`lg:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className={`lg:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100 pointer-events-auto' : 'max-h-0 opacity-0 pointer-events-none'}`}>
           <div className="py-4 space-y-4 bg-gray-50 rounded-lg mb-4">
             <Link to="/student/chapters" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">الدروس</Link>
             <Link to="/student/lives" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">لايف</Link>
@@ -76,8 +87,18 @@ const Navbar = () => {
               <span>تسجيل الخروج</span>
             </button>
             <div className="px-4 pt-2">
-              <Link to="/register" className="block w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 text-center">
-                 سجل الان
+              <Link 
+                to={isAuthenticated ? "/" : "/register"}
+                className="block w-full bg-gradient-to-r from-red-400 to-pink-500 text-white py-3 rounded-full font-medium hover:from-red-500 hover:to-pink-600 transition-all duration-300 text-center flex items-center justify-center gap-2"
+              >
+                {isAuthenticated ? (
+                  <>
+                    <Home className="w-4 h-4" />
+                    <span>الرئيسية</span>
+                  </>
+                ) : (
+                  "سجل الان"
+                )}
               </Link>
             </div>
           </div>

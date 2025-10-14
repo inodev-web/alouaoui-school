@@ -72,106 +72,6 @@ const StudentChaptersPage = () => {
         }
       ]
     },
-    {
-      id: 3,
-      title: "الضوء والبصريات",
-      icon: <Eye className="w-8 h-8" />,
-      description: "دراسة خصائص الضوء وسلوكه عند التفاعل مع المواد المختلفة.",
-      subject: "البصريات",
-      courses: [
-        {
-          id: 7,
-          title: "انتشار الضوء",
-          description: "الخصائص الأساسية للضوء وقوانين الانعكاس والانكسار.",
-          duration: "س 1",
-          summary: "طبيعة الضوء، الانعكاس المنتظم والمنتشر، قانون سنل للانكسار.",
-          exercises: "16 مسألة بصرية مع رسوم هندسية دقيقة"
-        },
-        {
-          id: 8,
-          title: "العدسات والمرايا",
-          description: "تكوين الصور باستخدام العدسات والمرايا المختلفة.",
-          duration: "2",
-          summary: "العدسات المحدبة والمقعرة، المرايا الكروية، معادلة العدسة الرقيقة.",
-          exercises: "22 تمرين تكوين صور مع جداول ورسوم بيانية"
-        }
-      ]
-    },
-    {
-      id: 4,
-      title: "الحرارة والديناميكا الحرارية",
-      icon: <Thermometer className="w-8 h-8" />,
-      description: "دراسة الحرارة ودرجة الحرارة وتأثيرها على المواد.",
-      subject: "الديناميكا الحرارية",
-      courses: [
-        {
-          id: 9,
-          title: "الحرارة ودرجة الحرارة",
-          description: "الفرق بين الحرارة ودرجة الحرارة وطرق انتقال الحرارة.",
-          duration: "1",
-          summary: "وحدات قياس الحرارة، التوصيل والحمل والإشعاع، التمدد الحراري.",
-          exercises: "11 مسألة حرارية مع جداول الخصائص الحرارية"
-        },
-        {
-          id: 10,
-          title: "الغازات والقوانين الحرارية",
-          description: "سلوك الغازات تحت ظروف مختلفة من الضغط والحرارة.",
-          duration: "س 1",
-          summary: "قانون بويل، قانون شارل، قانون الغاز المثالي، النظرية الحركية للغازات.",
-          exercises: "17 تطبيق عملي مع رسوم بيانية تفاعلية"
-        }
-      ]
-    },
-    {
-      id: 5,
-      title: "الفيزياء الذرية والنووية",
-      icon: <Atom className="w-8 h-8" />,
-      description: "استكشاف بنية الذرة والنواة والظواهر الكمية.",
-      subject: "الفيزياء الحديثة",
-      courses: [
-        {
-          id: 11,
-          title: "بنية الذرة",
-          description: "النماذج الذرية وتطورها عبر التاريخ حتى النموذج الحديث.",
-          duration: "س 0.75",
-          summary: "نموذج رذرفورد، نموذج بور، المدارات الإلكترونية، الأطياف الذرية.",
-          exercises: "13 مسألة طيفية مع رسوم توضيحية للمدارات"
-        },
-        {
-          id: 12,
-          title: "النشاط الإشعاعي",
-          description: "دراسة تفكك الأنوية المشعة وأنواع الإشعاعات النووية.",
-          duration: "س 0.67",
-          summary: "أنواع الإشعاع (ألفا، بيتا، جاما)، قانون التفكك الإشعاعي، عمر النصف.",
-          exercises: "9 تطبيقات حسابية مع أمثلة طبية وتقنية"
-        }
-      ]
-    },
-    {
-      id: 6,
-      title: "الموجات والصوت",
-      icon: <Radio className="w-8 h-8" />,
-      description: "دراسة خصائص الموجات الميكانيكية والكهرومغناطيسية.",
-      subject: "الموجات",
-      courses: [
-        {
-          id: 13,
-          title: "الموجات الميكانيكية",
-          description: "الخصائص الأساسية للموجات وانتشارها في الأوساط المادية.",
-          duration: "س 0.83",
-          summary: "أنواع الموجات، الطول الموجي، التردد، سرعة الموجة، مبدأ الانعكاس.",
-          exercises: "15 مسألة موجية مع محاكاة تفاعلية"
-        },
-        {
-          id: 14,
-          title: "الصوت والسمع",
-          description: "دراسة الموجات الصوتية وخصائصها وتطبيقاتها العملية.",
-          duration: "س 0.75",
-          summary: "انتشار الصوت، شدة الصوت، تأثير دوبلر، الرنين الصوتي.",
-          exercises: "12 تجربة صوتية مع قياسات عملية"
-        }
-      ]
-    }
   ];
 
   const filteredChapters = useMemo(() => {
@@ -191,7 +91,11 @@ const StudentChaptersPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-400 to-pink-500 p-6 mt-16 lg:mt-20" dir="rtl">
+    <>
+    <div className="relative min-h-screen bg-gradient-to-br from-red-400 to-pink-500 p-6 mt-16 lg:mt-20" dir="rtl">
+      <div class="absolute top-0 left-0 w-full h-full bg-black/80 flex items-center justify-center z-10">
+        <h1 class="text-white text-6xl font-bold">...قريبا</h1>
+      </div>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -329,6 +233,7 @@ const StudentChaptersPage = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

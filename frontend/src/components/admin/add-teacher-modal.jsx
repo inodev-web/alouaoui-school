@@ -15,11 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { UserPlus } from "lucide-react"
 import { teachersService } from "@/services/teachersService"
+import { useToast } from "../../hooks/use-toast"
 
 export function AddTeacherModal({ onTeacherCreated }) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -99,12 +101,24 @@ export function AddTeacherModal({ onTeacherCreated }) {
         years: formData.years,
       }
       await teachersService.createTeacher(payload)
+      
+      // Show success message
+      toast({
+        title: "تم إضافة الأستاذ بنجاح",
+        description: `تم إنشاء حساب للأستاذ ${payload.name}`,
+      })
+      
       resetForm()
       setOpen(false)
       if (onTeacherCreated) onTeacherCreated()
     } catch (err) {
       const msg = err?.response?.data?.message || 'حدث خطأ أثناء إنشاء الأستاذ'
       setError(msg)
+      toast({
+        title: "خطأ في إضافة الأستاذ",
+        description: msg,
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -118,7 +132,7 @@ export function AddTeacherModal({ onTeacherCreated }) {
           إضافة أستاذ
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[480px]" dir="rtl">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle>إضافة أستاذ جديد</DialogTitle>
           <DialogDescription>إدخال معلومات الأستاذ حسب الحقول المتاحة.</DialogDescription>
