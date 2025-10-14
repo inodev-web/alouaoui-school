@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\StreamController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DashboardDataController;
+use App\Http\Controllers\Api\BranchController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,13 @@ Route::prefix('auth')->name('auth.')->group(function () {
 
         // Profile routes moved outside for testing
     });
+});
+
+// Public routes (no authentication required)
+Route::prefix('branches')->name('branches.')->group(function () {
+    Route::get('/', [BranchController::class, 'index'])->name('index');
+    Route::get('/year/{yearLevel}', [BranchController::class, 'getForYearLevel'])->name('for-year-level');
+    Route::get('/{branch}', [BranchController::class, 'show'])->name('show');
 });
 
 // Protected routes requiring authentication

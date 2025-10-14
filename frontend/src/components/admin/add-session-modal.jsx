@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { CalendarPlus, Loader2 } from "lucide-react"
 import { sessionService } from "@/services/api/session.service"
 import { teacherService } from "@/services/api/teacher.service"
+import branchesService from "../../services/api/branches.service"
 
 export function AddSessionModal({ onSessionAdded }) {
   const [open, setOpen] = useState(false)
@@ -24,16 +25,42 @@ export function AddSessionModal({ onSessionAdded }) {
   const [formData, setFormData] = useState({
     teacher: "",
     year_target: "1AM",
+    branch_id: "",
     date: "",
     time: "",
     duration: "",
   })
+  const [availableBranches, setAvailableBranches] = useState([])
+  const [loadingBranches, setLoadingBranches] = useState(false)
 
   useEffect(() => {
     if (open) {
       fetchTeachers()
     }
   }, [open])
+
+  // Load branches when year changes
+  useEffect(() => {
+    const loadBranches = async () => {
+      if (formData.year_target && ['1AS', '2AS', '3AS'].includes(formData.year_target)) {
+        setLoadingBranches(true)
+        try {
+          const response = await branchesService.getBranchesForYear(formData.year_target)
+          setAvailableBranches(response.data || [])
+        } catch (error) {
+          console.error('Error loading branches:', error)
+          setAvailableBranches([])
+        } finally {
+          setLoadingBranches(false)
+        }
+      } else {
+        setAvailableBranches([])
+        setFormData(prev => ({ ...prev, branch_id: "" }))
+      }
+    }
+
+    loadBranches()
+  }, [formData.year_target])
 
   const fetchTeachers = async () => {
     try {
@@ -56,6 +83,7 @@ export function AddSessionModal({ onSessionAdded }) {
       setFormData({
         teacher: "",
         year_target: "1AM",
+        branch_id: "",
         date: "",
         time: "",
         duration: "",
@@ -122,6 +150,31 @@ export function AddSessionModal({ onSessionAdded }) {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Branch Selection - Only for High School */}
+            {['1AS', '2AS', '3AS'].includes(formData.year_target) && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="branch_id" className="text-right">
+                  الفرع المستهدف
+                </Label>
+                <Select 
+                  value={formData.branch_id} 
+                  onValueChange={(value) => setFormData({ ...formData, branch_id: value })}
+                  disabled={loadingBranches}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder={loadingBranches ? "جاري تحميل الفروع..." : "اختر الفرع المستهدف"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableBranches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id.toString()}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">

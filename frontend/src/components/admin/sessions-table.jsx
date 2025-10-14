@@ -150,6 +150,7 @@ export function SessionsTable({ filters = {} }) {
               <TableHead className="text-right">المعلم</TableHead>
               <TableHead className="text-right">المادة</TableHead>
               <TableHead className="text-right">السنة المستهدفة</TableHead>
+              <TableHead className="text-right">الفرع</TableHead>
               <TableHead className="text-right">التاريخ</TableHead>
               <TableHead className="text-right">الوقت</TableHead>
               <TableHead className="text-right">المدة</TableHead>
@@ -171,6 +172,9 @@ export function SessionsTable({ filters = {} }) {
                 </TableCell>
                 <TableCell className="text-right">
                   {session.year_target || 'غير محدد'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {session.branch?.name || 'غير محدد'}
                 </TableCell>
                 <TableCell className="text-right">
                   {formatDate(session.date || session.start_time)}

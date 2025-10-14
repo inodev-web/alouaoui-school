@@ -16,6 +16,7 @@ export const sessionService = {
       
       if (filters.teacher_uuid) params.append('teacher_uuid', filters.teacher_uuid)
       if (filters.year_target) params.append('year_target', filters.year_target)
+      if (filters.branch_id) params.append('branch_id', filters.branch_id)
       if (filters.status) params.append('status', filters.status)
       if (filters.start_date) params.append('start_date', filters.start_date)
       if (filters.end_date) params.append('end_date', filters.end_date)
@@ -116,6 +117,7 @@ export const sessionService = {
     return {
       teacher_uuid: formData.teacher,
       year_target: formData.year_target || '1AM',
+      branch_id: formData.branch_id || null,
       start_time: `${formData.date} ${formData.time}:00`,
       end_time: this.calculateEndTime(formData.date, formData.time, formData.duration),
       status: 'completed' // Default status in simplified model

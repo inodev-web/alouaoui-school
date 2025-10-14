@@ -46,6 +46,7 @@ const StudentProfilePage = () => {
       address: u.address || '',
       school_name: u.school_name || '',
       free_subscriber: u.free_subscriber || false,
+      branch: u.branch || null,
     };
   }, [currentUser]);
 
@@ -166,6 +167,7 @@ const StudentProfilePage = () => {
                 <div><span className="text-gray-500">الاسم:</span> {student.name}</div>
                 <div><span className="text-gray-500">الهاتف:</span> {student.phone}</div>
                 <div><span className="text-gray-500">السنة الدراسية:</span> {student.grade}</div>
+                <div><span className="text-gray-500">الفرع الدراسي:</span> {student.branch?.name || '—'}</div>
                 <div><span className="text-gray-500">المدرسة:</span> {student.school_name || '—'}</div>
                 <div><span className="text-gray-500">تاريخ الميلاد:</span> {student.birth_date || '—'}</div>
                 <div><span className="text-gray-500">العنوان:</span> {student.address || '—'}</div>

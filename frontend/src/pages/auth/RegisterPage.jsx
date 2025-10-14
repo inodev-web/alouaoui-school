@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { BookOpen, Eye, EyeOff, Phone, Lock, User, GraduationCap, Key } from 'lucide-react'
 import authService from '../../services/api/auth.service'
+import branchesService from '../../services/api/branches.service'
 import { loginSuccess } from '../../store/slices/authSlice'
 
 const RegisterPage = () => {
@@ -13,6 +14,7 @@ const RegisterPage = () => {
     address: '',
     school_name: '',
     year_of_study: '1AM',
+    branch_id: '',
     phone: '',
     password: '',
     password_confirmation: ''
@@ -21,8 +23,33 @@ const RegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState({})
+  const [availableBranches, setAvailableBranches] = useState([])
+  const [loadingBranches, setLoadingBranches] = useState(false)
   const navigate = useNavigate()
   const dispatch = useDispatch()
+
+  // Load branches when year changes
+  useEffect(() => {
+    const loadBranches = async () => {
+      if (formData.year_of_study && ['1AS', '2AS', '3AS'].includes(formData.year_of_study)) {
+        setLoadingBranches(true)
+        try {
+          const response = await branchesService.getBranchesForYear(formData.year_of_study)
+          setAvailableBranches(response.data || [])
+        } catch (error) {
+          console.error('Error loading branches:', error)
+          setAvailableBranches([])
+        } finally {
+          setLoadingBranches(false)
+        }
+      } else {
+        setAvailableBranches([])
+        setFormData(prev => ({ ...prev, branch_id: '' }))
+      }
+    }
+
+    loadBranches()
+  }, [formData.year_of_study])
 
   const validateForm = () => {
     const newErrors = {}
@@ -49,6 +76,11 @@ const RegisterPage = () => {
 
     if (!formData.year_of_study) {
       newErrors.year_of_study = 'السنة الدراسية مطلوبة'
+    }
+
+    // Validate branch for high school students
+    if (['1AS', '2AS', '3AS'].includes(formData.year_of_study) && !formData.branch_id) {
+      newErrors.branch_id = 'الفرع مطلوب للطلاب الثانويين'
     }
     
     if (!formData.phone?.trim()) {
@@ -349,6 +381,43 @@ const RegisterPage = () => {
                   <p className="mt-1 text-sm text-red-600 text-right">{errors.year_of_study}</p>
                 )}
               </div>
+
+              {/* Branch Selection - Only for High School */}
+              {['1AS', '2AS', '3AS'].includes(formData.year_of_study) && (
+                <div>
+                  <label htmlFor="branch_id" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                    الفرع الدراسي
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <BookOpen className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <select
+                      id="branch_id"
+                      name="branch_id"
+                      required
+                      className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right text-gray-900 transition-all duration-200 ${
+                        errors.branch_id ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      value={formData.branch_id}
+                      onChange={handleChange}
+                      disabled={loadingBranches}
+                    >
+                      <option value="">
+                        {loadingBranches ? 'جاري تحميل الفروع...' : 'اختر الفرع الدراسي'}
+                      </option>
+                      {availableBranches.map((branch) => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {errors.branch_id && (
+                    <p className="mt-1 text-sm text-red-600 text-right">{errors.branch_id}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Phone Field */}

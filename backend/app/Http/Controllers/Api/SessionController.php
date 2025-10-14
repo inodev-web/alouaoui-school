@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Session;
 use App\Models\Teacher;
 use App\Models\Attendance;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -18,7 +19,7 @@ class SessionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Session::with(['teacher', 'attendances']);
+        $query = Session::with(['teacher', 'attendances', 'branch']);
 
         // Filter by teacher
         if ($request->filled('teacher_uuid')) {
@@ -28,6 +29,11 @@ class SessionController extends Controller
         // Filter by year target
         if ($request->filled('year_target')) {
             $query->where('year_target', $request->year_target);
+        }
+
+        // Filter by branch
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
         }
 
         // Filter by status
@@ -83,6 +89,7 @@ class SessionController extends Controller
         $validator = Validator::make($request->all(), [
             'teacher_uuid' => 'required|exists:teachers,uuid',
             'year_target' => 'required|in:' . implode(',', Session::YEAR_TARGETS),
+            'branch_id' => 'nullable|exists:branches,id',
             'start_time' => 'required|date|after:now',
             'end_time' => 'required|date|after:start_time',
             'status' => 'sometimes|in:' . implode(',', Session::STATUSES),
@@ -95,10 +102,28 @@ class SessionController extends Controller
             ], 422);
         }
 
+        // Validate branch_id based on year_target
+        if ($request->filled('branch_id') && $request->filled('year_target')) {
+            $branch = Branch::find($request->branch_id);
+            if ($branch && $branch->year_level !== $request->year_target) {
+                return response()->json([
+                    'message' => 'الفرع المحدد لا يتطابق مع السنة المستهدفة',
+                    'errors' => ['branch_id' => ['الفرع المحدد لا يتطابق مع السنة المستهدفة']]
+                ], 422);
+            }
+        }
+
+        // Clear branch_id for middle school sessions
+        $branchId = $request->branch_id;
+        if ($request->year_target && in_array($request->year_target, ['1AM', '2AM', '3AM', '4AM'])) {
+            $branchId = null;
+        }
+
         try {
             $session = Session::create([
                 'teacher_uuid' => $request->teacher_uuid,
                 'year_target' => $request->year_target,
+                'branch_id' => $branchId,
                 'start_time' => Carbon::parse($request->start_time),
                 'end_time' => Carbon::parse($request->end_time),
                 'status' => $request->status ?? 'completed', // Default to completed in simplified model
@@ -134,6 +159,7 @@ class SessionController extends Controller
         $validator = Validator::make($request->all(), [
             'teacher_uuid' => 'sometimes|exists:teachers,uuid',
             'year_target' => 'sometimes|in:' . implode(',', Session::YEAR_TARGETS),
+            'branch_id' => 'nullable|exists:branches,id',
             'start_time' => 'sometimes|date',
             'end_time' => 'sometimes|date|after:start_time',
             'status' => 'sometimes|in:' . implode(',', Session::STATUSES),
@@ -146,8 +172,28 @@ class SessionController extends Controller
             ], 422);
         }
 
+        // Validate branch_id based on year_target
+        if ($request->filled('branch_id') && $request->filled('year_target')) {
+            $branch = Branch::find($request->branch_id);
+            if ($branch && $branch->year_level !== $request->year_target) {
+                return response()->json([
+                    'message' => 'الفرع المحدد لا يتطابق مع السنة المستهدفة',
+                    'errors' => ['branch_id' => ['الفرع المحدد لا يتطابق مع السنة المستهدفة']]
+                ], 422);
+            }
+        }
+
+        // Clear branch_id for middle school sessions
+        $branchId = $request->branch_id;
+        if ($request->year_target && in_array($request->year_target, ['1AM', '2AM', '3AM', '4AM'])) {
+            $branchId = null;
+        }
+
         try {
             $updateData = $request->only(['teacher_uuid', 'year_target', 'status']);
+            if ($request->has('branch_id')) {
+                $updateData['branch_id'] = $branchId;
+            }
             
             if ($request->has('start_time')) {
                 $updateData['start_time'] = Carbon::parse($request->start_time);
@@ -252,6 +298,11 @@ class SessionController extends Controller
             'teacher_name' => $teacher ? $teacher->name : 'غير محدد',
             'module' => $teacher ? $teacher->module : 'غير محدد',
             'year_target' => $session->year_target,
+            'branch' => $session->branch ? [
+                'id' => $session->branch->id,
+                'name' => $session->branch->name,
+                'code' => $session->branch->code,
+            ] : null,
             'start_time' => $session->start_time->format('Y-m-d H:i:s'),
             'end_time' => $session->end_time->format('Y-m-d H:i:s'),
             'date' => $session->start_time->format('Y-m-d'),

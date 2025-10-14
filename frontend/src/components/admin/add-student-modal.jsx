@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { UserPlus } from "lucide-react"
 import studentsService from "../../services/api/students.service"
+import branchesService from "../../services/api/branches.service"
 
 export function AddStudentModal({ onStudentAdded }) {
   const [open, setOpen] = useState(false)
@@ -26,8 +27,34 @@ export function AddStudentModal({ onStudentAdded }) {
     address: "",
     school_name: "",
     year_of_study: "",
+    branch_id: "",
     password: "00000000"
   })
+  const [availableBranches, setAvailableBranches] = useState([])
+  const [loadingBranches, setLoadingBranches] = useState(false)
+
+  // Load branches when year changes
+  useEffect(() => {
+    const loadBranches = async () => {
+      if (formData.year_of_study && ['1AS', '2AS', '3AS'].includes(formData.year_of_study)) {
+        setLoadingBranches(true)
+        try {
+          const response = await branchesService.getBranchesForYear(formData.year_of_study)
+          setAvailableBranches(response.data || [])
+        } catch (error) {
+          console.error('Error loading branches:', error)
+          setAvailableBranches([])
+        } finally {
+          setLoadingBranches(false)
+        }
+      } else {
+        setAvailableBranches([])
+        setFormData(prev => ({ ...prev, branch_id: "" }))
+      }
+    }
+
+    loadBranches()
+  }, [formData.year_of_study])
 
   const yearOptions = [
     { value: "1AM", label: "السنة الأولى متوسط" },
@@ -53,6 +80,7 @@ export function AddStudentModal({ onStudentAdded }) {
         address: formData.address,
         school_name: formData.school_name,
         year_of_study: formData.year_of_study,
+        branch_id: formData.branch_id || null,
         password: "00000000", // Default password
         role: "student"
       }
@@ -98,6 +126,7 @@ export function AddStudentModal({ onStudentAdded }) {
       address: "",
       school_name: "",
       year_of_study: "",
+      branch_id: "",
       password: "00000000"
     })
   }
@@ -229,6 +258,31 @@ export function AddStudentModal({ onStudentAdded }) {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* الفرع الدراسي - للثانوي فقط */}
+            {['1AS', '2AS', '3AS'].includes(formData.year_of_study) && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="branch_id" className="text-right">
+                  الفرع الدراسي *
+                </Label>
+                <Select 
+                  value={formData.branch_id} 
+                  onValueChange={(value) => setFormData({ ...formData, branch_id: value })}
+                  disabled={loadingBranches}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder={loadingBranches ? "جاري تحميل الفروع..." : "اختر الفرع الدراسي"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableBranches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id.toString()} className="text-right">
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* كلمة المرور (للعرض فقط) */}
             <div className="grid grid-cols-4 items-center gap-4">

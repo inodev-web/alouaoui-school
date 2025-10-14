@@ -17,8 +17,9 @@ class Session extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-    'teacher_uuid',
+        'teacher_uuid',
         'year_target',
+        'branch_id',
         'start_time',
         'end_time',
         'status',
@@ -108,5 +109,29 @@ class Session extends Model
             return null;
         }
         return $this->start_time->diffInMinutes($this->end_time);
+    }
+
+    /**
+     * Session belongs to a branch (for high school sessions)
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Check if session is for high school
+     */
+    public function isHighSchoolSession(): bool
+    {
+        return in_array($this->year_target, ['1AS', '2AS', '3AS']);
+    }
+
+    /**
+     * Check if session is for middle school
+     */
+    public function isMiddleSchoolSession(): bool
+    {
+        return in_array($this->year_target, ['1AM', '2AM', '3AM', '4AM']);
     }
 }

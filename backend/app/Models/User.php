@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -36,6 +37,7 @@ class User extends Authenticatable
         'year_of_study',
         'role',
         'device_uuid',
+        'branch_id', // Branch for high school students
         // New simplified access model fields
         'free_subscriber',
         'free_subscriber_reason',
@@ -164,5 +166,41 @@ class User extends Authenticatable
             ->where('starts_at', '<=', now())
             ->where('ends_at', '>=', now())
             ->exists();
+    }
+
+    /**
+     * User belongs to a branch (for high school students)
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Check if user is a high school student (has branch)
+     */
+    public function isHighSchoolStudent(): bool
+    {
+        return $this->isStudent() && in_array($this->year_of_study, ['1AS', '2AS', '3AS']);
+    }
+
+    /**
+     * Check if user is a middle school student (no branch)
+     */
+    public function isMiddleSchoolStudent(): bool
+    {
+        return $this->isStudent() && in_array($this->year_of_study, ['1AM', '2AM', '3AM', '4AM']);
+    }
+
+    /**
+     * Get available branches for user's year level
+     */
+    public function getAvailableBranches()
+    {
+        if (!$this->isHighSchoolStudent()) {
+            return collect();
+        }
+
+        return Branch::getForYearLevel($this->year_of_study);
     }
 }

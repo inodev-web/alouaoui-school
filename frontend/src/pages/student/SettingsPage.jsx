@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import AuthService from '../../services/api/auth.service';
+import branchesService from '../../services/api/branches.service';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Page paramètres profil étudiant (limite: une modification complète par jour)
 export default function StudentSettingsPage() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
   const [form, setForm] = useState({
-    firstname: '', lastname: '', phone: '', birth_date: '', address: '', school_name: '', year_of_study: ''
+    firstname: '', lastname: '', phone: '', birth_date: '', address: '', school_name: '', year_of_study: '', branch_id: ''
   });
   const [passwords, setPasswords] = useState({ current_password: '', password: '', password_confirmation: '' });
   const [pictureFile, setPictureFile] = useState(null);
@@ -17,6 +19,8 @@ export default function StudentSettingsPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [canModify, setCanModify] = useState(true);
+  const [availableBranches, setAvailableBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -36,7 +40,8 @@ export default function StudentSettingsPage() {
           birth_date: u.birth_date || '',
           address: u.address || '',
           school_name: u.school_name || '',
-          year_of_study: u.year_of_study || ''
+          year_of_study: u.year_of_study || '',
+          branch_id: u.branch_id || ''
         });
         // compute canModify
         if (u.last_profile_update_at) {
@@ -51,6 +56,29 @@ export default function StudentSettingsPage() {
     };
     init();
   }, []);
+
+  // Load branches when year changes
+  useEffect(() => {
+    const loadBranches = async () => {
+      if (form.year_of_study && ['1AS', '2AS', '3AS'].includes(form.year_of_study)) {
+        setLoadingBranches(true);
+        try {
+          const response = await branchesService.getBranchesForYear(form.year_of_study);
+          setAvailableBranches(response.data || []);
+        } catch (error) {
+          console.error('Error loading branches:', error);
+          setAvailableBranches([]);
+        } finally {
+          setLoadingBranches(false);
+        }
+      } else {
+        setAvailableBranches([]);
+        setForm(prev => ({ ...prev, branch_id: '' }));
+      }
+    };
+
+    loadBranches();
+  }, [form.year_of_study]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -141,6 +169,28 @@ export default function StudentSettingsPage() {
               <Label>السنة الدراسية</Label>
               <Input name="year_of_study" value={form.year_of_study} onChange={handleChange} />
             </div>
+            {/* Branch Selection - Only for High School */}
+            {['1AS', '2AS', '3AS'].includes(form.year_of_study) && (
+              <div className="space-y-1">
+                <Label>الفرع الدراسي</Label>
+                <Select 
+                  value={form.branch_id} 
+                  onValueChange={(value) => setForm(prev => ({ ...prev, branch_id: value }))}
+                  disabled={loadingBranches}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingBranches ? "جاري تحميل الفروع..." : "اختر الفرع الدراسي"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableBranches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id.toString()}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1">
               <Label>صورة جديدة (اختياري)</Label>
               <Input type="file" accept="image/*" onChange={(e) => setPictureFile(e.target.files?.[0] || null)} />

@@ -128,6 +128,7 @@ export function StudentsTable({ searchQuery = "" }) {
             <TableHead className="text-right">رقم الهاتف</TableHead>
             <TableHead className="text-right">تاريخ الميلاد</TableHead>
             <TableHead className="text-right">السنة الدراسية</TableHead>
+            <TableHead className="text-right">الفرع</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -142,6 +143,7 @@ export function StudentsTable({ searchQuery = "" }) {
               <TableCell className="text-right">{student.phone}</TableCell>
               <TableCell className="text-right">{student.birth_date || 'غير محدد'}</TableCell>
               <TableCell className="text-right">{student.year_of_study || 'غير محدد'}</TableCell>
+              <TableCell className="text-right">{student.branch?.name || 'غير محدد'}</TableCell>
             </TableRow>
           ))}
         </TableBody>

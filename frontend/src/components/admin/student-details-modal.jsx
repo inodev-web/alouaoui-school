@@ -233,6 +233,10 @@ export function StudentDetailsModal({ student, open, onOpenChange, onUpdate }) {
                   <label className="text-sm font-medium text-muted-foreground">السنة الدراسية</label>
                   <p className="text-sm">{student.year_of_study || 'غير محدد'}</p>
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">الفرع الدراسي</label>
+                  <p className="text-sm">{student.branch?.name || 'غير محدد'}</p>
+                </div>
               </div>
             </CardContent>
           </Card>

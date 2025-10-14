@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Teacher;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -20,7 +21,8 @@ class UserController extends Controller
     {
         try {
             // Start with optimized query - select only needed fields
-            $query = User::select(['uuid', 'firstname', 'lastname', 'phone', 'birth_date', 'year_of_study', 'created_at'])
+            $query = User::select(['uuid', 'firstname', 'lastname', 'phone', 'birth_date', 'year_of_study', 'branch_id', 'created_at'])
+                ->with('branch')
                 ->where('role', 'student');
 
             // General search filter with optimized OR conditions
@@ -63,6 +65,11 @@ class UserController extends Controller
                     'phone' => $student->phone,
                     'birth_date' => $student->birth_date ? $student->birth_date->format('Y-m-d') : null,
                     'year_of_study' => $student->year_of_study,
+                    'branch' => $student->branch ? [
+                        'id' => $student->branch->id,
+                        'name' => $student->branch->name,
+                        'code' => $student->branch->code,
+                    ] : null,
                 ];
             });
 
@@ -157,7 +164,7 @@ class UserController extends Controller
         try {
             $student = User::where('role', 'student')
                 ->where('uuid', $uuid)
-                ->with(['subscriptions.teacher'])
+                ->with(['subscriptions.teacher', 'branch'])
                 ->firstOrFail();
 
             return response()->json([
@@ -170,6 +177,11 @@ class UserController extends Controller
                 'address' => $student->address,
                 'school_name' => $student->school_name,
                 'year_of_study' => $student->year_of_study,
+                'branch' => $student->branch ? [
+                    'id' => $student->branch->id,
+                    'name' => $student->branch->name,
+                    'code' => $student->branch->code,
+                ] : null,
                 'role' => $student->role,
                 'device_uuid' => $student->device_uuid,
                 'qr_token' => $student->qr_token,
@@ -213,10 +225,27 @@ class UserController extends Controller
             'address' => 'nullable|string|max:255',
             'school_name' => 'nullable|string|max:255',
             'year_of_study' => ['nullable', Rule::in(User::YEARS_OF_STUDY)],
+            'branch_id' => 'nullable|exists:branches,id',
             'free_subscriber' => 'boolean',
             'free_subscriber_reason' => 'nullable|string|max:255',
             'picture' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
+
+        // Validate branch_id based on year_of_study
+        if ($validated['branch_id'] && $validated['year_of_study']) {
+            $branch = Branch::find($validated['branch_id']);
+            if ($branch && $branch->year_level !== $validated['year_of_study']) {
+                return response()->json([
+                    'message' => 'الفرع المحدد لا يتطابق مع السنة الدراسية',
+                    'errors' => ['branch_id' => ['الفرع المحدد لا يتطابق مع السنة الدراسية']]
+                ], 422);
+            }
+        }
+
+        // Clear branch_id for middle school students
+        if ($validated['year_of_study'] && in_array($validated['year_of_study'], ['1AM', '2AM', '3AM', '4AM'])) {
+            $validated['branch_id'] = null;
+        }
 
         $validated['role'] = 'student';
         if ($request->hasFile('picture')) {
@@ -253,10 +282,27 @@ class UserController extends Controller
             'address' => 'nullable|string|max:255',
             'school_name' => 'nullable|string|max:255',
             'year_of_study' => ['nullable', Rule::in(User::YEARS_OF_STUDY)],
+            'branch_id' => 'nullable|exists:branches,id',
             'free_subscriber' => 'boolean',
             'free_subscriber_reason' => 'nullable|string|max:255',
             'picture' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
+
+        // Validate branch_id based on year_of_study
+        if ($validated['branch_id'] && $validated['year_of_study']) {
+            $branch = Branch::find($validated['branch_id']);
+            if ($branch && $branch->year_level !== $validated['year_of_study']) {
+                return response()->json([
+                    'message' => 'الفرع المحدد لا يتطابق مع السنة الدراسية',
+                    'errors' => ['branch_id' => ['الفرع المحدد لا يتطابق مع السنة الدراسية']]
+                ], 422);
+            }
+        }
+
+        // Clear branch_id for middle school students
+        if ($validated['year_of_study'] && in_array($validated['year_of_study'], ['1AM', '2AM', '3AM', '4AM'])) {
+            $validated['branch_id'] = null;
+        }
 
         if ($request->hasFile('picture')) {
             $validated['picture'] = $request->file('picture')->store('students', 'public');
