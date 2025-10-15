@@ -17,6 +17,7 @@ import { sessionService } from "@/services/api/session.service"
 import { teacherService } from "@/services/api/teacher.service"
 import branchesService from "@/services/api/branches.service"
 import { useToast } from "@/hooks/use-toast"
+import { cacheService } from "@/services/cache.service"
 
 const HIGH_SCHOOL_YEARS = ["1AS", "2AS", "3AS"]
 
@@ -88,8 +89,17 @@ export function EditSessionModal({ session, open, onOpenChange, onSessionUpdated
       if (formData.year_target && HIGH_SCHOOL_YEARS.includes(formData.year_target)) {
         setLoadingBranches(true)
         try {
-          const response = await branchesService.getBranchesForYear(formData.year_target)
-          const branches = response.data || []
+          // Use cache for branches - they rarely change
+          const allBranches = await cacheService.getBranches(async () => {
+            const response = await branchesService.getAllBranches()
+            return response.data || []
+          })
+          
+          // Filter branches for the selected year
+          const branches = allBranches.filter(
+            branch => branch.year_level === formData.year_target
+          )
+          
           setAvailableBranches(branches)
           // Keep existing selection if valid
           setFormData(prev => {
@@ -117,8 +127,12 @@ export function EditSessionModal({ session, open, onOpenChange, onSessionUpdated
 
   const fetchTeachers = async () => {
     try {
-      const response = await teacherService.getTeachers()
-      setTeachers(response.data || [])
+      // Use cache service to avoid repeated API calls
+      const data = await cacheService.getTeachers(async () => {
+        const response = await teacherService.getTeachers()
+        return response.data || []
+      })
+      setTeachers(data)
     } catch (error) {
       console.error('Error fetching teachers:', error)
     }

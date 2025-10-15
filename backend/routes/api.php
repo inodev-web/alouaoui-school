@@ -128,7 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
             Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
         });
-        
+
         // Routes that don't need scanner lock (read-only operations)
         Route::get('/session-attendance', [CheckinController::class, 'sessionAttendance'])->name('session-attendance');
         Route::get('/attendance-stats', [CheckinController::class, 'attendanceStats'])->name('attendance-stats');

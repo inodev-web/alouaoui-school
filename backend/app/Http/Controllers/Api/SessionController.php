@@ -19,7 +19,13 @@ class SessionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Session::with(['teacher', 'attendances', 'branch', 'branches']);
+        // Eager load relations with only necessary columns to reduce query size
+        $query = Session::with([
+            'teacher:uuid,name,picture,module',
+            'branch:id,name,code,year_level',
+            'branches:id,name,code,year_level',
+            'attendances:id,session_id,student_uuid'
+        ]);
 
         // Filter by teacher
         if ($request->filled('teacher_uuid')) {

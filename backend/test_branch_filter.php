@@ -42,10 +42,10 @@ if ($branches->count() > 0) {
     // Test with branch ID 17 (Electrical Engineering - should match session 34)
     $testBranchId = 17;
     $testBranch = Branch::find($testBranchId);
-    
+
     if ($testBranch) {
         echo "\n=== Testing filter for branch ID: {$testBranchId} ({$testBranch->code}) ===\n";
-        
+
         $filteredSessions = Session::with(['teacher', 'branches'])
             ->where(function ($q) use ($testBranchId) {
                 $q->where('branch_id', $testBranchId)
@@ -54,7 +54,7 @@ if ($branches->count() > 0) {
                   });
             })
             ->get();
-        
+
         echo "Found {$filteredSessions->count()} sessions\n";
         foreach ($filteredSessions as $session) {
             echo "  - Session {$session->id}: branch_id={$session->branch_id}, ";
@@ -64,7 +64,7 @@ if ($branches->count() > 0) {
             }
             echo "\n";
         }
-        
+
         // Expected: Session 34 should be in results because it has branch 17 in pivot table
         echo "\nExpected: Session 34 should appear (has branches 17 and 19 in pivot)\n";
     }

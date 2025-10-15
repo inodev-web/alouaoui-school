@@ -22,7 +22,7 @@ class UserController extends Controller
         try {
             // Start with optimized query - select only needed fields
             $query = User::select(['uuid', 'firstname', 'lastname', 'phone', 'birth_date', 'year_of_study', 'branch_id', 'picture', 'created_at'])
-                ->with('branch')
+                ->with('branch:id,name,code,year_level')  // Specify only needed columns
                 ->where('role', 'student');
 
             // General search filter with optimized OR conditions

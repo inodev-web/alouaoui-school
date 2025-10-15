@@ -1,0 +1,185 @@
+/**
+ * Cache Service for API Data
+ * Reduces redundant API calls by caching frequently accessed data
+ */
+
+const CACHE_KEYS = {
+  TEACHERS: 'cache_teachers',
+  BRANCHES: 'cache_branches',
+  CHAPTERS: 'cache_chapters',
+  USER_STATS: 'cache_user_stats',
+}
+
+const CACHE_TTL = {
+  TEACHERS: 5 * 60 * 1000, // 5 minutes
+  BRANCHES: 30 * 60 * 1000, // 30 minutes (rarely changes)
+  CHAPTERS: 10 * 60 * 1000, // 10 minutes
+  USER_STATS: 2 * 60 * 1000, // 2 minutes
+}
+
+class CacheService {
+  /**
+   * Get cached data
+   * @param {string} key - Cache key
+   * @returns {any|null} Cached data or null if expired/not found
+   */
+  get(key) {
+    try {
+      const cached = localStorage.getItem(key)
+      if (!cached) return null
+
+      const { data, timestamp, ttl } = JSON.parse(cached)
+      const now = Date.now()
+
+      // Check if cache is still valid
+      if (now - timestamp > ttl) {
+        this.remove(key)
+        return null
+      }
+
+      return data
+    } catch (error) {
+      console.error(`Cache get error for key ${key}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Set cache data
+   * @param {string} key - Cache key
+   * @param {any} data - Data to cache
+   * @param {number} ttl - Time to live in milliseconds
+   */
+  set(key, data, ttl) {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now(),
+        ttl,
+      }
+      localStorage.setItem(key, JSON.stringify(cacheData))
+    } catch (error) {
+      console.error(`Cache set error for key ${key}:`, error)
+    }
+  }
+
+  /**
+   * Remove cached data
+   * @param {string} key - Cache key
+   */
+  remove(key) {
+    try {
+      localStorage.removeItem(key)
+    } catch (error) {
+      console.error(`Cache remove error for key ${key}:`, error)
+    }
+  }
+
+  /**
+   * Clear all cache
+   */
+  clearAll() {
+    try {
+      Object.values(CACHE_KEYS).forEach((key) => {
+        this.remove(key)
+      })
+    } catch (error) {
+      console.error('Cache clear all error:', error)
+    }
+  }
+
+  /**
+   * Get or fetch teachers with caching
+   * @param {Function} fetchFn - Function to fetch teachers
+   * @returns {Promise<Array>}
+   */
+  async getTeachers(fetchFn) {
+    const cached = this.get(CACHE_KEYS.TEACHERS)
+    if (cached) {
+      console.log('📦 Using cached teachers')
+      return cached
+    }
+
+    console.log('🌐 Fetching teachers from API')
+    const data = await fetchFn()
+    this.set(CACHE_KEYS.TEACHERS, data, CACHE_TTL.TEACHERS)
+    return data
+  }
+
+  /**
+   * Get or fetch branches with caching
+   * @param {Function} fetchFn - Function to fetch branches
+   * @returns {Promise<Array>}
+   */
+  async getBranches(fetchFn) {
+    const cached = this.get(CACHE_KEYS.BRANCHES)
+    if (cached) {
+      console.log('📦 Using cached branches')
+      return cached
+    }
+
+    console.log('🌐 Fetching branches from API')
+    const data = await fetchFn()
+    this.set(CACHE_KEYS.BRANCHES, data, CACHE_TTL.BRANCHES)
+    return data
+  }
+
+  /**
+   * Get or fetch chapters with caching
+   * @param {Function} fetchFn - Function to fetch chapters
+   * @returns {Promise<Array>}
+   */
+  async getChapters(fetchFn) {
+    const cached = this.get(CACHE_KEYS.CHAPTERS)
+    if (cached) {
+      console.log('📦 Using cached chapters')
+      return cached
+    }
+
+    console.log('🌐 Fetching chapters from API')
+    const data = await fetchFn()
+    this.set(CACHE_KEYS.CHAPTERS, data, CACHE_TTL.CHAPTERS)
+    return data
+  }
+
+  /**
+   * Get or fetch user stats with caching
+   * @param {Function} fetchFn - Function to fetch user stats
+   * @returns {Promise<Object>}
+   */
+  async getUserStats(fetchFn) {
+    const cached = this.get(CACHE_KEYS.USER_STATS)
+    if (cached) {
+      console.log('📦 Using cached user stats')
+      return cached
+    }
+
+    console.log('🌐 Fetching user stats from API')
+    const data = await fetchFn()
+    this.set(CACHE_KEYS.USER_STATS, data, CACHE_TTL.USER_STATS)
+    return data
+  }
+
+  /**
+   * Invalidate specific cache
+   */
+  invalidateTeachers() {
+    this.remove(CACHE_KEYS.TEACHERS)
+  }
+
+  invalidateBranches() {
+    this.remove(CACHE_KEYS.BRANCHES)
+  }
+
+  invalidateChapters() {
+    this.remove(CACHE_KEYS.CHAPTERS)
+  }
+
+  invalidateUserStats() {
+    this.remove(CACHE_KEYS.USER_STATS)
+  }
+}
+
+export const cacheService = new CacheService()
+export { CACHE_KEYS, CACHE_TTL }
+export default cacheService

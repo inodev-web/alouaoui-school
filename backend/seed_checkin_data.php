@@ -80,7 +80,7 @@ $sessions = [];
 foreach ($teachers as $index => $teacher) {
     $startTime = $today->copy()->setHour(9 + ($index * 2))->setMinute(0)->setSecond(0);
     $endTime = $startTime->copy()->addHours(2);
-    
+
     $session = Session::firstOrCreate(
         [
             'teacher_uuid' => $teacher->uuid,
@@ -93,7 +93,7 @@ foreach ($teachers as $index => $teacher) {
             'branch_id' => $branch->id,
         ]
     );
-    
+
     $sessions[] = $session;
     echo "✓ Session created/found: {$teacher->name} at {$startTime->format('H:i')} - {$endTime->format('H:i')}\n";
 }
@@ -106,14 +106,14 @@ foreach ($students as $studentIndex => $student) {
     // Each student attends 1-2 random sessions
     $sessionCount = rand(1, 2);
     $attendedSessions = array_rand($sessions, $sessionCount);
-    
+
     if (!is_array($attendedSessions)) {
         $attendedSessions = [$attendedSessions];
     }
-    
+
     foreach ($attendedSessions as $sessionIndex) {
         $session = $sessions[$sessionIndex];
-        
+
         Attendance::firstOrCreate(
             [
                 'student_uuid' => $student->uuid,
@@ -125,7 +125,7 @@ foreach ($students as $studentIndex => $student) {
                 'created_at' => now(),
             ]
         );
-        
+
         $attendanceCount++;
         echo "✓ Attendance created: {$student->firstname} {$student->lastname} → {$session->teacher->name}\n";
     }

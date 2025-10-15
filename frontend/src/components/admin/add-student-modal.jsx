@@ -16,6 +16,7 @@ import { UserPlus } from "lucide-react"
 import studentsService from "../../services/api/students.service"
 import branchesService from "../../services/api/branches.service"
 import { useToast } from "../../hooks/use-toast"
+import { cacheService } from "@/services/cache.service"
 
 export function AddStudentModal({ onStudentAdded }) {
   const [open, setOpen] = useState(false)
@@ -41,8 +42,18 @@ export function AddStudentModal({ onStudentAdded }) {
       if (formData.year_of_study && ['1AS', '2AS', '3AS'].includes(formData.year_of_study)) {
         setLoadingBranches(true)
         try {
-          const response = await branchesService.getBranchesForYear(formData.year_of_study)
-          setAvailableBranches(response.data || [])
+          // Use cache for branches - they rarely change
+          const allBranches = await cacheService.getBranches(async () => {
+            const response = await branchesService.getAllBranches()
+            return response.data || []
+          })
+          
+          // Filter branches for the selected year
+          const branches = allBranches.filter(
+            branch => branch.year_level === formData.year_of_study
+          )
+          
+          setAvailableBranches(branches)
         } catch (error) {
           console.error('Error loading branches:', error)
           setAvailableBranches([])

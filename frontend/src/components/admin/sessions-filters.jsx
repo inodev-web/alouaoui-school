@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, X } from "lucide-react"
 import { teacherService } from "@/services/api/teacher.service"
 import branchesService from "@/services/api/branches.service"
+import { useDebounce } from "@/hooks/useDebounce"
+import { cacheService } from "@/services/cache.service"
 
 export function SessionsFilters({ onFiltersChange }) {
   const [searchTerm, setSearchTerm] = useState("")
@@ -17,6 +19,9 @@ export function SessionsFilters({ onFiltersChange }) {
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 500)
+
   useEffect(() => {
     fetchTeachers()
     fetchBranches()
@@ -24,8 +29,9 @@ export function SessionsFilters({ onFiltersChange }) {
 
   useEffect(() => {
     // Notify parent component of filter changes
+    // Use debounced search term instead of direct searchTerm
     const filters = {
-      search: searchTerm,
+      search: debouncedSearchTerm,
       teacher_uuid: selectedTeacher !== "all" && selectedTeacher ? selectedTeacher : undefined,
       status: selectedStatus !== "all" && selectedStatus ? selectedStatus : undefined,
       year_target: selectedYear !== "all" && selectedYear ? selectedYear : undefined,
@@ -35,13 +41,17 @@ export function SessionsFilters({ onFiltersChange }) {
     }
     onFiltersChange?.(filters)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, selectedTeacher, selectedStatus, selectedYear, selectedBranch, selectedDate])
+  }, [debouncedSearchTerm, selectedTeacher, selectedStatus, selectedYear, selectedBranch, selectedDate])
 
   const fetchTeachers = async () => {
     try {
       setLoading(true)
-      const response = await teacherService.getTeachers()
-      setTeachers(response.data || [])
+      // Use cache service instead of direct API call
+      const data = await cacheService.getTeachers(async () => {
+        const response = await teacherService.getTeachers()
+        return response.data || []
+      })
+      setTeachers(data)
     } catch (error) {
       console.error('Error fetching teachers:', error)
     } finally {
@@ -51,8 +61,12 @@ export function SessionsFilters({ onFiltersChange }) {
 
   const fetchBranches = async () => {
     try {
-      const response = await branchesService.getAllBranches()
-      setBranches(response.data || [])
+      // Use cache service instead of direct API call
+      const data = await cacheService.getBranches(async () => {
+        const response = await branchesService.getAllBranches()
+        return response.data || []
+      })
+      setBranches(data)
     } catch (error) {
       console.error('Error fetching branches:', error)
     }
