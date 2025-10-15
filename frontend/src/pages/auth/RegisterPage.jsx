@@ -124,6 +124,11 @@ const RegisterPage = () => {
         password: formData.password,
         password_confirmation: formData.password_confirmation,
       }
+
+      // Add branch_id only for high school students
+      if (['1AS', '2AS', '3AS'].includes(formData.year_of_study) && formData.branch_id) {
+        userData.branch_id = formData.branch_id
+      }
       
       console.log('Sending registration request with data:', userData)
       

@@ -19,7 +19,7 @@ class SessionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Session::with(['teacher', 'attendances', 'branch']);
+        $query = Session::with(['teacher', 'attendances', 'branch', 'branches']);
 
         // Filter by teacher
         if ($request->filled('teacher_uuid')) {
@@ -33,7 +33,13 @@ class SessionController extends Controller
 
         // Filter by branch
         if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
+            $branchId = (int) $request->branch_id;
+            $query->where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)
+                  ->orWhereHas('branches', function ($branchQuery) use ($branchId) {
+                      $branchQuery->where('branches.id', $branchId);
+                  });
+            });
         }
 
         // Filter by status
@@ -90,9 +96,12 @@ class SessionController extends Controller
             'teacher_uuid' => 'required|exists:teachers,uuid',
             'year_target' => 'required|in:' . implode(',', Session::YEAR_TARGETS),
             'branch_id' => 'nullable|exists:branches,id',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'integer|exists:branches,id',
             'start_time' => 'required|date|after:now',
             'end_time' => 'required|date|after:start_time',
-            'status' => 'sometimes|in:' . implode(',', Session::STATUSES),
+            'status' => 'nullable|in:' . implode(',', Session::STATUSES),
+            'cancel_reason' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -102,36 +111,83 @@ class SessionController extends Controller
             ], 422);
         }
 
-        // Validate branch_id based on year_target
-        if ($request->filled('branch_id') && $request->filled('year_target')) {
-            $branch = Branch::find($request->branch_id);
-            if ($branch && $branch->year_level !== $request->year_target) {
-                return response()->json([
-                    'message' => 'الفرع المحدد لا يتطابق مع السنة المستهدفة',
-                    'errors' => ['branch_id' => ['الفرع المحدد لا يتطابق مع السنة المستهدفة']]
-                ], 422);
-            }
+        if ($request->filled('status') && $request->status === 'cancelled' && !$request->filled('cancel_reason')) {
+            return response()->json([
+                'message' => 'يجب تحديد سبب للإلغاء',
+                'errors' => ['cancel_reason' => ['الرجاء اختيار سبب لإلغاء الجلسة']],
+            ], 422);
         }
 
-        // Clear branch_id for middle school sessions
-        $branchId = $request->branch_id;
-        if ($request->year_target && in_array($request->year_target, ['1AM', '2AM', '3AM', '4AM'])) {
-            $branchId = null;
+        if ($request->filled('cancel_reason') && $request->input('status') !== 'cancelled') {
+            return response()->json([
+                'message' => 'لا يمكن حفظ سبب الإلغاء بدون إلغاء الجلسة',
+                'errors' => ['cancel_reason' => ['قم بإلغاء الجلسة أولاً قبل تحديد السبب']],
+            ], 422);
         }
+
+        $branchIds = collect($request->input('branch_ids', []))
+            ->filter(function ($id) {
+                return $id !== null && $id !== '';
+            })
+            ->map(function ($id) {
+                return (int) $id;
+            })
+            ->unique()
+            ->values();
+
+        if ($request->filled('branch_id')) {
+            $branchIds->push((int) $request->branch_id);
+            $branchIds = $branchIds->unique()->values();
+        }
+
+        $yearTarget = $request->year_target;
+        $isHighSchool = in_array($yearTarget, ['1AS', '2AS', '3AS']);
+
+        if ($isHighSchool) {
+            if ($branchIds->isEmpty()) {
+                return response()->json([
+                    'message' => 'يجب اختيار فرع واحد على الأقل لهذه السنة',
+                    'errors' => ['branch_ids' => ['يجب اختيار فرع واحد على الأقل لهذه السنة']]
+                ], 422);
+            }
+
+            $hasInvalidBranch = Branch::whereIn('id', $branchIds->all())
+                ->where(function ($branchQuery) use ($yearTarget) {
+                    $branchQuery->where('year_level', '!=', $yearTarget)
+                        ->orWhereNull('year_level');
+                })
+                ->exists();
+
+            if ($hasInvalidBranch) {
+                return response()->json([
+                    'message' => 'الفروع المحددة لا تتطابق مع السنة المستهدفة',
+                    'errors' => ['branch_ids' => ['الفروع المحددة لا تتطابق مع السنة المستهدفة']]
+                ], 422);
+            }
+        } else {
+            $branchIds = collect();
+        }
+
+        $primaryBranchId = $isHighSchool ? $branchIds->first() : null;
 
         try {
             $session = Session::create([
                 'teacher_uuid' => $request->teacher_uuid,
                 'year_target' => $request->year_target,
-                'branch_id' => $branchId,
+                'branch_id' => $primaryBranchId,
                 'start_time' => Carbon::parse($request->start_time),
                 'end_time' => Carbon::parse($request->end_time),
-                'status' => $request->status ?? 'completed', // Default to completed in simplified model
+                'status' => $request->input('status'),
+                'cancel_reason' => $request->input('status') === 'cancelled'
+                    ? $request->input('cancel_reason')
+                    : null,
             ]);
+
+            $session->branches()->sync($branchIds->all());
 
             return response()->json([
                 'message' => 'Session created successfully',
-                'data' => $this->transformSession($session->load(['teacher', 'attendances']))
+                'data' => $this->transformSession($session->load(['teacher', 'attendances', 'branch', 'branches']))
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -147,7 +203,7 @@ class SessionController extends Controller
     public function show(Session $session): JsonResponse
     {
         return response()->json([
-            'data' => $this->transformSession($session->load(['teacher', 'attendances']))
+            'data' => $this->transformSession($session->load(['teacher', 'attendances', 'branch', 'branches']))
         ]);
     }
 
@@ -160,9 +216,12 @@ class SessionController extends Controller
             'teacher_uuid' => 'sometimes|exists:teachers,uuid',
             'year_target' => 'sometimes|in:' . implode(',', Session::YEAR_TARGETS),
             'branch_id' => 'nullable|exists:branches,id',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'integer|exists:branches,id',
             'start_time' => 'sometimes|date',
             'end_time' => 'sometimes|date|after:start_time',
-            'status' => 'sometimes|in:' . implode(',', Session::STATUSES),
+            'status' => 'nullable|in:' . implode(',', Session::STATUSES),
+            'cancel_reason' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -172,29 +231,98 @@ class SessionController extends Controller
             ], 422);
         }
 
-        // Validate branch_id based on year_target
-        if ($request->filled('branch_id') && $request->filled('year_target')) {
-            $branch = Branch::find($request->branch_id);
-            if ($branch && $branch->year_level !== $request->year_target) {
+        if ($request->filled('status') && $request->status === 'cancelled' && !$request->filled('cancel_reason')) {
+            return response()->json([
+                'message' => 'يجب تحديد سبب للإلغاء',
+                'errors' => ['cancel_reason' => ['الرجاء اختيار سبب لإلغاء الجلسة']],
+            ], 422);
+        }
+
+        if ($request->filled('cancel_reason') && $request->input('status', $session->status) !== 'cancelled') {
+            return response()->json([
+                'message' => 'لا يمكن حفظ سبب الإلغاء بدون إلغاء الجلسة',
+                'errors' => ['cancel_reason' => ['قم بإلغاء الجلسة أولاً قبل تحديد السبب']],
+            ], 422);
+        }
+
+        $yearTarget = $request->input('year_target', $session->year_target);
+        $isHighSchool = in_array($yearTarget, ['1AS', '2AS', '3AS']);
+        $branchDataProvided = $request->has('branch_ids') || $request->has('branch_id');
+
+        $branchIds = collect();
+
+        if ($branchDataProvided) {
+            $branchIds = collect($request->input('branch_ids', []))
+                ->filter(function ($id) {
+                    return $id !== null && $id !== '';
+                })
+                ->map(function ($id) {
+                    return (int) $id;
+                })
+                ->unique()
+                ->values();
+
+            if ($request->filled('branch_id')) {
+                $branchIds->push((int) $request->branch_id);
+                $branchIds = $branchIds->unique()->values();
+            }
+        }
+
+        $shouldSyncBranches = $branchDataProvided || !$isHighSchool;
+
+        if ($isHighSchool && $shouldSyncBranches) {
+            if ($branchIds->isEmpty()) {
                 return response()->json([
-                    'message' => 'الفرع المحدد لا يتطابق مع السنة المستهدفة',
-                    'errors' => ['branch_id' => ['الفرع المحدد لا يتطابق مع السنة المستهدفة']]
+                    'message' => 'يجب اختيار فرع واحد على الأقل لهذه السنة',
+                    'errors' => ['branch_ids' => ['يجب اختيار فرع واحد على الأقل لهذه السنة']]
+                ], 422);
+            }
+
+            $hasInvalidBranch = Branch::whereIn('id', $branchIds->all())
+                ->where(function ($branchQuery) use ($yearTarget) {
+                    $branchQuery->where('year_level', '!=', $yearTarget)
+                        ->orWhereNull('year_level');
+                })
+                ->exists();
+
+            if ($hasInvalidBranch) {
+                return response()->json([
+                    'message' => 'الفروع المحددة لا تتطابق مع السنة المستهدفة',
+                    'errors' => ['branch_ids' => ['الفروع المحددة لا تتطابق مع السنة المستهدفة']]
                 ], 422);
             }
         }
 
-        // Clear branch_id for middle school sessions
-        $branchId = $request->branch_id;
-        if ($request->year_target && in_array($request->year_target, ['1AM', '2AM', '3AM', '4AM'])) {
-            $branchId = null;
+        if ($isHighSchool && !$shouldSyncBranches) {
+            $hasInvalidExisting = $session->branches()
+                ->where(function ($branchQuery) use ($yearTarget) {
+                    $branchQuery->where('year_level', '!=', $yearTarget)
+                        ->orWhereNull('year_level');
+                })
+                ->exists();
+
+            if ($hasInvalidExisting) {
+                return response()->json([
+                    'message' => 'الفروع الحالية لا تتطابق مع السنة الجديدة، يرجى اختيار الفروع المناسبة',
+                    'errors' => ['branch_ids' => ['الفروع الحالية لا تتطابق مع السنة الجديدة']]
+                ], 422);
+            }
         }
+
+        if (!$isHighSchool) {
+            $branchIds = collect();
+        }
+
+        $primaryBranchId = $shouldSyncBranches
+            ? ($isHighSchool ? $branchIds->first() : null)
+            : $session->branch_id;
 
         try {
             $updateData = $request->only(['teacher_uuid', 'year_target', 'status']);
-            if ($request->has('branch_id')) {
-                $updateData['branch_id'] = $branchId;
+            if ($shouldSyncBranches || $request->has('branch_id')) {
+                $updateData['branch_id'] = $primaryBranchId;
             }
-            
+
             if ($request->has('start_time')) {
                 $updateData['start_time'] = Carbon::parse($request->start_time);
             }
@@ -202,11 +330,27 @@ class SessionController extends Controller
                 $updateData['end_time'] = Carbon::parse($request->end_time);
             }
 
+            if (array_key_exists('status', $updateData)) {
+                $statusValue = $request->input('status');
+                $updateData['status'] = $statusValue;
+                if ($statusValue !== 'cancelled') {
+                    $updateData['cancel_reason'] = null;
+                }
+            }
+
+            if ($request->filled('cancel_reason') && $request->input('status', $session->status) === 'cancelled') {
+                $updateData['cancel_reason'] = $request->input('cancel_reason');
+            }
+
             $session->update($updateData);
+
+            if ($shouldSyncBranches) {
+                $session->branches()->sync($branchIds->all());
+            }
 
             return response()->json([
                 'message' => 'Session updated successfully',
-                'data' => $this->transformSession($session->load(['teacher', 'attendances']))
+                'data' => $this->transformSession($session->load(['teacher', 'attendances', 'branch', 'branches']))
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -239,7 +383,7 @@ class SessionController extends Controller
      */
     public function today(): JsonResponse
     {
-        $sessions = Session::with(['teacher', 'attendances'])
+        $sessions = Session::with(['teacher', 'attendances', 'branch', 'branches'])
             ->whereDate('start_time', today())
             ->orderBy('start_time')
             ->get();
@@ -259,7 +403,7 @@ class SessionController extends Controller
     public function stats(): JsonResponse
     {
         $today = today();
-        
+
         $stats = [
             'today_sessions' => Session::whereDate('start_time', $today)->count(),
             'completed_sessions' => Session::where('status', 'completed')->count(),
@@ -279,7 +423,24 @@ class SessionController extends Controller
     {
         $teacher = $session->teacher;
         $attendances = $session->attendances;
-        
+        $branchesCollection = $session->relationLoaded('branches')
+            ? $session->branches
+            : $session->branches()->get();
+
+        $branchesData = $branchesCollection->map(function ($branch) {
+            return [
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'code' => $branch->code,
+            ];
+        })->values();
+
+        $primaryBranch = $session->branch ?: $branchesCollection->first();
+        $statusRaw = $session->status;
+        $needsStatusConfirmation = !$statusRaw
+            && $session->end_time
+            && $session->end_time->lessThanOrEqualTo(now());
+
         // Determine session type based on teacher pricing
         $sessionType = 'free';
         if ($teacher && $teacher->price_subscription > 0) {
@@ -298,17 +459,22 @@ class SessionController extends Controller
             'teacher_name' => $teacher ? $teacher->name : 'غير محدد',
             'module' => $teacher ? $teacher->module : 'غير محدد',
             'year_target' => $session->year_target,
-            'branch' => $session->branch ? [
-                'id' => $session->branch->id,
-                'name' => $session->branch->name,
-                'code' => $session->branch->code,
+            'branch' => $primaryBranch ? [
+                'id' => $primaryBranch->id,
+                'name' => $primaryBranch->name,
+                'code' => $primaryBranch->code,
             ] : null,
+            'branches' => $branchesData->toArray(),
+            'branch_ids' => $branchesData->pluck('id')->toArray(),
             'start_time' => $session->start_time->format('Y-m-d H:i:s'),
             'end_time' => $session->end_time->format('Y-m-d H:i:s'),
             'date' => $session->start_time->format('Y-m-d'),
             'time' => $session->start_time->format('H:i'),
             'duration' => $session->durationMinutes() ? round($session->durationMinutes() / 60, 1) . 'س' : 'غير محدد',
-            'status' => $this->getStatusInArabic($session->status),
+            'status' => $this->getStatusInArabic($statusRaw),
+            'status_raw' => $statusRaw,
+            'cancel_reason' => $session->cancel_reason,
+            'needs_status_confirmation' => $needsStatusConfirmation,
             'type' => $this->getTypeInArabic($sessionType),
             'students_count' => $attendances->count(),
             'revenue' => $revenue . ' دج',
@@ -319,8 +485,12 @@ class SessionController extends Controller
     /**
      * Get status in Arabic
      */
-    private function getStatusInArabic(string $status): string
+    private function getStatusInArabic(?string $status): string
     {
+        if ($status === null) {
+            return 'بانتظار التأكيد';
+        }
+
         return match($status) {
             'completed' => 'مكتملة',
             'cancelled' => 'ملغية',

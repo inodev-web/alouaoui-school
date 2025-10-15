@@ -183,7 +183,7 @@ export function AdminSidebar() {
               <span className="text-sm font-medium">تسجيل الخروج</span>
             )}
           </button>
-          <Link
+          {/* <Link
             to="/admin/settings"
             onClick={handleItemClick}
             title="الإعدادات"
@@ -197,7 +197,7 @@ export function AdminSidebar() {
             {isOpen && (
               <span className="text-sm font-medium">الإعدادات</span>
             )}
-          </Link>
+          </Link> */}
         </div>
       </aside>
     </div>

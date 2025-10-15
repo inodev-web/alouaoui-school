@@ -96,8 +96,27 @@ export default function StudentSettingsPage() {
     try {
       // Build multipart if picture is changing
       const fd = new FormData();
-      Object.entries(form).forEach(([k,v]) => { if (v) fd.append(k, v); });
-      if (pictureFile) fd.append('picture', pictureFile);
+      
+      // Liste des champs autorisés (SANS picture)
+      const allowedFields = ['firstname', 'lastname', 'phone', 'birth_date', 'address', 'school_name', 'year_of_study', 'branch_id'];
+      
+      // Ajouter uniquement les champs autorisés
+      allowedFields.forEach(field => {
+        if (form[field]) {
+          // Convertir birth_date au format YYYY-MM-DD si c'est un ISO string
+          if (field === 'birth_date' && typeof form[field] === 'string' && form[field].includes('T')) {
+            fd.append(field, form[field].split('T')[0]);
+          } else {
+            fd.append(field, form[field]);
+          }
+        }
+      });
+      
+      // Ajouter le fichier picture si sélectionné
+      if (pictureFile && pictureFile instanceof File) {
+        fd.append('picture', pictureFile);
+      }
+      
       // Current password required for info modification
       if (!passwords.current_password) {
         setError('يرجى إدخال كلمة المرور الحالية لتعديل المعلومات');
@@ -107,6 +126,21 @@ export default function StudentSettingsPage() {
       const updated = await AuthService.updateProfile(fd);
       if (updated) {
         setUser(updated);
+        // Update the form with the new values including the picture URL
+        setForm({
+          firstname: updated.firstname || '',
+          lastname: updated.lastname || '',
+          phone: updated.phone || '',
+          birth_date: updated.birth_date || '',
+          address: updated.address || '',
+          school_name: updated.school_name || '',
+          year_of_study: updated.year_of_study || '',
+          branch_id: updated.branch_id || ''
+        });
+        // Clear the picture file input
+        setPictureFile(null);
+        // Trigger a custom event to notify other components (ProfilePage)
+        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: updated }));
         setSuccess('تم تحديث معلومات الحساب بنجاح');
         setCanModify(false);
       }
@@ -193,7 +227,11 @@ export default function StudentSettingsPage() {
             )}
             <div className="space-y-1">
               <Label>صورة جديدة (اختياري)</Label>
-              <Input type="file" accept="image/*" onChange={(e) => setPictureFile(e.target.files?.[0] || null)} />
+              <Input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => setPictureFile(e.target.files?.[0] || null)} 
+              />
             </div>
             <div className="md:col-span-2 space-y-1">
               <Label>كلمة المرور الحالية (مطلوبة للتعديل)</Label>

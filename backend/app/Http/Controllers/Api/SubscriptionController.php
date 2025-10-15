@@ -101,6 +101,7 @@ class SubscriptionController extends Controller
                 'id' => $sub->id,
                 'teacher_uuid' => $sub->teacher_uuid,
                 'teacher_name' => $teacher?->name,
+                'teacher_picture' => $teacher?->picture,
                 'starts_at' => $sub->starts_at,
                 'ends_at' => $sub->ends_at,
                 'days_remaining' => $sub->daysRemaining(),

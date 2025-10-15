@@ -40,6 +40,21 @@
   }
 
 }
+
+/* Animation brillante pour carte gold (Alouaoui) */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s infinite;
+}
+
 /* carousel */
 .carousel{
     height: calc(100vh - 5em);

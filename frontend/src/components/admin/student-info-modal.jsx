@@ -44,6 +44,17 @@ export function StudentInfoModal({ student, open, onOpenChange }) {
               <CardDescription>Student ID: {student.id}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Student Image */}
+              <div className="flex justify-center mb-4">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-2 shadow-md">
+                  <img
+                    src={student.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name || '')}&background=0D8ABC&color=fff&size=200`}
+                    alt={student.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name || '')}&background=0D8ABC&color=fff&size=200` }}
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />

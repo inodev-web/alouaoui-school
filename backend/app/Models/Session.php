@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Session extends Model
@@ -22,7 +23,8 @@ class Session extends Model
         'branch_id',
         'start_time',
         'end_time',
-        'status',
+    'status',
+    'cancel_reason',
     ];
 
     /**
@@ -117,6 +119,15 @@ class Session extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Session belongs to many branches (high school filieres)
+     */
+    public function branches(): BelongsToMany
+    {
+    return $this->belongsToMany(Branch::class, 'session_branch', 'session_id', 'branch_id')
+            ->withTimestamps();
     }
 
     /**

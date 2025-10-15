@@ -21,7 +21,7 @@ class UserController extends Controller
     {
         try {
             // Start with optimized query - select only needed fields
-            $query = User::select(['uuid', 'firstname', 'lastname', 'phone', 'birth_date', 'year_of_study', 'branch_id', 'created_at'])
+            $query = User::select(['uuid', 'firstname', 'lastname', 'phone', 'birth_date', 'year_of_study', 'branch_id', 'picture', 'created_at'])
                 ->with('branch')
                 ->where('role', 'student');
 
@@ -65,6 +65,7 @@ class UserController extends Controller
                     'phone' => $student->phone,
                     'birth_date' => $student->birth_date ? $student->birth_date->format('Y-m-d') : null,
                     'year_of_study' => $student->year_of_study,
+                    'picture' => $student->picture ? asset('storage/' . ltrim($student->picture, '/')) : null,
                     'branch' => $student->branch ? [
                         'id' => $student->branch->id,
                         'name' => $student->branch->name,

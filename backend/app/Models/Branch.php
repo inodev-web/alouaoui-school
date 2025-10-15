@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Branch extends Model
@@ -52,7 +53,16 @@ class Branch extends Model
      */
     public function sessions(): HasMany
     {
-        return $this->hasMany(Session::class, 'branch_id');
+        return $this->hasMany(Session::class, 'branch_id', 'id');
+    }
+
+    /**
+     * Branch belongs to many sessions (pivot session_branch)
+     */
+    public function sessionAssignments(): BelongsToMany
+    {
+        return $this->belongsToMany(Session::class, 'session_branch', 'branch_id', 'session_id')
+            ->withTimestamps();
     }
 
     /**

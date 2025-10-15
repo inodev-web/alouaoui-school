@@ -192,6 +192,8 @@ class AuthService {
                     address: profileData.address || '',
                     school_name: profileData.school_name || '',
                     free_subscriber: profileData.free_subscriber || false,
+                    branch_id: profileData.branch_id || null,
+                    branch: profileData.branch || null,
                     last_profile_update_at: profileData.last_profile_update_at || null,
                 };
                 formattedProfile.qr_token = formattedProfile.uuid;
@@ -207,12 +209,21 @@ class AuthService {
     async updateProfile(profileData) {
         try {
             let payload = profileData;
-            let headers = {};
+            let config = {};
             if (profileData instanceof FormData) {
                 payload = profileData;
-                headers = { 'Content-Type': 'multipart/form-data' };
+                // Laravel ne gère pas bien PUT avec multipart/form-data
+                // Utiliser POST avec _method=PUT pour simuler PUT
+                payload.append('_method', 'PUT');
+                // IMPORTANT: Supprimer le Content-Type pour que le navigateur
+                // le définisse automatiquement avec le boundary correct
+                config = {
+                    headers: {
+                        'Content-Type': undefined
+                    }
+                };
             }
-            const response = await api.put('/auth/profile', payload, { headers });
+            const response = await api.post('/auth/profile', payload, config);
             const updatedProfile = response.data.data;
             if (updatedProfile) {
                 const formattedProfile = {
@@ -229,6 +240,8 @@ class AuthService {
                     address: updatedProfile.address || '',
                     school_name: updatedProfile.school_name || '',
                     free_subscriber: updatedProfile.free_subscriber || false,
+                    branch_id: updatedProfile.branch_id || null,
+                    branch: updatedProfile.branch || null,
                     last_profile_update_at: updatedProfile.last_profile_update_at || null,
                 };
                 formattedProfile.qr_token = formattedProfile.uuid;

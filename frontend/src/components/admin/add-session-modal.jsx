@@ -11,13 +11,15 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { CalendarPlus, Loader2 } from "lucide-react"
 import { sessionService } from "@/services/api/session.service"
 import { teacherService } from "@/services/api/teacher.service"
-import branchesService from "../../services/api/branches.service"
-import { useToast } from "../../hooks/use-toast"
+import branchesService from "@/services/api/branches.service"
+import { useToast } from "@/hooks/use-toast"
+
+const HIGH_SCHOOL_YEARS = ["1AS", "2AS", "3AS"]
 
 export function AddSessionModal({ onSessionAdded }) {
   const [open, setOpen] = useState(false)
@@ -27,7 +29,7 @@ export function AddSessionModal({ onSessionAdded }) {
   const [formData, setFormData] = useState({
     teacher: "",
     year_target: "1AM",
-    branch_id: "",
+    branch_ids: [],
     date: "",
     time: "",
     duration: "",
@@ -41,14 +43,36 @@ export function AddSessionModal({ onSessionAdded }) {
     }
   }, [open])
 
+  useEffect(() => {
+    if (!open) {
+      setFormData({
+        teacher: "",
+        year_target: "1AM",
+        branch_ids: [],
+        date: "",
+        time: "",
+        duration: "",
+      })
+      setAvailableBranches([])
+      setLoadingBranches(false)
+    }
+  }, [open])
+
   // Load branches when year changes
   useEffect(() => {
     const loadBranches = async () => {
-      if (formData.year_target && ['1AS', '2AS', '3AS'].includes(formData.year_target)) {
+      if (formData.year_target && HIGH_SCHOOL_YEARS.includes(formData.year_target)) {
         setLoadingBranches(true)
         try {
           const response = await branchesService.getBranchesForYear(formData.year_target)
-          setAvailableBranches(response.data || [])
+          const branches = response.data || []
+          setAvailableBranches(branches)
+          setFormData(prev => {
+            const validSelection = prev.branch_ids.filter(id =>
+              branches.some(branch => branch.id.toString() === id)
+            )
+            return { ...prev, branch_ids: validSelection }
+          })
         } catch (error) {
           console.error('Error loading branches:', error)
           setAvailableBranches([])
@@ -57,7 +81,7 @@ export function AddSessionModal({ onSessionAdded }) {
         }
       } else {
         setAvailableBranches([])
-        setFormData(prev => ({ ...prev, branch_id: "" }))
+        setFormData(prev => ({ ...prev, branch_ids: [] }))
       }
     }
 
@@ -73,8 +97,31 @@ export function AddSessionModal({ onSessionAdded }) {
     }
   }
 
+  const handleBranchToggle = (branchId, checked) => {
+    setFormData(prev => {
+      const current = new Set(prev.branch_ids)
+      if (checked) {
+        current.add(branchId)
+      } else {
+        current.delete(branchId)
+      }
+      return { ...prev, branch_ids: Array.from(current) }
+    })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const isHighSchoolYear = HIGH_SCHOOL_YEARS.includes(formData.year_target)
+
+    if (isHighSchoolYear && formData.branch_ids.length === 0) {
+      toast({
+        title: "برجاء اختيار فرع",
+        description: "يجب اختيار فرع واحد على الأقل للجلسات الخاصة بالطور الثانوي.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
     
     try {
@@ -92,11 +139,12 @@ export function AddSessionModal({ onSessionAdded }) {
       setFormData({
         teacher: "",
         year_target: "1AM",
-        branch_id: "",
+        branch_ids: [],
         date: "",
         time: "",
         duration: "",
       })
+      setAvailableBranches([])
       
       onSessionAdded?.()
     } catch (error) {
@@ -166,27 +214,52 @@ export function AddSessionModal({ onSessionAdded }) {
             </div>
 
             {/* Branch Selection - Only for High School */}
-            {['1AS', '2AS', '3AS'].includes(formData.year_target) && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="branch_id" className="text-right">
-                  الفرع المستهدف
+            {HIGH_SCHOOL_YEARS.includes(formData.year_target) && (
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label className="text-right mt-2">
+                  الفروع المستهدفة
                 </Label>
-                <Select 
-                  value={formData.branch_id} 
-                  onValueChange={(value) => setFormData({ ...formData, branch_id: value })}
-                  disabled={loadingBranches}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder={loadingBranches ? "جاري تحميل الفروع..." : "اختر الفرع المستهدف"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableBranches.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id.toString()}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="col-span-3 flex flex-col gap-2">
+                  {loadingBranches && (
+                    <p className="text-sm text-muted-foreground">جاري تحميل الفروع...</p>
+                  )}
+
+                  {!loadingBranches && availableBranches.length === 0 && (
+                    <p className="text-sm text-muted-foreground">لا توجد فروع متاحة لهذه السنة.</p>
+                  )}
+
+                  {!loadingBranches && availableBranches.length > 0 && (
+                    <div className="space-y-2">
+                      {availableBranches.map((branch) => {
+                        const branchId = branch.id.toString()
+                        const checkboxId = `branch-${branch.id}`
+                        const checked = formData.branch_ids.includes(branchId)
+
+                        return (
+                          <div
+                            key={branch.id}
+                            className="flex items-center justify-between rounded-md border p-2"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                id={checkboxId}
+                                checked={checked}
+                                onCheckedChange={(value) => handleBranchToggle(branchId, value === true)}
+                                disabled={loadingBranches}
+                              />
+                              <Label htmlFor={checkboxId} className="cursor-pointer text-sm font-normal">
+                                {branch.name}
+                              </Label>
+                            </div>
+                            {branch.code && (
+                              <span className="text-xs text-muted-foreground">{branch.code}</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
