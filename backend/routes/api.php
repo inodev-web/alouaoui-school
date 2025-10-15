@@ -55,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profile routes (moved here for testing)
     Route::get('/auth/profile', [AuthController::class, 'profile'])->name('profile');
     Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('update-profile');
+    // POST pour gérer les uploads de fichiers avec FormData (qui utilise _method=PUT)
+    Route::post('/auth/profile', [AuthController::class, 'updateProfile'])->name('update-profile-post');
 
     // Get current user
     Route::get('/user', function (Request $request) {
@@ -120,12 +122,18 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Admin check-in management (no device check needed for admin)
-    Route::prefix('admin/checkin')->name('admin.checkin.')->middleware(['abilities:admin', 'scanner.lock'])->group(function () {
-        Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
+    Route::prefix('admin/checkin')->name('admin.checkin.')->middleware(['abilities:admin'])->group(function () {
+        // Routes that need scanner lock (scanning operations)
+        Route::middleware('scanner.lock')->group(function () {
+            Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
+            Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
+        });
+        
+        // Routes that don't need scanner lock (read-only operations)
         Route::get('/session-attendance', [CheckinController::class, 'sessionAttendance'])->name('session-attendance');
         Route::get('/attendance-stats', [CheckinController::class, 'attendanceStats'])->name('attendance-stats');
+        Route::get('/summary-today', [CheckinController::class, 'todaySummary'])->name('today-summary');
         Route::get('/student/{student}/history', [CheckinController::class, 'studentHistory'])->name('student-history');
-        Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
         Route::get('/student/{uuid}/info', [CheckinController::class, 'getStudentInfo'])->name('student-info');
         Route::get('/student/{uuid}/sessions', [CheckinController::class, 'getTodaysSessionsWithStudent'])->name('student-sessions');
     });
@@ -183,7 +191,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard analytics (admin only, no device check needed)
     Route::middleware('abilities:admin')->group(function () {
         Route::get('/dashboard/analytics', [DashboardController::class, 'index'])->name('dashboard.analytics');
-        
+
         // Dashboard data endpoints
         Route::prefix('dashboard/data')->name('dashboard.data.')->group(function () {
             Route::get('/summary', [DashboardDataController::class, 'getSummary'])->name('summary');

@@ -123,6 +123,7 @@ export function StudentsTable({ searchQuery = "" }) {
       <Table dir="rtl">
         <TableHeader>
           <TableRow>
+            <TableHead className="text-right">الصورة</TableHead>
             <TableHead className="text-right">الاسم</TableHead>
             <TableHead className="text-right">اللقب</TableHead>
             <TableHead className="text-right">رقم الهاتف</TableHead>
@@ -138,6 +139,16 @@ export function StudentsTable({ searchQuery = "" }) {
               className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => handleRowClick(student.id)}
             >
+              <TableCell className="text-right">
+                <div className="w-10 h-10 rounded-full overflow-hidden border">
+                  <img
+                    src={student.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.firstname || '')}+${encodeURIComponent(student.lastname || '')}&background=0D8ABC&color=fff&size=100`}
+                    alt={`${student.firstname} ${student.lastname}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.firstname || '')}+${encodeURIComponent(student.lastname || '')}&background=0D8ABC&color=fff&size=100` }}
+                  />
+                </div>
+              </TableCell>
               <TableCell className="text-right font-medium">{student.firstname}</TableCell>
               <TableCell className="text-right">{student.lastname}</TableCell>
               <TableCell className="text-right">{student.phone}</TableCell>

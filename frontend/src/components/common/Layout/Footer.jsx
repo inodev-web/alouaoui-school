@@ -23,13 +23,13 @@ const Footer = () => {
               
               {/* Social Media */}
               <div className="flex justify-end space-x-4 rtl:space-x-reverse">
-                <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
+                <a href="https://www.facebook.com/share/18a8pp66qD/?mibextid=wwXIfr" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
                   <Facebook className="w-5 h-5" />
                 </a>
-                <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
+                <a href="https://www.instagram.com/alouaoui_ismail?igsh=emdmN21panVhaXVx" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
                   <Instagram className="w-5 h-5" />
                 </a>
-                <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
+                <a href="https://youtube.com/channel/UCZssJm0Jx-oJN51_jD3M9wg?si=cDWrqO43-Lr5y3cs" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
                   <Youtube className="w-5 h-5" />
                 </a>
                 <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">

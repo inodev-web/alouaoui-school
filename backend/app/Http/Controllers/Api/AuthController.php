@@ -29,6 +29,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:6|confirmed',
             'role' => 'sometimes|string|in:student,admin',
             'year_of_study' => 'sometimes|string|max:10',
+            'branch_id' => 'sometimes|nullable|exists:branches,id',
         ]);
 
         if ($validator->fails()) {
@@ -51,11 +52,15 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => 'student',
             'year_of_study' => $request->year_of_study,
+            'branch_id' => $request->branch_id,
             'device_uuid' => $deviceUuid,
         ]);
 
         // Token avec device UUID comme nom
         $token = $user->createToken($deviceUuid, ['student'])->plainTextToken;
+
+        // Load branch relationship
+        $user->loadMissing('branch');
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -70,6 +75,13 @@ class AuthController extends Controller
                     'qr_token' => $user->uuid,
                     'free_subscriber' => $user->isFree(),
                     'free_subscriber_reason' => $user->free_subscriber_reason,
+                    'branch_id' => $user->branch_id,
+                    'branch' => $user->branch ? [
+                        'id' => $user->branch->id,
+                        'name' => $user->branch->name,
+                        'code' => $user->branch->code,
+                        'year_level' => $user->branch->year_level,
+                    ] : null,
                 ],
                 'token' => $token,
                 'device_uuid' => $deviceUuid,
@@ -144,6 +156,9 @@ class AuthController extends Controller
             'tokens_after_creation' => $user->tokens()->count()
         ]);
 
+        // Load branch relationship
+        $user->loadMissing('branch');
+
         // Retourner les informations utilisateur sans token Sanctum
         return response()->json([
             'message' => 'Login successful',
@@ -158,6 +173,13 @@ class AuthController extends Controller
                     'qr_token' => $user->uuid,
                     'free_subscriber' => $user->isFree(),
                     'free_subscriber_reason' => $user->free_subscriber_reason,
+                    'branch_id' => $user->branch_id,
+                    'branch' => $user->branch ? [
+                        'id' => $user->branch->id,
+                        'name' => $user->branch->name,
+                        'code' => $user->branch->code,
+                        'year_level' => $user->branch->year_level,
+                    ] : null,
                 ],
                 'token' => $token, // Token Sanctum
                 'device_uuid' => $deviceUuid,
@@ -211,6 +233,7 @@ class AuthController extends Controller
     public function profile(Request $request): JsonResponse
     {
         $user = $request->user();
+        $user->loadMissing('branch');
 
         return response()->json([
             'message' => 'Profile retrieved successfully',
@@ -228,6 +251,13 @@ class AuthController extends Controller
                 'device_uuid' => $user->device_uuid,
                 'free_subscriber' => $user->isFree(),
                 'free_subscriber_reason' => $user->free_subscriber_reason,
+                'branch_id' => $user->branch_id,
+                'branch' => $user->branch ? [
+                    'id' => $user->branch->id,
+                    'name' => $user->branch->name,
+                    'code' => $user->branch->code,
+                    'year_level' => $user->branch->year_level,
+                ] : null,
                 // return full picture URL if available
                 'picture' => $user->picture ? asset('storage/' . $user->picture) : null,
                 'last_profile_update_at' => $user->last_profile_update_at,
@@ -305,7 +335,9 @@ class AuthController extends Controller
 
         // Mark daily modification timestamp
         $user->last_profile_update_at = now();
+
         $user->save();
+        $user->loadMissing('branch');
 
         return response()->json([
             'message' => 'Profile updated successfully',
@@ -322,6 +354,13 @@ class AuthController extends Controller
                 'qr_token' => $user->uuid,
                 'free_subscriber' => $user->isFree(),
                 'free_subscriber_reason' => $user->free_subscriber_reason,
+                'branch_id' => $user->branch_id,
+                'branch' => $user->branch ? [
+                    'id' => $user->branch->id,
+                    'name' => $user->branch->name,
+                    'code' => $user->branch->code,
+                    'year_level' => $user->branch->year_level,
+                ] : null,
                 'picture' => $user->picture ? asset('storage/' . $user->picture) : null,
                 'last_profile_update_at' => $user->last_profile_update_at,
             ]
@@ -465,10 +504,10 @@ class AuthController extends Controller
         if ($user->device_uuid && $user->device_uuid !== $deviceUuid) {
             // When single_device=false, allow device change but revoke old tokens
             \Log::info("Device change detected for user {$user->uuid}: {$user->device_uuid} -> {$deviceUuid}");
-            
+
             // Revoke all existing tokens for this user
             $user->tokens()->delete();
-            
+
             // Update the device UUID
             $user->update(['device_uuid' => $deviceUuid]);
         } else if (!$user->device_uuid) {
@@ -501,7 +540,7 @@ class AuthController extends Controller
                 'new_device' => $deviceUuid
             ]);
         }
-        
+
         // Mettre à jour le device_uuid
         $user->update(['device_uuid' => $deviceUuid]);
         \Log::info("Updated user device_uuid", [

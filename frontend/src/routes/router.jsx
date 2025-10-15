@@ -9,6 +9,8 @@ import AdminLayout from '../components/common/Layout/AdminLayout'
 const HomePage = lazy(() => import('@/pages/public/HomePage.jsx'))
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage.jsx'))
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage.jsx'))
+const TermsPage = lazy(() => import('@/pages/TermsPage.jsx'))
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage.jsx'))
 
 // Student pages
 const StudentProfilePage = lazy(() => import('@/pages/student/ProfilePage.jsx'))
@@ -50,6 +52,14 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterPage />,
+  },
+  {
+    path: '/terms',
+    element: <TermsPage />,
+  },
+  {
+    path: '/privacy',
+    element: <PrivacyPage />,
   },
 
   // Student routes (protected)
