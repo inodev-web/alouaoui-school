@@ -117,21 +117,21 @@ export function AdminSidebar() {
 
       <aside
         className={cn(
-          "sidebar-container fixed inset-y-0 right-0 z-50 flex h-full flex-col bg-gray-50 border-r border-gray-200 transition-all duration-300 ease-in-out",
+          "sidebar-container fixed inset-y-0 right-0 z-50 flex h-full flex-col bg-pink-50 border-r border-pink-200 transition-all duration-300 ease-in-out",
           !isMobile && (isOpen ? "w-64" : "w-16"),
           isMobile && (isOpen ? "w-[80%] sm:w-[300px]" : "translate-x-full")
         )}
         dir="rtl"
       >
-        <div className="flex h-16 items-center justify-between px-3 border-b border-gray-200">
+        <div className="flex h-16 items-center justify-between px-3 border-b border-pink-200">
           <button
             onClick={toggleSidebar}
-            className="toggle-button p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            className="toggle-button p-1 hover:bg-pink-100 rounded-lg transition-colors"
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
           {isOpen && (
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-gray-800">
               لوحة الإدارة
             </h1>
           )}
@@ -150,8 +150,8 @@ export function AdminSidebar() {
                   "flex items-center gap-3 rounded-lg transition-colors",
                   isOpen ? "px-3 py-2 text-right" : "p-2 justify-center",
                   isActive
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                    ? "bg-red-100 text-red-700 border border-red-200"
+                    : "text-gray-700 hover:bg-pink-100 hover:text-gray-900",
                   isMobile && !isOpen && "hidden"
                 )}
               >
@@ -165,7 +165,7 @@ export function AdminSidebar() {
         </nav>
 
         <div className={cn(
-          "border-t border-gray-200 space-y-2",
+          "border-t border-pink-200 space-y-2",
           isOpen ? "p-3" : "p-2",
           isMobile && !isOpen && "hidden"
         )}>
@@ -175,7 +175,7 @@ export function AdminSidebar() {
             className={cn(
               "flex items-center gap-3 rounded-lg transition-colors",
               isOpen ? "w-full px-3 py-2 text-right" : "p-2 w-full justify-center",
-              "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              "text-gray-700 hover:bg-pink-100 hover:text-gray-900"
             )}
           >
             <LogOut className="h-5 w-5 min-w-[1.25rem]" />
@@ -190,7 +190,7 @@ export function AdminSidebar() {
             className={cn(
               "flex items-center gap-3 rounded-lg transition-colors",
               isOpen ? "w-full px-3 py-2 text-right" : "p-2 w-full justify-center",
-              "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              "text-gray-700 hover:bg-pink-100 hover:text-gray-900"
             )}
           >
             <Settings className="h-5 w-5 min-w-[1.25rem]" />

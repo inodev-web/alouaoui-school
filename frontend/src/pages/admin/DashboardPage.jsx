@@ -11,8 +11,8 @@ export default function AdminDashboardPage() {
     <div dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground text-right">لوحة التحكم</h1>
-          <p className="text-muted-foreground text-right">
+          <h1 className="text-3xl font-bold text-gray-800 text-right">لوحة التحكم</h1>
+          <p className="text-gray-600 text-right">
             مرحباً بك مرة أخرى! إليك ما يحدث في منصتك التعليمية.
           </p>
         </div>
@@ -20,7 +20,7 @@ export default function AdminDashboardPage() {
           <select 
             value={selectedPeriod} 
             onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            className="px-3 py-2 border border-pink-300 rounded-md bg-white text-sm focus:border-red-400 focus:ring-2 focus:ring-red-200"
           >
             <option value="daily">يومي</option>
             <option value="weekly">أسبوعي</option>

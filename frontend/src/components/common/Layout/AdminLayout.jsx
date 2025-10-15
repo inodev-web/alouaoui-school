@@ -8,7 +8,7 @@ const AdminLayoutContent = () => {
   const { isOpen, isMobile } = useSidebar();
   
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-white">
       <div 
         className={`
           flex-1 flex flex-col overflow-hidden
@@ -17,7 +17,7 @@ const AdminLayoutContent = () => {
         `}
       >
         <AdminHeader />
-        <main className="flex-1 overflow-y-auto p-6 bg-background">
+        <main className="flex-1 overflow-y-auto p-6 bg-white">
           <Outlet />
         </main>
       </div>
