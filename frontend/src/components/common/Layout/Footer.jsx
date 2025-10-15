@@ -2,7 +2,7 @@ import { Menu, X, Phone, Mail, MapPin, Facebook, Instagram, Youtube, BookOpen, M
 
 const Footer = () => {
     return (
-      <footer className="bg-gray-900 text-white">
+      <footer id='contact' className="bg-gray-900 text-white">
         {/* Main Footer Content */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-16">
@@ -23,18 +23,18 @@ const Footer = () => {
               
               {/* Social Media */}
               <div className="flex justify-end space-x-4 rtl:space-x-reverse">
-                <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
+                <a href="https://www.facebook.com/share/18a8pp66qD/?mibextid=wwXIfr" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
                   <Facebook className="w-5 h-5" />
                 </a>
-                <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
+                <a href="https://www.instagram.com/alouaoui_ismail?igsh=emdmN21panVhaXVx" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
                   <Instagram className="w-5 h-5" />
                 </a>
-                <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
+                {/* <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
                   <Youtube className="w-5 h-5" />
                 </a>
                 <a href="#" className="bg-gray-800 p-3 rounded-full hover:bg-red-500 transition-colors duration-300">
                   <MessageCircle className="w-5 h-5" />
-                </a>
+                </a> */}
               </div>
             </div>
   
@@ -57,7 +57,7 @@ const Footer = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-end space-x-3 rtl:space-x-reverse">
                   <div>
-                    <p className="text-gray-300">06 97 13 37 15</p>
+                    <p className="text-gray-300">05 40 25 13 39</p>
                     <p className="text-gray-500 text-sm">متاح من 8ص إلى 8م</p>
                   </div>
                   <Phone className="w-5 h-5 text-red-400" />

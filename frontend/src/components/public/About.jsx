@@ -2,7 +2,7 @@ import React from 'react'
 
 const About = () => {
   return (
-    <div className="relative overflow-hidden">
+    <div id='about' className="relative overflow-hidden">
       {/* Gradient Backgrounds */}
       <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-r from-red-400 to-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-100"></div>
       <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-r from-red-400 to-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-100"></div>
@@ -28,14 +28,12 @@ const About = () => {
             </div>
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl py-4 shadow-lg border border-gray-200">
               <div className="space-y-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center justify-end space-x-3 gap-2 space-x-reverse">
+                  <div className="flex items-center justify-end space-x-3 gap-2 space-x-reverse">
                     <span className="text-gray-700 font-medium">
-                      شهادة تدريس متقدمة - جامعة ستانفورد
+                      شهادة تدريس متقدمة - المدرسة العليا للتعليم
                     </span>
                     <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                   </div>
-                ))}
               </div>
             </div>
           </div>
@@ -48,14 +46,12 @@ const About = () => {
             </div>
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-200">
               <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-start justify-end space-x-3 space-x-reverse">
+                  <div className="flex items-start justify-end space-x-3 space-x-reverse">
                     <p className="text-gray-700 leading-relaxed text-right mr-1">
-                      بدأت رحلتي في التدريس منذ أكثر من 15 عاماً عندما اكتشفت شغفي في تبسيط المفاهيم العلمية المعقدة وجعلها في متناول الطلاب
+                      بدأت رحلتي في التدريس منذ أكثر من 12 عاماً عندما اكتشفت شغفي في تبسيط المفاهيم العلمية المعقدة وجعلها في متناول الطلاب
                     </p>
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-3"></div>
                   </div>
-                ))}
               </div>
             </div>
           </div>
@@ -77,11 +73,11 @@ const About = () => {
                   "هدفي هو إلهام الجيل القادم من العلماء والمفكرين، وتزويدهم بالمعرفة والمهارات التي يحتاجونها لبناء مستقبل أفضل. أؤمن بأن التعليم هو أقوى أداة لتغيير العالم."
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2 sm:space-x-4 sm:space-x-reverse">
-                  <div className="text-sm text-gray-600 font-medium">+5000 طالب</div>
+                  <div className="text-sm text-gray-600 font-medium">+2000 طالب</div>
                   <div className="hidden sm:block text-sm text-gray-600 font-medium">•</div>
-                  <div className="text-sm text-gray-600 font-medium">15+ سنة خبرة</div>
+                  <div className="text-sm text-gray-600 font-medium">12+ سنة خبرة</div>
                   <div className="hidden sm:block text-sm text-gray-600 font-medium">•</div>
-                  <div className="text-sm text-gray-600 font-medium">98% نجاح</div>
+                  <div className="text-sm text-gray-600 font-medium">95% نجاح</div>
                 </div>
               </div>
             </div>

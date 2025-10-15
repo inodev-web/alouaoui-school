@@ -11,7 +11,7 @@ const HomePage = () => {
     <>
       <Navbar />
       <HeroSection />
-      <Events />
+      {/* <Events /> */}
       <Features />
       <About />
       <Testimonials />

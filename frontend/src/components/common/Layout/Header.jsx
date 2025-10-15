@@ -66,7 +66,7 @@ const Navbar = () => {
             <a href="#contact" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">تواصل معي</a>
             <a href="#results" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">نتائج و اراء</a>
             <a href="#about" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">عني</a>
-            <a href="#courses" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">الاحداث</a>
+            {/* <a href="#courses" className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">الاحداث</a> */}
 
             <button onClick={handleDiscoverCourses} className="text-gray-700 hover:text-red-500 font-medium transition-colors duration-200">
               اكتشف الدروس
@@ -97,7 +97,7 @@ const Navbar = () => {
         {/* Mobile Menu */}
         <div className={`lg:hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100 pointer-events-auto' : 'max-h-0 opacity-0 pointer-events-none'}`}>
           <div className="py-4 space-y-4 bg-gray-50 rounded-lg mb-4">
-            <a href="#courses" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">الاحداث</a>
+            {/* <a href="#courses" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">الاحداث</a> */}
             <a href="#about" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">عني</a>
             <a href="#results" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">نتائج و اراء</a>
             <a href="#contact" className="block text-right px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-red-50 transition-colors duration-200">تواصل معي</a>
