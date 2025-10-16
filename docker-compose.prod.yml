@@ -9,21 +9,21 @@ services:
       args:
         user: laravel
         uid: 1000
-    container_name: alouaoui-school-php
-    restart: unless-stopped
+    container_name: alouaoui-school-php-prod
+    restart: always
     working_dir: /var/www
     volumes:
       - ./backend:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     environment:
-      - APP_ENV=local
-      - APP_DEBUG=true
+      - APP_ENV=production
+      - APP_DEBUG=false
       - DB_CONNECTION=mysql
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_DATABASE=alouaoui_school
-      - DB_USERNAME=root
-      - DB_PASSWORD=
+      - DB_USERNAME=${DB_USERNAME:-alouaoui_school}
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=redis
     depends_on:
       - mysql
@@ -34,8 +34,8 @@ services:
   # Nginx Web Server
   nginx:
     image: nginx:alpine
-    container_name: alouaoui-school-nginx
-    restart: unless-stopped
+    container_name: alouaoui-school-nginx-prod
+    restart: always
     ports:
       - "80:80"
       - "443:443"
@@ -44,6 +44,7 @@ services:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./docker/nginx/sites/:/etc/nginx/sites-available/
       - ./docker/nginx/ssl:/etc/nginx/ssl
+      - ./frontend/dist:/var/www/public/frontend
     depends_on:
       - php
     networks:
@@ -52,55 +53,31 @@ services:
   # MySQL Database
   mysql:
     image: mysql:8.0
-    container_name: alouaoui-school-mysql
-    restart: unless-stopped
+    container_name: alouaoui-school-mysql-prod
+    restart: always
     environment:
-      MYSQL_DATABASE: alouaoui_school
-      MYSQL_ROOT_PASSWORD: ""
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_USER: alouaoui_school
-      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: ${DB_DATABASE:-alouaoui_school}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME:-alouaoui_school}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
-    ports:
-      - "3306:3306"
     networks:
       - alouaoui-school-network
 
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: alouaoui-school-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
+    container_name: alouaoui-school-redis-prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
     networks:
       - alouaoui-school-network
 
-  # Node.js pour le frontend et outils de build
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: alouaoui-school-frontend
-    restart: unless-stopped
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"  # Vite dev server
-    environment:
-      - NODE_ENV=development
-      - VITE_API_URL=http://localhost/api
-    networks:
-      - alouaoui-school-network
-
-  # Laravel Queue Worker (pour les jobs en arrière-plan)
+  # Laravel Queue Worker
   queue:
     build:
       context: ./backend
@@ -108,22 +85,55 @@ services:
       args:
         user: laravel
         uid: 1000
-    container_name: alouaoui-school-queue
-    restart: unless-stopped
+    container_name: alouaoui-school-queue-prod
+    restart: always
     working_dir: /var/www
     volumes:
       - ./backend:/var/www
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     environment:
-      - APP_ENV=local
+      - APP_ENV=production
+      - APP_DEBUG=false
       - DB_CONNECTION=mysql
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_DATABASE=alouaoui_school
-      - DB_USERNAME=root
-      - DB_PASSWORD=
+      - DB_USERNAME=${DB_USERNAME:-alouaoui_school}
+      - DB_PASSWORD=${DB_PASSWORD}
       - REDIS_HOST=redis
-    command: php artisan queue:work --tries=3
+    command: php artisan queue:work --tries=3 --timeout=90
+    depends_on:
+      - mysql
+      - redis
+      - php
+    networks:
+      - alouaoui-school-network
+
+  # Scheduler (Laravel Cron)
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.php
+      args:
+        user: laravel
+        uid: 1000
+    container_name: alouaoui-school-scheduler-prod
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=alouaoui_school
+      - DB_USERNAME=${DB_USERNAME:-alouaoui_school}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
     depends_on:
       - mysql
       - redis

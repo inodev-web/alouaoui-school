@@ -41,9 +41,6 @@ RUN useradd -G www-data,root -u $uid -d /home/$user $user
 RUN mkdir -p /home/$user/.composer && \
     chown -R $user:$user /home/$user
 
-# Configuration de PHP
-COPY ./docker/php/local.ini /usr/local/etc/php/conf.d/local.ini
-
 # Définir le répertoire de travail
 WORKDIR /var/www
 

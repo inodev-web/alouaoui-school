@@ -4,7 +4,7 @@
 DOCKER_COMPOSE = docker-compose
 DOCKER = docker
 BACKEND_CONTAINER = alouaoui-school-php
-FRONTEND_CONTAINER = alouaoui-school-node
+FRONTEND_CONTAINER = alouaoui-school-frontend
 
 # Commandes de base
 .PHONY: help build up down restart logs
@@ -53,13 +53,13 @@ bash-php: ## Ouvrir un bash dans le conteneur PHP
 	$(DOCKER_COMPOSE) exec php bash
 
 bash-node: ## Ouvrir un bash dans le conteneur Node
-	$(DOCKER_COMPOSE) exec node sh
+	$(DOCKER_COMPOSE) exec frontend sh
 
 composer: ## Exécuter une commande Composer (ex: make composer cmd="install")
 	$(DOCKER_COMPOSE) exec php composer $(cmd)
 
 npm: ## Exécuter une commande npm (ex: make npm cmd="install")
-	$(DOCKER_COMPOSE) exec node npm $(cmd)
+	$(DOCKER_COMPOSE) exec frontend npm $(cmd)
 
 # Commandes de maintenance
 .PHONY: clean clean-volumes fresh

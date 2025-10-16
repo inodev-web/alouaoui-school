@@ -1,0 +1,15 @@
+node_modules
+vendor
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+storage/*.key
+.phpunit.cache
+.DS_Store
+Thumbs.db
+*.log
+
