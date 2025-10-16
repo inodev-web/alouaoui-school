@@ -1,9 +1,9 @@
-import { useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Search, User, GraduationCap } from "lucide-react"
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Search, User, GraduationCap } from "lucide-react";
 
 const searchResults = [
   {
@@ -24,26 +24,30 @@ const searchResults = [
     teacher: "Ms. Emily Davis",
     status: "active",
   },
-]
+];
 
 export function QuickSearch() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [results, setResults] = useState([])
+  const [searchTerm, setSearchTerm] = useState("");
+  const [results, setResults] = useState([]);
 
   const handleSearch = () => {
     if (searchTerm.trim()) {
       // Simulate search results
-      setResults(searchResults.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase())))
+      setResults(
+        searchResults.filter((item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
+      );
     } else {
-      setResults([])
+      setResults([]);
     }
-  }
+  };
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
-      handleSearch()
+      handleSearch();
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -63,9 +67,14 @@ export function QuickSearch() {
 
       {results.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-muted-foreground">Search Results:</h4>
+          <h4 className="text-sm font-medium text-muted-foreground">
+            Search Results:
+          </h4>
           {results.map((result, index) => (
-            <Card key={index} className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <Card
+              key={index}
+              className="cursor-pointer hover:bg-muted/50 transition-colors"
+            >
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -77,11 +86,19 @@ export function QuickSearch() {
                     <div>
                       <p className="font-medium">{result.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {result.type === "teacher" ? result.module : `Teacher: ${result.teacher}`}
+                        {result.type === "teacher"
+                          ? result.module
+                          : `Teacher: ${result.teacher}`}
                       </p>
                     </div>
                   </div>
-                  <Badge variant={result.status === "active" ? "default" : "destructive"}>{result.status}</Badge>
+                  <Badge
+                    variant={
+                      result.status === "active" ? "default" : "destructive"
+                    }
+                  >
+                    {result.status}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -89,5 +106,5 @@ export function QuickSearch() {
         </div>
       )}
     </div>
-  )
+  );
 }

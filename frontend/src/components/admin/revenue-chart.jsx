@@ -1,11 +1,30 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useRevenueTimeSeries } from "@/hooks/useDashboardData"
-import dashboardService from "@/services/dashboardService"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRevenueTimeSeries } from "@/hooks/useDashboardData";
+import dashboardService from "@/services/dashboardService";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
-const RevenueChart = ({ period = 'daily', days = 30, startDate = null, endDate = null }) => {
-  const { data, loading, error } = useRevenueTimeSeries(period, days, startDate, endDate)
+const RevenueChart = ({
+  period = "daily",
+  days = 30,
+  startDate = null,
+  endDate = null,
+}) => {
+  const { data, loading, error } = useRevenueTimeSeries(
+    period,
+    days,
+    startDate,
+    endDate,
+  );
 
   if (loading) {
     return (
@@ -17,7 +36,7 @@ const RevenueChart = ({ period = 'daily', days = 30, startDate = null, endDate =
           <Skeleton className="h-80 w-full" />
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -32,7 +51,7 @@ const RevenueChart = ({ period = 'daily', days = 30, startDate = null, endDate =
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!data || data.length === 0) {
@@ -47,20 +66,20 @@ const RevenueChart = ({ period = 'daily', days = 30, startDate = null, endDate =
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   // Format data for the chart
-  const chartData = data.map(item => ({
-    date: new Date(item.date).toLocaleDateString('ar-DZ', { 
-      month: 'short', 
-      day: 'numeric' 
+  const chartData = data.map((item) => ({
+    date: new Date(item.date).toLocaleDateString("ar-DZ", {
+      month: "short",
+      day: "numeric",
     }),
     revenue: item.revenue,
     profit: item.profit,
     schoolCut: item.school_cut,
-    teacherCut: item.teacher_cut
-  }))
+    teacherCut: item.teacher_cut,
+  }));
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -73,10 +92,10 @@ const RevenueChart = ({ period = 'daily', days = 30, startDate = null, endDate =
             </p>
           ))}
         </div>
-      )
+      );
     }
-    return null
-  }
+    return null;
+  };
 
   return (
     <Card>
@@ -91,45 +110,47 @@ const RevenueChart = ({ period = 'daily', days = 30, startDate = null, endDate =
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date" 
+              <XAxis
+                dataKey="date"
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => value}
               />
-              <YAxis 
+              <YAxis
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value) => dashboardService.formatCurrency(value)}
+                tickFormatter={(value) =>
+                  dashboardService.formatCurrency(value)
+                }
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#8884d8" 
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#8884d8"
                 strokeWidth={2}
                 name="الإيرادات"
                 dot={{ r: 4 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="profit" 
-                stroke="#82ca9d" 
+              <Line
+                type="monotone"
+                dataKey="profit"
+                stroke="#82ca9d"
                 strokeWidth={2}
                 name="الأرباح"
                 dot={{ r: 4 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="schoolCut" 
-                stroke="#ffc658" 
+              <Line
+                type="monotone"
+                dataKey="schoolCut"
+                stroke="#ffc658"
                 strokeWidth={2}
                 name="حصة المدرسة"
                 dot={{ r: 4 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="teacherCut" 
-                stroke="#ff7300" 
+              <Line
+                type="monotone"
+                dataKey="teacherCut"
+                stroke="#ff7300"
                 strokeWidth={2}
                 name="حصة المعلم"
                 dot={{ r: 4 }}
@@ -139,7 +160,7 @@ const RevenueChart = ({ period = 'daily', days = 30, startDate = null, endDate =
         </div>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default RevenueChart
+export default RevenueChart;

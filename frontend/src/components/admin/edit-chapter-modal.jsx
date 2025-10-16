@@ -1,11 +1,24 @@
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Trash2, Edit, Plus } from "lucide-react"
-import { EditCourseModal } from "./edit-course-modal"
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Trash2, Edit, Plus } from "lucide-react";
+import { EditCourseModal } from "./edit-course-modal";
 
 const iconOptions = [
   { value: "📐", label: "📐 مسطرة" },
@@ -18,18 +31,28 @@ const iconOptions = [
   { value: "🎵", label: "🎵 موسيقى" },
   { value: "💻", label: "💻 حاسوب" },
   { value: "🏛️", label: "🏛️ مبنى" },
-]
+];
 
-export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter, onDeleteChapter, onAddCourse, onUpdateCourse, onDeleteCourse, onUploadPDF }) {
+export function EditChapterModal({
+  chapter,
+  open,
+  onOpenChange,
+  onUpdateChapter,
+  onDeleteChapter,
+  onAddCourse,
+  onUpdateCourse,
+  onDeleteCourse,
+  onUploadPDF,
+}) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     icon: "",
     year_target: "",
-  })
+  });
 
-  const [selectedCourse, setSelectedCourse] = useState(null)
-  const [editCourseModalOpen, setEditCourseModalOpen] = useState(false)
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [editCourseModalOpen, setEditCourseModalOpen] = useState(false);
 
   // Initialize form data when chapter changes
   useEffect(() => {
@@ -39,45 +62,52 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
         description: chapter.description || "",
         icon: chapter.icon || "",
         year_target: chapter.year_target || "",
-      })
+      });
     }
-  }, [chapter])
+  }, [chapter]);
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (onUpdateChapter) {
-      onUpdateChapter(chapter.id, formData)
+      onUpdateChapter(chapter.id, formData);
     }
-  }
+  };
 
   const handleDeleteChapter = () => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الفصل؟ سيتم حذف جميع الدروس المرتبطة به.')) {
-      onDeleteChapter(chapter.id)
-      onOpenChange(false)
+    if (
+      window.confirm(
+        "هل أنت متأكد من حذف هذا الفصل؟ سيتم حذف جميع الدروس المرتبطة به.",
+      )
+    ) {
+      onDeleteChapter(chapter.id);
+      onOpenChange(false);
     }
-  }
+  };
 
   const handleEditCourse = (course) => {
-    setSelectedCourse(course)
-    setEditCourseModalOpen(true)
-  }
+    setSelectedCourse(course);
+    setEditCourseModalOpen(true);
+  };
 
   const handleAddCourse = () => {
-    setSelectedCourse(null)
-    setEditCourseModalOpen(true)
-  }
+    setSelectedCourse(null);
+    setEditCourseModalOpen(true);
+  };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent 
-          className="max-w-4xl max-h-[90vh] overflow-y-auto" 
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto"
           dir="rtl"
           aria-describedby="chapter-edit-description"
         >
           <DialogHeader>
             <DialogTitle className="text-right">تعديل الفصل</DialogTitle>
-            <DialogDescription id="chapter-edit-description" className="text-right">
+            <DialogDescription
+              id="chapter-edit-description"
+              className="text-right"
+            >
               قم بتعديل معلومات الفصل والدروس المرتبطة به.
             </DialogDescription>
           </DialogHeader>
@@ -85,7 +115,9 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chapter Details Form */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold mb-4 text-right">معلومات الفصل</h3>
+              <h3 className="text-lg font-semibold mb-4 text-right">
+                معلومات الفصل
+              </h3>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4">
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -96,21 +128,31 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
                       id="chapter-title"
                       name="title"
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
                       className="col-span-3 text-right"
                       required
                     />
                   </div>
 
                   <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="chapter-description" className="text-right mt-2">
+                    <Label
+                      htmlFor="chapter-description"
+                      className="text-right mt-2"
+                    >
                       الوصف
                     </Label>
                     <textarea
                       id="chapter-description"
                       name="description"
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
                       className="col-span-3 min-h-[80px] px-3 py-2 text-right border border-input bg-background rounded-md text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       required
                       rows={3}
@@ -121,12 +163,17 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
                     <Label htmlFor="chapter-icon" className="text-right">
                       الأيقونة
                     </Label>
-                    <Select 
+                    <Select
                       name="icon"
-                      value={formData.icon} 
-                      onValueChange={(value) => setFormData({ ...formData, icon: value })}
+                      value={formData.icon}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, icon: value })
+                      }
                     >
-                      <SelectTrigger id="chapter-icon" className="col-span-3 text-right">
+                      <SelectTrigger
+                        id="chapter-icon"
+                        className="col-span-3 text-right"
+                      >
                         <SelectValue placeholder="اختر أيقونة" />
                       </SelectTrigger>
                       <SelectContent>
@@ -143,12 +190,17 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
                     <Label htmlFor="chapter-year-target" className="text-right">
                       السنة المستهدفة
                     </Label>
-                    <Select 
+                    <Select
                       name="year_target"
-                      value={formData.year_target} 
-                      onValueChange={(value) => setFormData({ ...formData, year_target: value })}
+                      value={formData.year_target}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, year_target: value })
+                      }
                     >
-                      <SelectTrigger id="chapter-year-target" className="col-span-3 text-right">
+                      <SelectTrigger
+                        id="chapter-year-target"
+                        className="col-span-3 text-right"
+                      >
                         <SelectValue placeholder="اختر السنة المستهدفة" />
                       </SelectTrigger>
                       <SelectContent>
@@ -164,7 +216,11 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
                   </div>
 
                   <div className="flex justify-between pt-4">
-                    <Button type="button" variant="destructive" onClick={handleDeleteChapter}>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleDeleteChapter}
+                    >
                       <Trash2 className="h-4 w-4 ml-2" />
                       حذف الفصل
                     </Button>
@@ -220,7 +276,7 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
         </DialogContent>
       </Dialog>
 
-      <EditCourseModal 
+      <EditCourseModal
         open={editCourseModalOpen}
         onOpenChange={setEditCourseModalOpen}
         course={selectedCourse}
@@ -229,33 +285,40 @@ export function EditChapterModal({ chapter, open, onOpenChange, onUpdateChapter,
           try {
             let result;
             if (selectedCourse) {
-              result = await onUpdateCourse(chapter.id, selectedCourse.id, courseData)
+              result = await onUpdateCourse(
+                chapter.id,
+                selectedCourse.id,
+                courseData,
+              );
             } else {
-              result = await onAddCourse(chapter.id, courseData)
+              result = await onAddCourse(chapter.id, courseData);
             }
-            
-            console.log('Server response:', result)
-            
+
+            console.log("Server response:", result);
+
             // La réponse peut être soit directement les données, soit un objet avec data
-            const responseData = result?.data?.data || result?.data || result
+            const responseData = result?.data?.data || result?.data || result;
 
             if (responseData) {
-              setEditCourseModalOpen(false)
-              return responseData
+              setEditCourseModalOpen(false);
+              return responseData;
             }
 
             // Si on est ici, la réponse est inattendue. Loggons sans lancer une exception
             // car le cours peut avoir bien été créé (backend retourne parfois une réponse enveloppée).
-            console.warn('Unexpected response shape from server when saving course:', result)
-            setEditCourseModalOpen(false)
-            return result
+            console.warn(
+              "Unexpected response shape from server when saving course:",
+              result,
+            );
+            setEditCourseModalOpen(false);
+            return result;
           } catch (error) {
-            console.error('Error saving course:', error)
-            throw error
+            console.error("Error saving course:", error);
+            throw error;
           }
         }}
         onUploadPDF={onUploadPDF}
       />
     </>
-  )
+  );
 }

@@ -1,29 +1,42 @@
-import { CardDescription } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, Phone, Mail, GraduationCap, Calendar, Clock, CheckCircle } from "lucide-react"
+import { CardDescription } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  User,
+  Phone,
+  Mail,
+  GraduationCap,
+  Calendar,
+  Clock,
+  CheckCircle,
+} from "lucide-react";
 
 export function StudentInfoModal({ student, open, onOpenChange }) {
   const handleCheckIn = () => {
     // In a real app, this would record the check-in
-    console.log("Checking in student:", student.id)
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
       case "active":
-        return "default"
+        return "default";
       case "expired":
-        return "destructive"
+        return "destructive";
       case "trial":
-        return "secondary"
+        return "secondary";
       default:
-        return "outline"
+        return "outline";
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,7 +46,9 @@ export function StudentInfoModal({ student, open, onOpenChange }) {
             <User className="h-5 w-5" />
             Student Check-In
           </DialogTitle>
-          <DialogDescription>Verify student information and complete check-in</DialogDescription>
+          <DialogDescription>
+            Verify student information and complete check-in
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -48,10 +63,15 @@ export function StudentInfoModal({ student, open, onOpenChange }) {
               <div className="flex justify-center mb-4">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 shadow-md">
                   <img
-                    src={student.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name || '')}&background=0D8ABC&color=fff&size=200`}
+                    src={
+                      student.picture ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name || "")}&background=0D8ABC&color=fff&size=200`
+                    }
                     alt={student.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name || '')}&background=0D8ABC&color=fff&size=200` }}
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name || "")}&background=0D8ABC&color=fff&size=200`;
+                    }}
                   />
                 </div>
               </div>
@@ -100,7 +120,9 @@ export function StudentInfoModal({ student, open, onOpenChange }) {
               <CardContent>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{student.totalSessions} sessions</span>
+                  <span className="text-sm">
+                    {student.totalSessions} sessions
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -111,7 +133,10 @@ export function StudentInfoModal({ student, open, onOpenChange }) {
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCheckIn} className="bg-green-600 hover:bg-green-700">
+            <Button
+              onClick={handleCheckIn}
+              className="bg-green-600 hover:bg-green-700"
+            >
               <CheckCircle className="h-4 w-4 mr-2" />
               Complete Check-In
             </Button>
@@ -119,5 +144,5 @@ export function StudentInfoModal({ student, open, onOpenChange }) {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

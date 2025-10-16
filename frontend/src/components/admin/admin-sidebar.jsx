@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -12,15 +12,15 @@ import {
   LogOut,
   Menu,
   X,
-} from 'lucide-react';
-import { useDispatch } from 'react-redux';
-import { logout as logoutAction } from '../../store/slices/authSlice';
-import AuthService from '../../services/api/auth.service';
-import { useSidebar } from '../../contexts/SidebarContext';
+} from "lucide-react";
+import { useDispatch } from "react-redux";
+import { logout as logoutAction } from "../../store/slices/authSlice";
+import AuthService from "../../services/api/auth.service";
+import { useSidebar } from "../../contexts/SidebarContext";
 
 // Utility function for combining class names
 const cn = (...classes) => {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 };
 
 const navigation = [
@@ -71,27 +71,31 @@ export function AdminSidebar() {
     try {
       await AuthService.logout();
     } catch {
-      console.warn('Logout request failed, clearing local session');
+      console.warn("Logout request failed, clearing local session");
     }
-    try { dispatch(logoutAction()); } catch { /* noop */ }
-    navigate('/login');
-  };
-
-  const handleItemClick = () => {
-    toggleSidebar();
+    try {
+      dispatch(logoutAction());
+    } catch {
+      /* noop */
+    }
+    navigate("/login");
   };
 
   // Effect to add click outside listener
   React.useEffect(() => {
     const handleClickOutside = (event) => {
       // Si le sidebar est ouvert et que le clic n'est pas dans le sidebar ou sur le bouton toggle
-      if (isOpen && !event.target.closest('.sidebar-container') && !event.target.closest('.toggle-button')) {
+      if (
+        isOpen &&
+        !event.target.closest(".sidebar-container") &&
+        !event.target.closest(".toggle-button")
+      ) {
         toggleSidebar();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, toggleSidebar]);
 
   return (
@@ -119,7 +123,7 @@ export function AdminSidebar() {
         className={cn(
           "sidebar-container fixed inset-y-0 right-0 z-50 flex h-full flex-col bg-pink-50 border-r border-pink-200 transition-all duration-300 ease-in-out",
           !isMobile && (isOpen ? "w-64" : "w-16"),
-          isMobile && (isOpen ? "w-[80%] sm:w-[300px]" : "translate-x-full")
+          isMobile && (isOpen ? "w-[80%] sm:w-[300px]" : "translate-x-full"),
         )}
         dir="rtl"
       >
@@ -131,9 +135,7 @@ export function AdminSidebar() {
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
           {isOpen && (
-            <h1 className="text-xl font-bold text-gray-800">
-              لوحة الإدارة
-            </h1>
+            <h1 className="text-xl font-bold text-gray-800">لوحة الإدارة</h1>
           )}
         </div>
 
@@ -152,7 +154,7 @@ export function AdminSidebar() {
                   isActive
                     ? "bg-red-100 text-red-700 border border-red-200"
                     : "text-gray-700 hover:bg-pink-100 hover:text-gray-900",
-                  isMobile && !isOpen && "hidden"
+                  isMobile && !isOpen && "hidden",
                 )}
               >
                 <item.icon className="h-5 w-5 min-w-[1.25rem]" />
@@ -164,18 +166,22 @@ export function AdminSidebar() {
           })}
         </nav>
 
-        <div className={cn(
-          "border-t border-pink-200 space-y-2",
-          isOpen ? "p-3" : "p-2",
-          isMobile && !isOpen && "hidden"
-        )}>
+        <div
+          className={cn(
+            "border-t border-pink-200 space-y-2",
+            isOpen ? "p-3" : "p-2",
+            isMobile && !isOpen && "hidden",
+          )}
+        >
           <button
             onClick={handleLogout}
             title="تسجيل الخروج"
             className={cn(
               "flex items-center gap-3 rounded-lg transition-colors",
-              isOpen ? "w-full px-3 py-2 text-right" : "p-2 w-full justify-center",
-              "text-gray-700 hover:bg-pink-100 hover:text-gray-900"
+              isOpen
+                ? "w-full px-3 py-2 text-right"
+                : "p-2 w-full justify-center",
+              "text-gray-700 hover:bg-pink-100 hover:text-gray-900",
             )}
           >
             <LogOut className="h-5 w-5 min-w-[1.25rem]" />
@@ -185,7 +191,7 @@ export function AdminSidebar() {
           </button>
           {/* <Link
             to="/admin/settings"
-            onClick={handleItemClick}
+            onClick={toggleSidebar}
             title="الإعدادات"
             className={cn(
               "flex items-center gap-3 rounded-lg transition-colors",

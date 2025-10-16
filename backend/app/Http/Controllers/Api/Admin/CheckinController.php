@@ -494,7 +494,7 @@ class CheckinController extends Controller
 
         $student = User::where('uuid', $uuid)
             ->where('role', 'student')
-            ->with('branch')
+            ->with('branch:id,name,code,year_level')
             ->first();
 
         if (!$student) {
@@ -590,7 +590,7 @@ class CheckinController extends Controller
 
         $student = User::where('uuid', $studentUuid)
             ->where('role', 'student')
-            ->with('branch')
+            ->with('branch:id,name,code,year_level')
             ->first();
 
         if (!$student) {

@@ -74,6 +74,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{user}/toggle-free-subscriber', [UserController::class, 'toggleFreeSubscriber'])->name('toggle-free-subscriber');
     });
 
+    // Students alias for /users (Admin only)
+    Route::prefix('students')->name('students.')->middleware('abilities:admin')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/stats', [UserController::class, 'stats'])->name('stats');
+        Route::post('/', [UserController::class, 'store'])->name('store');
+        Route::get('/{user}', [UserController::class, 'show'])->name('show');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        Route::post('/{user}/toggle-free-subscriber', [UserController::class, 'toggleFreeSubscriber'])->name('toggle-free-subscriber');
+    });
+
     // Teacher management (Admin routes don't need device check)
     Route::prefix('teachers')->name('teachers.')->group(function () {
         // Public routes (need device check for students)
@@ -92,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{teacher}/revenue-details', [TeacherController::class, 'getRevenueDetails'])->name('revenue-details');
             Route::patch('/{teacher}/toggle-status', [TeacherController::class, 'toggleStatus'])->name('toggle-status');
             Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics'])->name('statistics');
+            Route::get('/{teacher}/stats', [TeacherController::class, 'stats'])->name('stats');
         });
     });
 
@@ -117,7 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Subscription management (needs device check for students)
     Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
         Route::post('/', [SubscriptionController::class, 'store'])->name('store')->middleware('ensure.single.device');
-        Route::get('/active', [SubscriptionController::class, 'active'])->name('active')->middleware('ensure.single.device'); // Restored device check
+        Route::get('/active', [SubscriptionController::class, 'active'])->name('active')->middleware('ensure.single.device'); // Also serves as my-subscriptions
         Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show')->middleware('ensure.single.device');
     });
 
@@ -128,7 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
             Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
         });
-        
+
         // Routes that don't need scanner lock (read-only operations)
         Route::get('/session-attendance', [CheckinController::class, 'sessionAttendance'])->name('session-attendance');
         Route::get('/attendance-stats', [CheckinController::class, 'attendanceStats'])->name('attendance-stats');
@@ -198,6 +210,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/cards', [DashboardDataController::class, 'getDashboardCards'])->name('cards');
             Route::get('/top-teachers', [DashboardDataController::class, 'getTopTeachers'])->name('top-teachers');
             Route::get('/revenue-time-series', [DashboardDataController::class, 'getRevenueTimeSeries'])->name('revenue-time-series');
+            Route::get('/revenue-series', [DashboardDataController::class, 'getRevenueTimeSeries'])->name('revenue-series'); // Alias
             Route::get('/teacher-performance', [DashboardDataController::class, 'getTeacherPerformance'])->name('teacher-performance');
             Route::get('/refresh-status', [DashboardDataController::class, 'getRefreshStatus'])->name('refresh-status');
         });

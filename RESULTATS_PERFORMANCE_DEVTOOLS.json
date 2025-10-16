@@ -1,0 +1,115 @@
+{
+  "timestamp": "2025-10-16T11:28:33.330Z",
+  "dashboard": {
+    "pageName": "Dashboard",
+    "loadTime": 1265,
+    "totalRequests": 59,
+    "apiRequests": 0,
+    "cacheHits": 57,
+    "cacheHitRate": "96.61",
+    "metrics": {
+      "domContentLoaded": 0.10000000894069672,
+      "loadComplete": 0,
+      "domInteractive": 42.69999998807907,
+      "firstPaint": 308,
+      "firstContentfulPaint": 308
+    },
+    "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\dashboard-loaded.png",
+    "apiRequestsList": []
+  },
+  "sessions": {
+    "pageName": "Sessions",
+    "loadTime": 965,
+    "totalRequests": 59,
+    "apiRequests": 0,
+    "cacheHits": 58,
+    "cacheHitRate": "98.31",
+    "metrics": {
+      "domContentLoaded": 0.10000000894069672,
+      "loadComplete": 0,
+      "domInteractive": 37.900000005960464,
+      "firstPaint": 188,
+      "firstContentfulPaint": 188
+    },
+    "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\sessions-loaded.png",
+    "apiRequestsList": []
+  },
+  "students": {
+    "pageName": "Students",
+    "loadTime": 1303,
+    "totalRequests": 59,
+    "apiRequests": 0,
+    "cacheHits": 58,
+    "cacheHitRate": "98.31",
+    "metrics": {
+      "domContentLoaded": 0,
+      "loadComplete": 0,
+      "domInteractive": 28,
+      "firstPaint": 196,
+      "firstContentfulPaint": 196
+    },
+    "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\students-loaded.png",
+    "apiRequestsList": []
+  },
+  "cache": {
+    "dashboard": {
+      "pageName": "Dashboard",
+      "coldLoad": {
+        "time": 2987,
+        "apiRequests": 0,
+        "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\dashboard-cold-load.png"
+      },
+      "cacheHit": {
+        "time": 3043,
+        "apiRequests": 0,
+        "cacheHits": 60,
+        "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\dashboard-cache-hit.png"
+      },
+      "improvement": -1.87
+    },
+    "sessions": {
+      "pageName": "Sessions",
+      "coldLoad": {
+        "time": 2714,
+        "apiRequests": 0,
+        "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\sessions-cold-load.png"
+      },
+      "cacheHit": {
+        "time": 2882,
+        "apiRequests": 0,
+        "cacheHits": 60,
+        "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\sessions-cache-hit.png"
+      },
+      "improvement": -6.19
+    },
+    "students": {
+      "pageName": "Students",
+      "coldLoad": {
+        "time": 3022,
+        "apiRequests": 0,
+        "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\students-cold-load.png"
+      },
+      "cacheHit": {
+        "time": 2955,
+        "apiRequests": 0,
+        "cacheHits": 60,
+        "screenshot": "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\students-cache-hit.png"
+      },
+      "improvement": 2.22
+    }
+  },
+  "debouncing": {
+    "success": false
+  },
+  "screenshots": [
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\dashboard-loaded.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\dashboard-cold-load.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\dashboard-cache-hit.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\sessions-loaded.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\sessions-cold-load.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\sessions-cache-hit.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\students-loaded.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\students-cold-load.png",
+    "C:\\Users\\ENPEI\\alouaoui-school\\screenshots\\students-cache-hit.png"
+  ]
+}

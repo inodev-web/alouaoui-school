@@ -1,132 +1,136 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
-import { BookOpen, Eye, EyeOff, Phone, Lock } from 'lucide-react'
-import authService from '../../services/api/auth.service'
-import { loginSuccess } from '../../store/slices/authSlice'
-import { useToast } from '../../hooks/use-toast'
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { BookOpen, Eye, EyeOff, Phone, Lock } from "lucide-react";
+import authService from "../../services/api/auth.service";
+import { loginSuccess } from "../../store/slices/authSlice";
+import { useToast } from "../../hooks/use-toast";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    phone: '',
-    password: '',
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState({})
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
-  const { toast } = useToast()
+    phone: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { toast } = useToast();
 
   const validateForm = () => {
-    const newErrors = {}
-    
+    const newErrors = {};
+
     if (!formData.phone?.trim()) {
-      newErrors.phone = 'رقم الهاتف مطلوب'
+      newErrors.phone = "رقم الهاتف مطلوب";
     } else if (!/^[0-9]{10}$/.test(formData.phone)) {
-      newErrors.phone = 'رقم الهاتف يجب أن يتكون من 10 أرقام'
+      newErrors.phone = "رقم الهاتف يجب أن يتكون من 10 أرقام";
     }
 
     if (!formData.password) {
-      newErrors.password = 'كلمة المرور مطلوبة'
+      newErrors.password = "كلمة المرور مطلوبة";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateForm()) {
-      return
+      return;
     }
-    
-    setIsLoading(true)
-    
+
+    setIsLoading(true);
+
     try {
-      const response = await authService.login(formData.phone, formData.password)
-      console.log('Login response:', response)
-      
+      const response = await authService.login(
+        formData.phone,
+        formData.password,
+      );
+
       if (response.token && response.user) {
         // Update Redux store
-        dispatch(loginSuccess({ token: response.token, user: response.user }))
-        
+        dispatch(loginSuccess({ token: response.token, user: response.user }));
+
         // Show success message
         toast({
           title: "تم تسجيل الدخول بنجاح",
-          description: `مرحباً ${response.user.firstname || response.user.name || 'بك'}!`,
-        })
-        
+          description: `مرحباً ${response.user.firstname || response.user.name || "بك"}!`,
+        });
+
         // Navigate based on user role
-        console.log('User role after login:', response.user.role)
-        if (response.user.role === 'admin') {
-          navigate('/admin')
+        if (response.user.role === "admin") {
+          navigate("/admin");
         } else {
-          navigate('/student/profile')
+          navigate("/student/profile");
         }
       } else {
-        console.error('No token received in response:', response)
-        throw new Error('لم يتم استلام رمز المصادقة')
+        console.error("No token received in response:", response);
+        throw new Error("لم يتم استلام رمز المصادقة");
       }
     } catch (error) {
-      console.error('Login error:', error)
-      
+      console.error("Login error:", error);
+
       // Handle validation errors from backend
       if (error.response?.data?.errors) {
-        const backendErrors = error.response.data.errors
-        const formattedErrors = {}
-        Object.keys(backendErrors).forEach(key => {
+        const backendErrors = error.response.data.errors;
+        const formattedErrors = {};
+        Object.keys(backendErrors).forEach((key) => {
           // Mapper le champ 'login' du backend vers 'phone' du frontend
-          const frontendKey = key === 'login' ? 'phone' : key
-          formattedErrors[frontendKey] = Array.isArray(backendErrors[key]) 
-            ? backendErrors[key][0] 
-            : backendErrors[key]
-        })
-        
+          const frontendKey = key === "login" ? "phone" : key;
+          formattedErrors[frontendKey] = Array.isArray(backendErrors[key])
+            ? backendErrors[key][0]
+            : backendErrors[key];
+        });
+
         // Si c'est une erreur de credentials, l'afficher comme erreur générale
-        if (backendErrors.login && backendErrors.login.includes('incorrect')) {
-          formattedErrors.submit = Array.isArray(backendErrors.login) 
-            ? backendErrors.login[0] 
-            : backendErrors.login
-          delete formattedErrors.phone // Ne pas afficher l'erreur sur le champ phone dans ce cas
+        if (backendErrors.login && backendErrors.login.includes("incorrect")) {
+          formattedErrors.submit = Array.isArray(backendErrors.login)
+            ? backendErrors.login[0]
+            : backendErrors.login;
+          delete formattedErrors.phone; // Ne pas afficher l'erreur sur le champ phone dans ce cas
         }
-        
-        setErrors(formattedErrors)
+
+        setErrors(formattedErrors);
       } else if (error.cause?.details?.errors) {
         // Erreurs de validation Laravel (old format)
-        const validationErrors = error.cause.details.errors
+        const validationErrors = error.cause.details.errors;
         setErrors({
           ...Object.keys(validationErrors).reduce((acc, key) => {
-            acc[key] = validationErrors[key][0]
-            return acc
-          }, {})
-        })
+            acc[key] = validationErrors[key][0];
+            return acc;
+          }, {}),
+        });
       } else {
         // Erreur générale
         setErrors({
-          submit: error.response?.data?.message || error.message || 'حدث خطأ أثناء تسجيل الدخول'
-        })
+          submit:
+            error.response?.data?.message ||
+            error.message ||
+            "حدث خطأ أثناء تسجيل الدخول",
+        });
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
+    });
 
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: ''
-      })
+        [name]: "",
+      });
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -141,9 +145,7 @@ const LoginPage = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             مرحباً بك مرة أخرى
           </h2>
-          <p className="text-gray-600">
-            سجل دخولك للوصول إلى دروسك
-          </p>
+          <p className="text-gray-600">سجل دخولك للوصول إلى دروسك</p>
         </div>
 
         {/* Login Form */}
@@ -152,13 +154,18 @@ const LoginPage = () => {
             {/* Error Message */}
             {errors.submit && (
               <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-700 text-right">{errors.submit}</div>
+                <div className="text-sm text-red-700 text-right">
+                  {errors.submit}
+                </div>
               </div>
             )}
 
             {/* Phone Field */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-2 text-right"
+              >
                 رقم الهاتف
               </label>
               <div className="relative">
@@ -172,21 +179,26 @@ const LoginPage = () => {
                   required
                   pattern="[0-9]{10}"
                   className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                    errors.phone ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="أدخل رقم هاتفك (10 أرقام)"
-                  value={formData.phone || ''}
+                  value={formData.phone || ""}
                   onChange={handleChange}
                 />
               </div>
               {errors.phone && (
-                <p className="mt-1 text-sm text-red-600 text-right">{errors.phone}</p>
+                <p className="mt-1 text-sm text-red-600 text-right">
+                  {errors.phone}
+                </p>
               )}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2 text-right"
+              >
                 كلمة المرور
               </label>
               <div className="relative">
@@ -196,14 +208,14 @@ const LoginPage = () => {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   minLength="6"
                   className={`block w-full pr-10 pl-12 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
+                    errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="أدخل كلمة المرور"
-                  value={formData.password || ''}
+                  value={formData.password || ""}
                   onChange={handleChange}
                 />
                 <button
@@ -219,7 +231,9 @@ const LoginPage = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600 text-right">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-600 text-right">
+                  {errors.password}
+                </p>
               )}
             </div>
 
@@ -232,12 +246,18 @@ const LoginPage = () => {
                   type="checkbox"
                   className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="mr-2 block text-sm text-gray-700">
+                <label
+                  htmlFor="remember-me"
+                  className="mr-2 block text-sm text-gray-700"
+                >
                   تذكرني
                 </label>
               </div>
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-red-600 hover:text-red-500 transition-colors duration-200">
+                <Link
+                  to="/forgot-password"
+                  className="font-medium text-red-600 hover:text-red-500 transition-colors duration-200"
+                >
                   نسيت كلمة المرور؟
                 </Link>
               </div>
@@ -265,7 +285,7 @@ const LoginPage = () => {
                     جاري تسجيل الدخول...
                   </div>
                 ) : (
-                  'تسجيل الدخول'
+                  "تسجيل الدخول"
                 )}
               </button>
             </div>
@@ -283,7 +303,7 @@ const LoginPage = () => {
             {/* Register Link */}
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                ليس لديك حساب؟{' '}
+                ليس لديك حساب؟{" "}
                 <Link
                   to="/register"
                   className="font-medium text-red-600 hover:text-red-500 transition-colors duration-200"
@@ -303,7 +323,7 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LoginPage
+export default LoginPage;

@@ -1,18 +1,36 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { DollarSign, CreditCard, Calendar, CheckCircle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { DollarSign, CreditCard, Calendar, CheckCircle } from "lucide-react";
 
 export function PaymentModal({ teacher, paymentType, open, onOpenChange }) {
-  const amount = paymentType === "monthly" ? teacher.monthlyPrice : teacher.sessionPrice
-  const description = paymentType === "monthly" ? "Monthly Subscription" : "Per Session Payment"
+  const amount =
+    paymentType === "monthly" ? teacher.monthlyPrice : teacher.sessionPrice;
+  const description =
+    paymentType === "monthly" ? "Monthly Subscription" : "Per Session Payment";
 
   const handlePayment = () => {
     // In a real app, this would process the payment
-    console.log("Processing payment:", { teacher: teacher.id, type: paymentType, amount })
-    onOpenChange(false)
-  }
+    console.log("Processing payment:", {
+      teacher: teacher.id,
+      type: paymentType,
+      amount,
+    });
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -22,7 +40,9 @@ export function PaymentModal({ teacher, paymentType, open, onOpenChange }) {
             <DollarSign className="h-5 w-5" />
             Payment Processing
           </DialogTitle>
-          <DialogDescription>Complete payment for {teacher.name}</DialogDescription>
+          <DialogDescription>
+            Complete payment for {teacher.name}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -34,7 +54,9 @@ export function PaymentModal({ teacher, paymentType, open, onOpenChange }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Payment Type:</span>
+                <span className="text-sm text-muted-foreground">
+                  Payment Type:
+                </span>
                 <Badge variant="outline">{description}</Badge>
               </div>
               <div className="flex items-center justify-between">
@@ -43,7 +65,9 @@ export function PaymentModal({ teacher, paymentType, open, onOpenChange }) {
               </div>
               {paymentType === "monthly" && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Next Due:</span>
+                  <span className="text-sm text-muted-foreground">
+                    Next Due:
+                  </span>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     <span className="text-sm">{teacher.nextDue}</span>
@@ -63,7 +87,9 @@ export function PaymentModal({ teacher, paymentType, open, onOpenChange }) {
                 <CreditCard className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">Cash Payment</p>
-                  <p className="text-sm text-muted-foreground">In-person payment</p>
+                  <p className="text-sm text-muted-foreground">
+                    In-person payment
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -71,10 +97,17 @@ export function PaymentModal({ teacher, paymentType, open, onOpenChange }) {
 
           {/* Actions */}
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1"
+            >
               Cancel
             </Button>
-            <Button onClick={handlePayment} className="flex-1 bg-green-600 hover:bg-green-700">
+            <Button
+              onClick={handlePayment}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
               <CheckCircle className="h-4 w-4 mr-2" />
               Confirm Payment
             </Button>
@@ -82,5 +115,5 @@ export function PaymentModal({ teacher, paymentType, open, onOpenChange }) {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

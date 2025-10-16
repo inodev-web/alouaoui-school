@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Maximize } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { Play, Pause, Maximize } from "lucide-react";
 
-const VideoPlayer = ({ 
-  videoSrc, 
+const VideoPlayer = ({
+  videoSrc,
   title = "درس الفيديو",
   duration: videoDuration = "45:30",
-  thumbnail = null 
+  thumbnail = null,
 }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -22,14 +22,14 @@ const VideoPlayer = ({
     const updateTime = () => setCurrentTime(video.currentTime);
     const updateDuration = () => setDuration(video.duration);
 
-    video.addEventListener('timeupdate', updateTime);
-    video.addEventListener('loadedmetadata', updateDuration);
-    video.addEventListener('ended', () => setIsPlaying(false));
+    video.addEventListener("timeupdate", updateTime);
+    video.addEventListener("loadedmetadata", updateDuration);
+    video.addEventListener("ended", () => setIsPlaying(false));
 
     return () => {
-      video.removeEventListener('timeupdate', updateTime);
-      video.removeEventListener('loadedmetadata', updateDuration);
-      video.removeEventListener('ended', () => setIsPlaying(false));
+      video.removeEventListener("timeupdate", updateTime);
+      video.removeEventListener("loadedmetadata", updateDuration);
+      video.removeEventListener("ended", () => setIsPlaying(false));
     };
   }, []);
 
@@ -71,11 +71,11 @@ const VideoPlayer = ({
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="relative w-full max-w-4xl mx-auto bg-black rounded-xl overflow-hidden shadow-2xl"
       onMouseEnter={() => setShowControls(true)}
@@ -99,24 +99,27 @@ const VideoPlayer = ({
             onClick={togglePlay}
             className="bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-6 transform hover:scale-110 transition-all duration-300 shadow-2xl"
           >
-            <Play className="w-16 h-16 text-gray-800 ml-1" fill="currentColor" />
+            <Play
+              className="w-16 h-16 text-gray-800 ml-1"
+              fill="currentColor"
+            />
           </button>
         </div>
       )}
 
       {/* Controls Overlay */}
-      <div 
+      <div
         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/70 to-transparent p-6 transition-opacity duration-300 ${
-          showControls ? 'opacity-100' : 'opacity-0'
+          showControls ? "opacity-100" : "opacity-0"
         }`}
       >
         {/* Progress Bar */}
         <div className="mb-4 flex justify-center md:block">
-          <div 
+          <div
             className="w-full max-w-xs md:max-w-none h-2 bg-white bg-opacity-30 rounded-full cursor-pointer hover:h-3 transition-all duration-200"
             onClick={handleSeek}
           >
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-red-400 to-pink-500 rounded-full relative"
               style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
             >
@@ -133,7 +136,11 @@ const VideoPlayer = ({
               onClick={togglePlay}
               className="text-white hover:text-pink-300 transition-colors duration-200"
             >
-              {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8" />}
+              {isPlaying ? (
+                <Pause className="w-8 h-8" />
+              ) : (
+                <Play className="w-8 h-8" />
+              )}
             </button>
 
             {/* Time Display */}

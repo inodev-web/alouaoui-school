@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'scanner.lock' => \App\Http\Middleware\ScannerLock::class,
             'admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
+
+        // Add response compression globally for API routes
+        // This reduces bandwidth by 70-90% for large JSON payloads
+        $middleware->append(\App\Http\Middleware\CompressResponse::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
