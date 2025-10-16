@@ -62,9 +62,6 @@ const Events = () => {
       const sliderItems = listDom.querySelectorAll('.item')
       const thumbnailItems = thumbnailDom.querySelectorAll('.item')
 
-      console.log('Before move - Main images:', Array.from(sliderItems).map(item => item.querySelector('img')?.src))
-      console.log('Before move - Thumbnails:', Array.from(thumbnailItems).map(item => item.querySelector('img')?.src))
-
       if (type === 'next') {
         // Move first item to end
         listDom.appendChild(sliderItems[0])
@@ -76,9 +73,6 @@ const Events = () => {
         thumbnailDom.prepend(thumbnailItems[thumbnailItems.length - 1])
         carouselDom.classList.add('prev')
       }
-
-      console.log('After move - Main images:', Array.from(listDom.querySelectorAll('.item')).map(item => item.querySelector('img')?.src))
-      console.log('After move - Thumbnails:', Array.from(thumbnailDom.querySelectorAll('.item')).map(item => item.querySelector('img')?.src))
     }
 
     clearTimeout(timeRef.current)
@@ -172,7 +166,6 @@ const Events = () => {
               onClick={() => {
                 // Simple approach: just click next until we reach the desired item
                 // This is not perfect but will work for now
-                console.log('Thumbnail clicked:', event.title)
               }}
             >
               <img src={event.image} alt={event.title} />

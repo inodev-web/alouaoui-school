@@ -19,19 +19,6 @@ export function StudentDetailsModal({ student, open, onOpenChange, onUpdate }) {
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "active":
-      case "نشط":
-        return "default"
-      case "inactive":
-      case "غير نشط":
-        return "secondary"
-      default:
-        return "outline"
-    }
-  }
-
   const toggleFreeSubscriber = async () => {
     if (!student.free_subscriber) {
       // Si on active l'abonnement gratuit, demander la raison

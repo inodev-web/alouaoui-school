@@ -1,18 +1,29 @@
 import axiosInstance from './api/axios.config'
+import { cacheService } from './cache.service'
 
 class DashboardService {
   /**
-   * Get dashboard cards data
+   * Get dashboard cards data with caching
    */
   async getDashboardCards(period = 'daily', date = null) {
     try {
-      const params = new URLSearchParams({ period })
-      if (date) params.append('date', date)
+      console.log('📊 Loading dashboard cards...', { period, date })
       
-      const response = await axiosInstance.get(`/dashboard/data/cards?${params}`)
-      return response.data
+      const cacheKey = `dashboard_cards_${period}_${date || 'current'}`
+      
+      const data = await cacheService.getDashboardStats(async () => {
+        const params = new URLSearchParams({ period })
+        if (date) params.append('date', date)
+        
+        console.log('🌐 API call: dashboard/data/cards')
+        const response = await axiosInstance.get(`/dashboard/data/cards?${params}`)
+        return response.data
+      }, cacheKey)
+      
+      console.log('✅ Dashboard cards loaded')
+      return data
     } catch (error) {
-      console.error('Error fetching dashboard cards:', error)
+      console.error('❌ Error fetching dashboard cards:', error)
       throw error
     }
   }
@@ -34,40 +45,60 @@ class DashboardService {
   }
 
   /**
-   * Get top teachers by revenue
+   * Get top teachers by revenue with caching
    */
   async getTopTeachers(limit = 10, period = 'daily', date = null) {
     try {
-      const params = new URLSearchParams({ 
-        limit: limit.toString(),
-        period 
-      })
-      if (date) params.append('date', date)
+      console.log('👨‍🏫 Loading top teachers...', { limit, period, date })
       
-      const response = await axiosInstance.get(`/dashboard/data/top-teachers?${params}`)
-      return response.data
+      const cacheKey = `top_teachers_${limit}_${period}_${date || 'current'}`
+      
+      const data = await cacheService.getDashboardStats(async () => {
+        const params = new URLSearchParams({ 
+          limit: limit.toString(),
+          period 
+        })
+        if (date) params.append('date', date)
+        
+        console.log('🌐 API call: dashboard/data/top-teachers')
+        const response = await axiosInstance.get(`/dashboard/data/top-teachers?${params}`)
+        return response.data
+      }, cacheKey)
+      
+      console.log('✅ Top teachers loaded')
+      return data
     } catch (error) {
-      console.error('Error fetching top teachers:', error)
+      console.error('❌ Error fetching top teachers:', error)
       throw error
     }
   }
 
   /**
-   * Get revenue time series data for charts
+   * Get revenue time series data for charts with caching
    */
   async getRevenueTimeSeries(period = 'daily', days = 30, startDate = null, endDate = null) {
     try {
-      const params = new URLSearchParams({ 
-        period,
-        days: days.toString()
-      })
-      if (startDate) params.append('start_date', startDate)
-      if (endDate) params.append('end_date', endDate)
+      console.log('📈 Loading revenue time series...', { period, days, startDate, endDate })
       
-      const response = await axiosInstance.get(`/dashboard/data/revenue-time-series?${params}`)
-      return response.data
+      const cacheKey = `revenue_series_${period}_${days}_${startDate || 'null'}_${endDate || 'null'}`
+      
+      const data = await cacheService.getDashboardStats(async () => {
+        const params = new URLSearchParams({ 
+          period,
+          days: days.toString()
+        })
+        if (startDate) params.append('start_date', startDate)
+        if (endDate) params.append('end_date', endDate)
+        
+        console.log('🌐 API call: dashboard/data/revenue-time-series')
+        const response = await axiosInstance.get(`/dashboard/data/revenue-time-series?${params}`)
+        return response.data
+      }, cacheKey)
+      
+      console.log('✅ Revenue time series loaded')
+      return data
     } catch (error) {
-      console.error('Error fetching revenue time series:', error)
+      console.error('❌ Error fetching revenue time series:', error)
       throw error
     }
   }

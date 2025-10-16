@@ -8,6 +8,7 @@ const CACHE_KEYS = {
   BRANCHES: 'cache_branches',
   CHAPTERS: 'cache_chapters',
   USER_STATS: 'cache_user_stats',
+  DASHBOARD_STATS: 'cache_dashboard_stats', // Dynamic prefix for dashboard data
 }
 
 const CACHE_TTL = {
@@ -15,6 +16,7 @@ const CACHE_TTL = {
   BRANCHES: 30 * 60 * 1000, // 30 minutes (rarely changes)
   CHAPTERS: 10 * 60 * 1000, // 10 minutes
   USER_STATS: 2 * 60 * 1000, // 2 minutes
+  DASHBOARD_STATS: 2 * 60 * 1000, // 2 minutes (same as user stats)
 }
 
 class CacheService {
@@ -161,6 +163,27 @@ class CacheService {
   }
 
   /**
+   * Get or fetch dashboard stats with caching
+   * Supports dynamic cache keys for different dashboard data (cards, charts, etc.)
+   * @param {Function} fetchFn - Function to fetch dashboard data
+   * @param {string} cacheKey - Specific cache key (e.g., 'dashboard_cards_daily')
+   * @returns {Promise<Object>}
+   */
+  async getDashboardStats(fetchFn, cacheKey) {
+    const fullKey = `${CACHE_KEYS.DASHBOARD_STATS}_${cacheKey}`
+    const cached = this.get(fullKey)
+    if (cached) {
+      console.log('📦 Using cached dashboard data:', cacheKey)
+      return cached
+    }
+
+    console.log('🌐 Fetching dashboard data from API:', cacheKey)
+    const data = await fetchFn()
+    this.set(fullKey, data, CACHE_TTL.DASHBOARD_STATS)
+    return data
+  }
+
+  /**
    * Invalidate specific cache
    */
   invalidateTeachers() {
@@ -177,6 +200,14 @@ class CacheService {
 
   invalidateUserStats() {
     this.remove(CACHE_KEYS.USER_STATS)
+  }
+
+  invalidateDashboardStats() {
+    // Clear all dashboard-related cache keys
+    const allKeys = Object.keys(localStorage)
+    const dashboardKeys = allKeys.filter(key => key.startsWith(CACHE_KEYS.DASHBOARD_STATS))
+    dashboardKeys.forEach(key => this.remove(key))
+    console.log('🗑️ Invalidated dashboard stats cache')
   }
 }
 

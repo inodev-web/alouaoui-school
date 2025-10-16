@@ -130,10 +130,7 @@ const RegisterPage = () => {
         userData.branch_id = formData.branch_id
       }
       
-      console.log('Sending registration request with data:', userData)
-      
       const response = await authService.register(userData)
-      console.log('Registration response:', response)
       
       const { token, user } = response
       

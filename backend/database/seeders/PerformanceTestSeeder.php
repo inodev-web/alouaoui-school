@@ -42,24 +42,28 @@ class PerformanceTestSeeder extends Seeder
         $this->command->info('📚 Branches available: ' . count($branches));
         $this->command->info('👨‍🏫 Teachers available: ' . count($teachers));
 
-        // 1. Generate 3000 Students
-        $this->command->info("\n📝 Generating 3000 students...");
-        $this->generateStudents(3000, $branches, $faker);
+        // 1. Generate 500 Students (test avec moins de données d'abord)
+        $this->command->info("\n📝 Generating 500 students...");
+        $this->generateStudents(500, $branches, $faker);
 
-        // 2. Generate 500 Sessions
-        $this->command->info("\n📅 Generating 500 sessions...");
-        $this->generateSessions(500, $teachers, $branches);
+        // 2. Generate 100 Sessions
+        $this->command->info("\n📅 Generating 100 sessions...");
+        $this->generateSessions(100, $teachers, $branches);
 
-        // 3. Generate 5000 Subscriptions
-        $this->command->info("\n💳 Generating 5000 subscriptions...");
-        $this->generateSubscriptions(5000, $teachers);
+        // 3. Generate 500 Subscriptions
+        $this->command->info("\n💳 Generating 500 subscriptions...");
+        $this->generateSubscriptions(500, $teachers);
 
-        // 4. Generate 10000 Attendances
-        $this->command->info("\n✅ Generating 10000 attendances...");
-        $this->generateAttendances(10000);
+        // 4. Generate 1000 Attendances
+        $this->command->info("\n✅ Generating 1000 attendances...");
+        $this->generateAttendances(1000);
 
         // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON;');
+        }
 
         $this->command->info("\n🎉 Performance test data generation completed!");
         $this->command->info("📊 Database is ready for load testing with 3000+ users");
@@ -74,6 +78,9 @@ class PerformanceTestSeeder extends Seeder
         $highSchoolYears = ['1AS', '2AS', '3AS'];
         $batchSize = 500;
         $batches = ceil($count / $batchSize);
+
+        // Hash password once for performance (all test users share same password)
+        $hashedPassword = Hash::make('password123');
 
         $this->command->getOutput()->progressStart($batches);
 
@@ -90,7 +97,7 @@ class PerformanceTestSeeder extends Seeder
                     'firstname' => 'Test-' . $faker->firstName(),
                     'lastname' => 'User-' . $faker->lastName(),
                     'phone' => '0' . rand(500000000, 799999999),
-                    'password' => Hash::make('password123'),
+                    'password' => $hashedPassword,
                     'role' => 'student',
                     'year_of_study' => $year,
                     'branch_id' => $branchId,
@@ -99,9 +106,7 @@ class PerformanceTestSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
-            }
-
-            DB::table('users')->insert($students);
+            }            DB::table('users')->insert($students);
             $this->command->getOutput()->progressAdvance();
         }
 
@@ -175,7 +180,6 @@ class PerformanceTestSeeder extends Seeder
     private function generateSubscriptions(int $count, array $teachers): void
     {
         $students = DB::table('users')->where('role', 'student')->pluck('uuid')->toArray();
-        $statuses = ['active', 'expired', 'cancelled'];
         $batchSize = 500;
         $batches = ceil($count / $batchSize);
 
@@ -189,14 +193,10 @@ class PerformanceTestSeeder extends Seeder
                 $startDate = Carbon::now()->subDays(rand(0, 90));
 
                 $subscriptions[] = [
-                    'uuid' => Str::uuid(),
-                    'student_uuid' => $students[array_rand($students)],
+                    'user_uuid' => $students[array_rand($students)],
                     'teacher_uuid' => $teachers[array_rand($teachers)],
-                    'amount' => rand(500, 3000),
-                    'months' => rand(1, 12),
-                    'start_date' => $startDate,
-                    'end_date' => (clone $startDate)->addMonths(rand(1, 12)),
-                    'status' => $statuses[array_rand($statuses)],
+                    'starts_at' => $startDate,
+                    'ends_at' => (clone $startDate)->addMonths(rand(1, 12)),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -217,6 +217,7 @@ class PerformanceTestSeeder extends Seeder
     {
         $sessions = DB::table('sessions')->pluck('id')->toArray();
         $students = DB::table('users')->where('role', 'student')->pluck('uuid')->toArray();
+        $teachers = DB::table('teachers')->pluck('uuid')->toArray();
         $batchSize = 500;
         $batches = ceil($count / $batchSize);
 
@@ -227,13 +228,11 @@ class PerformanceTestSeeder extends Seeder
             $currentBatchSize = min($batchSize, $count - ($b * $batchSize));
 
             for ($i = 0; $i < $currentBatchSize; $i++) {
-                $checkInTime = Carbon::now()->subDays(rand(0, 60))->addHours(rand(8, 20));
-
                 $attendances[] = [
-                    'uuid' => Str::uuid(),
                     'session_id' => $sessions[array_rand($sessions)],
                     'student_uuid' => $students[array_rand($students)],
-                    'check_in_time' => $checkInTime,
+                    'teacher_uuid' => $teachers[array_rand($teachers)],
+                    'validated_at' => rand(0, 1) ? Carbon::now()->subDays(rand(0, 60))->addHours(rand(8, 20)) : null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

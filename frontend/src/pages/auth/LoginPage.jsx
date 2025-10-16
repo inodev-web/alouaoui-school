@@ -46,7 +46,6 @@ const LoginPage = () => {
     
     try {
       const response = await authService.login(formData.phone, formData.password)
-      console.log('Login response:', response)
       
       if (response.token && response.user) {
         // Update Redux store
@@ -59,7 +58,6 @@ const LoginPage = () => {
         })
         
         // Navigate based on user role
-        console.log('User role after login:', response.user.role)
         if (response.user.role === 'admin') {
           navigate('/admin')
         } else {

@@ -8,6 +8,7 @@ import { EditTeacherModal } from "@/components/admin/edit-teacher-modal"
 import { TeacherDetailsDialog } from "@/components/admin/teacher-details-dialog"
 import { Edit, Trash2, Phone, Users, BookOpen, DollarSign, Calendar, RefreshCcw } from "lucide-react"
 import { teachersService } from "@/services/teachersService"
+import { useDebounce } from "@/hooks/useDebounce"
 
 export function TeachersTable() {
   const [teachers, setTeachers] = useState([])
@@ -18,6 +19,7 @@ export function TeachersTable() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 500) // 🔧 Debounce search input
   const [yearFilter, setYearFilter] = useState('')
   const [moduleFilter, setModuleFilter] = useState('')
   const [page, setPage] = useState(1)
@@ -32,26 +34,33 @@ export function TeachersTable() {
     try {
       const raw = sessionStorage.getItem(CACHE_KEY)
       if (raw) studentsCountCache.current = JSON.parse(raw)
-    } catch {}
+    } catch {
+      // Ignore sessionStorage errors (e.g., in incognito mode)
+    }
   }, [])
 
   useEffect(() => {
     mountedRef.current = true
     loadTeachers()
     return () => { mountedRef.current = false }
-  }, [page, search, yearFilter, moduleFilter])
+  }, [page, debouncedSearch, yearFilter, moduleFilter]) // 🔧 Use debouncedSearch instead of search
 
   const persistCache = () => {
-    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(studentsCountCache.current)) } catch {}
+    try { 
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(studentsCountCache.current)) 
+    } catch {
+      // Ignore sessionStorage errors (e.g., in incognito mode)
+    }
   }
 
   const loadTeachers = async () => {
+    console.log('📊 Loading teachers...') // 🔧 Performance log
     try {
       setLoading(true)
       const response = await teachersService.getTeachers({
         page,
         per_page: meta.per_page || 12,
-        search,
+        search: debouncedSearch, // 🔧 Use debounced value
         year: yearFilter,
         module: moduleFilter,
       })
@@ -71,7 +80,7 @@ export function TeachersTable() {
         return { ...t, studentsCount: count }
       }))
       if (mountedRef.current) setTeachers(enriched)
-    } catch (err) {
+    } catch {
       if (mountedRef.current) setError('خطأ في تحميل بيانات الأساتذة')
     } finally {
       if (mountedRef.current) setLoading(false)
@@ -107,11 +116,6 @@ export function TeachersTable() {
     } finally {
       setDeleting(null)
     }
-  }
-
-  const getDefaultAvatar = (name) => {
-    const initials = (name || '?').split(' ').map(n => n[0]).join('').substring(0, 2)
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=4f46e5&color=ffffff&size=128`
   }
 
   const SkeletonCard = () => (

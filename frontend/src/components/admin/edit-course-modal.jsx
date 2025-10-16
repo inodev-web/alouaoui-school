@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { FileText, Upload, X } from "lucide-react"
 
-export function EditCourseModal({ course, chapterId, open, onOpenChange, onSave, onUploadPDF }) {
+export function EditCourseModal({ course, chapterId, open, onOpenChange, onSave }) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",

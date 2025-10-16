@@ -17,7 +17,6 @@ export function SessionsFilters({ onFiltersChange }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]) // Today's date by default
   const [teachers, setTeachers] = useState([])
   const [branches, setBranches] = useState([])
-  const [loading, setLoading] = useState(true)
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
@@ -45,7 +44,6 @@ export function SessionsFilters({ onFiltersChange }) {
 
   const fetchTeachers = async () => {
     try {
-      setLoading(true)
       // Use cache service instead of direct API call
       const data = await cacheService.getTeachers(async () => {
         const response = await teacherService.getTeachers()
@@ -54,8 +52,6 @@ export function SessionsFilters({ onFiltersChange }) {
       setTeachers(data)
     } catch (error) {
       console.error('Error fetching teachers:', error)
-    } finally {
-      setLoading(false)
     }
   }
 

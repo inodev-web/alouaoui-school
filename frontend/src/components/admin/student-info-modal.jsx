@@ -8,7 +8,6 @@ import { User, Phone, Mail, GraduationCap, Calendar, Clock, CheckCircle } from "
 export function StudentInfoModal({ student, open, onOpenChange }) {
   const handleCheckIn = () => {
     // In a real app, this would record the check-in
-    console.log("Checking in student:", student.id)
     onOpenChange(false)
   }
 

@@ -65,33 +65,23 @@ export default function AdminChaptersPage() {
   }, [chapters, userStats])
 
   const handleAddChapter = async (chapterData) => {
-    const res = await addChapter(chapterData)
-    console.log('handleAddChapter result:', res)
-    return res
+    return await addChapter(chapterData)
   }
 
   const handleAddCourse = async (chapterId, courseData) => {
-    const res = await addCourse(chapterId, courseData)
-    console.log('handleAddCourse result:', res)
-    return res
+    return await addCourse(chapterId, courseData)
   }
 
   const handleUpdateCourse = async (chapterId, courseId, updates) => {
-    const res = await updateCourse(chapterId, courseId, updates)
-    console.log('handleUpdateCourse result:', res)
-    return res
+    return await updateCourse(chapterId, courseId, updates)
   }
 
   const handleDeleteCourse = async (chapterId, courseId) => {
-    const res = await deleteCourse(chapterId, courseId)
-    console.log('handleDeleteCourse result:', res)
-    return res
+    return await deleteCourse(chapterId, courseId)
   }
 
   const handleUpdateChapter = async (chapterId, updates) => {
-    const res = await updateChapter(chapterId, updates)
-    console.log('handleUpdateChapter result:', res)
-    return res
+    return await updateChapter(chapterId, updates)
   }
 
   const handleDeleteChapter = async (chapterId) => {

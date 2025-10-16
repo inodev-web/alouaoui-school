@@ -36,7 +36,7 @@ const teachers = [
 export function TopTeachers() {
   return (
     <div className="space-y-4">
-      {teachers.map((teacher, index) => (
+      {teachers.map((teacher) => (
         <div key={teacher.name} className="flex items-center gap-4">
           <div className="flex items-center gap-3 flex-1">
             <Avatar className="h-8 w-8">

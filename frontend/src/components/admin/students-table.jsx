@@ -1,25 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StudentDetailsModal } from "@/components/admin/student-details-modal";
 import studentsService from "../../services/api/students.service";
-
-// Simple debounce hook
-function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+import { useDebounce } from "@/hooks/useDebounce"; // 🔧 Use centralized debounce hook
 
 export function StudentsTable({ searchQuery = "" }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -29,12 +13,12 @@ export function StudentsTable({ searchQuery = "" }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Debounce search query to avoid too many API calls
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // 🔧 Debounce search query with centralized hook (500ms for consistency)
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Optimized fetch function with caching
   const fetchStudents = useCallback(async (page = 1, search = "") => {
-    const key = `${search}-${page}`;
+    console.log('📚 Loading students...', { page, search }) // 🔧 Performance log
     
     try {
       setLoading(true);
@@ -54,6 +38,7 @@ export function StudentsTable({ searchQuery = "" }) {
       setStudents(response.data);
       setTotalPages(response.last_page);
       setError(null);
+      console.log('✅ Students loaded:', response.data.length) // 🔧 Performance log
     } catch (err) {
       console.error('Error fetching students:', err);
       setError('فشل في تحميل بيانات الطلاب');

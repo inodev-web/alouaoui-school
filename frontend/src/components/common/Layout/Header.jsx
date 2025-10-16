@@ -26,21 +26,6 @@ const Navbar = () => {
     navigate('/student/chapters');
   };
 
-  const handleLogout = async () => {
-    try {
-      await AuthService.logout();
-    } catch {
-      // ignore errors from API, proceed to local cleanup
-      console.warn('Logout request failed, clearing local session');
-    }
-
-    // clear redux state
-    try { dispatch(logoutAction()); } catch { /* noop */ }
-
-    // navigate to login
-    navigate('/login');
-  };
-
   return (
     <nav className=" bg-white shadow-lg fixed w-full top-0 z-[100]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">

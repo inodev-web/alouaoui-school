@@ -3,7 +3,6 @@
 import { Bell, Search, User, Menu } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { useSidebar } from "../../contexts/SidebarContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +13,6 @@ import {
 } from "../../components/ui/dropdown-menu";
 
 export function AdminHeader() {
-  const { toggleSidebar } = useSidebar();
-
   return (
     <header className="flex h-16 items-center justify-between border-b border-pink-200 bg-white px-6" dir="rtl">
       {/* <div className="flex items-center gap-4 flex-1">
