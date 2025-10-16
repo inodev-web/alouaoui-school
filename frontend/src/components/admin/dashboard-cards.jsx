@@ -1,11 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, GraduationCap, DollarSign, Clock, TrendingUp } from "lucide-react"
-import { useDashboardCards } from "@/hooks/useDashboardData"
-import { Skeleton } from "@/components/ui/skeleton"
-import dashboardService from "@/services/dashboardService"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Users,
+  GraduationCap,
+  DollarSign,
+  Clock,
+  TrendingUp,
+} from "lucide-react";
+import { useDashboardCards } from "@/hooks/useDashboardData";
+import { Skeleton } from "@/components/ui/skeleton";
+import dashboardService from "@/services/dashboardService";
 
-const DashboardCards = ({ period = 'daily', date = null }) => {
-  const { data, loading, error } = useDashboardCards(period, date)
+const DashboardCards = ({ period = "daily", date = null }) => {
+  const { data, loading, error } = useDashboardCards(period, date);
 
   if (loading) {
     return (
@@ -23,7 +29,7 @@ const DashboardCards = ({ period = 'daily', date = null }) => {
           </Card>
         ))}
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -37,21 +43,23 @@ const DashboardCards = ({ period = 'daily', date = null }) => {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!data?.cards) {
-    return null
+    return null;
   }
 
-  const cards = data.cards
+  const cards = data.cards;
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
       {/* Total Students */}
       <Card className="bg-pink-50 border-pink-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-right text-gray-800">إجمالي الطلاب</CardTitle>
+          <CardTitle className="text-sm font-medium text-right text-gray-800">
+            إجمالي الطلاب
+          </CardTitle>
           <Users className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
@@ -67,7 +75,9 @@ const DashboardCards = ({ period = 'daily', date = null }) => {
       {/* Total Teachers */}
       <Card className="bg-pink-50 border-pink-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-right text-gray-800">إجمالي المعلمين</CardTitle>
+          <CardTitle className="text-sm font-medium text-right text-gray-800">
+            إجمالي المعلمين
+          </CardTitle>
           <GraduationCap className="h-4 w-4 text-pink-500" />
         </CardHeader>
         <CardContent>
@@ -83,7 +93,9 @@ const DashboardCards = ({ period = 'daily', date = null }) => {
       {/* Total Revenue */}
       <Card className="bg-pink-50 border-pink-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-right text-gray-800">إجمالي الإيرادات</CardTitle>
+          <CardTitle className="text-sm font-medium text-right text-gray-800">
+            إجمالي الإيرادات
+          </CardTitle>
           <DollarSign className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
@@ -99,7 +111,9 @@ const DashboardCards = ({ period = 'daily', date = null }) => {
       {/* Total Sessions */}
       <Card className="bg-pink-50 border-pink-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-right text-gray-800">إجمالي الجلسات</CardTitle>
+          <CardTitle className="text-sm font-medium text-right text-gray-800">
+            إجمالي الجلسات
+          </CardTitle>
           <Clock className="h-4 w-4 text-pink-500" />
         </CardHeader>
         <CardContent>
@@ -112,7 +126,7 @@ const DashboardCards = ({ period = 'daily', date = null }) => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default DashboardCards
+export default DashboardCards;

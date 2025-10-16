@@ -25,6 +25,18 @@ class SubscriptionService
         //     throw new RuntimeException('Free subscriber does not need monthly subscription.');
         // }
 
+        // VALIDATION: Check for active duplicate subscriptions
+        $now = now();
+        $activeSubscriptions = Subscription::where('user_uuid', $user->uuid)
+            ->where('teacher_uuid', $teacher->uuid)
+            ->where('starts_at', '<=', $now)
+            ->where('ends_at', '>=', $now)
+            ->count();
+
+        if ($activeSubscriptions > 0) {
+            throw new RuntimeException('Student already has an active subscription with this teacher.');
+        }
+
         // Check for existing subscription with this teacher
         $existingSubscription = Subscription::where('user_uuid', $user->uuid)
             ->where('teacher_uuid', $teacher->uuid)
@@ -53,7 +65,7 @@ class SubscriptionService
             // This would create a real overlap (not just touching)
             return $startsAt->lt($existing->ends_at) && $startsAt->ne($existing->ends_at);
         })->isNotEmpty();
-            
+
         if ($overlap) {
             throw new RuntimeException('Overlapping monthly subscription detected.');
         }
@@ -79,7 +91,18 @@ class SubscriptionService
 
         // Use session start time or current time, and set start_date = end_date
         $sessionDate = $session->start_time ? $session->start_time->copy()->startOfDay() : now()->startOfDay();
-        
+
+        // VALIDATION: Check for active duplicate subscriptions at session date
+        $activeSubscriptions = Subscription::where('user_uuid', $user->uuid)
+            ->where('teacher_uuid', $teacher->uuid)
+            ->where('starts_at', '<=', $sessionDate)
+            ->where('ends_at', '>=', $sessionDate)
+            ->count();
+
+        if ($activeSubscriptions > 0) {
+            throw new RuntimeException('Student already has an active subscription with this teacher for this date.');
+        }
+
         // For session pass, start_date = end_date (same day)
         $startsAt = $sessionDate;
         $endsAt = $sessionDate; // Same date as start

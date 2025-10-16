@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,11 +6,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Printer, Download } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Printer, Download } from "lucide-react";
 
 const detailedSessions = [
   {
@@ -73,19 +80,19 @@ const detailedSessions = [
     revenue: "$110",
     status: "completed",
   },
-]
+];
 
 export function SessionDetailsModal() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   const handlePrint = () => {
-    window.print()
-  }
+    window.print();
+  };
 
   const handleExport = () => {
     // In a real app, this would export to CSV/Excel
-    console.log("Exporting session data...")
-  }
+    console.log("Exporting session data...");
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -97,7 +104,9 @@ export function SessionDetailsModal() {
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Detailed Session Report</DialogTitle>
-          <DialogDescription>Complete session breakdown with revenue analysis</DialogDescription>
+          <DialogDescription>
+            Complete session breakdown with revenue analysis
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex justify-end gap-2 mb-4">
@@ -132,7 +141,9 @@ export function SessionDetailsModal() {
                 <TableCell>
                   <div>
                     <div className="font-medium">{session.date}</div>
-                    <div className="text-sm text-muted-foreground">{session.time}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {session.time}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>{session.teacher}</TableCell>
@@ -157,7 +168,9 @@ export function SessionDetailsModal() {
                 <TableCell>
                   <Badge variant="outline">{session.status}</Badge>
                 </TableCell>
-                <TableCell className="text-right font-medium">{session.revenue}</TableCell>
+                <TableCell className="text-right font-medium">
+                  {session.revenue}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -179,5 +192,5 @@ export function SessionDetailsModal() {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

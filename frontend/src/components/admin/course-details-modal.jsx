@@ -25,18 +25,24 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
 
   const handleDownloadSummaryPDF = () => {
     // In a real app, this would trigger PDF download
-    console.log("Downloading Summary PDF:", course.pdf_summary || course.summaryPdf);
+    console.log(
+      "Downloading Summary PDF:",
+      course.pdf_summary || course.summaryPdf,
+    );
   };
 
   const handleDownloadExercisesPDF = () => {
     // In a real app, this would trigger PDF download
-    console.log("Downloading Exercises PDF:", course.exercises_pdf || course.exercisesPdf);
+    console.log(
+      "Downloading Exercises PDF:",
+      course.exercises_pdf || course.exercisesPdf,
+    );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-2xl max-h-[80vh] overflow-y-auto" 
+      <DialogContent
+        className="max-w-2xl max-h-[80vh] overflow-y-auto"
         dir="rtl"
         aria-describedby="course-details-description"
       >
@@ -45,7 +51,10 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
             <Video className="h-5 w-5" />
             {course.title}
           </DialogTitle>
-          <DialogDescription id="course-details-description" className="text-right">
+          <DialogDescription
+            id="course-details-description"
+            className="text-right"
+          >
             تفاصيل الدرس: {course.title} (معرف: {course.id})
           </DialogDescription>
         </DialogHeader>
@@ -54,7 +63,9 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
           {/* Course Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg text-right">معلومات الدرس</CardTitle>
+              <CardTitle className="text-lg text-right">
+                معلومات الدرس
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -80,7 +91,9 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
                 <Video className="h-5 w-5" />
                 محتوى الفيديو
               </CardTitle>
-              <CardDescription className="text-right">الدرس الرئيسي بالفيديو</CardDescription>
+              <CardDescription className="text-right">
+                الدرس الرئيسي بالفيديو
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
@@ -118,7 +131,11 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
                       ملف PDF للمراجعة السريعة
                     </p>
                   </div>
-                  <Button variant="outline" onClick={handleDownloadSummaryPDF} className="border-blue-300 text-blue-700 hover:bg-blue-100">
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadSummaryPDF}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
                     <Download className="h-4 w-4 ml-2" />
                     تحميل الملخص
                   </Button>
@@ -147,7 +164,11 @@ export function CourseDetailsModal({ course, open, onOpenChange }) {
                       ملف PDF للتدريب والممارسة
                     </p>
                   </div>
-                  <Button variant="outline" onClick={handleDownloadExercisesPDF} className="border-green-300 text-green-700 hover:bg-green-100">
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadExercisesPDF}
+                    className="border-green-300 text-green-700 hover:bg-green-100"
+                  >
                     <Download className="h-4 w-4 ml-2" />
                     تحميل التمارين
                   </Button>

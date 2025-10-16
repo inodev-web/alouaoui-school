@@ -1,23 +1,23 @@
-import ComingSoon from '@/components/common/ComingSoon';
-import { Video, Wifi, Users, MessageCircle } from 'lucide-react';
+import ComingSoon from "@/components/common/ComingSoon";
+import { Video, Wifi, Users, MessageCircle } from "lucide-react";
 
 const StudentLivesPage = () => {
   const features = [
     {
       icon: Video,
-      title: 'بث مباشر',
-      description: 'شاهد الدروس مباشرة مع الأساتذة'
+      title: "بث مباشر",
+      description: "شاهد الدروس مباشرة مع الأساتذة",
     },
     {
       icon: MessageCircle,
-      title: 'تفاعل مباشر',
-      description: 'اطرح أسئلتك واحصل على إجابات فورية'
+      title: "تفاعل مباشر",
+      description: "اطرح أسئلتك واحصل على إجابات فورية",
     },
     {
       icon: Users,
-      title: 'جلسات جماعية',
-      description: 'تعلم مع زملائك في بيئة تفاعلية'
-    }
+      title: "جلسات جماعية",
+      description: "تعلم مع زملائك في بيئة تفاعلية",
+    },
   ];
 
   return (
@@ -29,6 +29,6 @@ const StudentLivesPage = () => {
       features={features}
     />
   );
-}
+};
 
-export default StudentLivesPage
+export default StudentLivesPage;

@@ -1,9 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { StudentDetailsModal } from "@/components/admin/student-details-modal";
 import studentsService from "../../services/api/students.service";
 import { useDebounce } from "@/hooks/useDebounce"; // 🔧 Use centralized debounce hook
+import { cacheService } from "@/services/cache.service"; // ⚡ Cache optimization
+import { invalidateDashboardCache } from "@/hooks/useDashboardData"; // ⚡ Invalidate dashboard after mutations
 
 export function StudentsTable({ searchQuery = "" }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -18,30 +27,34 @@ export function StudentsTable({ searchQuery = "" }) {
 
   // Optimized fetch function with caching
   const fetchStudents = useCallback(async (page = 1, search = "") => {
-    console.log('📚 Loading students...', { page, search }) // 🔧 Performance log
-    
+    console.log("📚 Loading students...", { page, search }); // 🔧 Performance log
+
     try {
       setLoading(true);
       setCurrentPage(page); // Update page state immediately
 
-      const params = { 
+      const params = {
         page,
-        per_page: 20
+        per_page: 20,
       };
-      
+
       if (search && search.trim()) {
         params.search = search.trim();
       }
 
-      const response = await studentsService.getStudents(params);
+      // ⚡ Use cache service for students
+      const response = await cacheService.getStudents(
+        async () => await studentsService.getStudents(params),
+        params,
+      );
 
       setStudents(response.data);
       setTotalPages(response.last_page);
       setError(null);
-      console.log('✅ Students loaded:', response.data.length) // 🔧 Performance log
+      console.log("✅ Students loaded:", response.data.length); // 🔧 Performance log
     } catch (err) {
-      console.error('Error fetching students:', err);
-      setError('فشل في تحميل بيانات الطلاب');
+      console.error("Error fetching students:", err);
+      setError("فشل في تحميل بيانات الطلاب");
     } finally {
       setLoading(false);
     }
@@ -58,8 +71,8 @@ export function StudentsTable({ searchQuery = "" }) {
       const studentDetails = await studentsService.getStudent(studentId);
       setSelectedStudent(studentDetails);
     } catch (err) {
-      console.error('Error fetching student details:', err);
-      alert('فشل في تحميل تفاصيل الطالب');
+      console.error("Error fetching student details:", err);
+      alert("فشل في تحميل تفاصيل الطالب");
     }
   }, []);
 
@@ -82,7 +95,9 @@ export function StudentsTable({ searchQuery = "" }) {
     return (
       <div className="flex items-center justify-center h-32">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="mr-2 text-sm text-muted-foreground">جاري التحميل...</span>
+        <span className="mr-2 text-sm text-muted-foreground">
+          جاري التحميل...
+        </span>
       </div>
     );
   }
@@ -91,7 +106,7 @@ export function StudentsTable({ searchQuery = "" }) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-sm text-red-700 text-right">{error}</p>
-        <Button 
+        <Button
           onClick={() => fetchStudents(currentPage, debouncedSearchQuery)}
           className="mt-2"
           variant="outline"
@@ -119,27 +134,40 @@ export function StudentsTable({ searchQuery = "" }) {
         </TableHeader>
         <TableBody>
           {students.map((student) => (
-            <TableRow 
-              key={student.id} 
+            <TableRow
+              key={student.id}
               className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => handleRowClick(student.id)}
             >
               <TableCell className="text-right">
                 <div className="w-10 h-10 rounded-full overflow-hidden border">
                   <img
-                    src={student.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.firstname || '')}+${encodeURIComponent(student.lastname || '')}&background=0D8ABC&color=fff&size=100`}
+                    src={
+                      student.picture ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(student.firstname || "")}+${encodeURIComponent(student.lastname || "")}&background=0D8ABC&color=fff&size=100`
+                    }
                     alt={`${student.firstname} ${student.lastname}`}
                     className="w-full h-full object-cover"
-                    onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.firstname || '')}+${encodeURIComponent(student.lastname || '')}&background=0D8ABC&color=fff&size=100` }}
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.firstname || "")}+${encodeURIComponent(student.lastname || "")}&background=0D8ABC&color=fff&size=100`;
+                    }}
                   />
                 </div>
               </TableCell>
-              <TableCell className="text-right font-medium">{student.firstname}</TableCell>
+              <TableCell className="text-right font-medium">
+                {student.firstname}
+              </TableCell>
               <TableCell className="text-right">{student.lastname}</TableCell>
               <TableCell className="text-right">{student.phone}</TableCell>
-              <TableCell className="text-right">{student.birth_date || 'غير محدد'}</TableCell>
-              <TableCell className="text-right">{student.year_of_study || 'غير محدد'}</TableCell>
-              <TableCell className="text-right">{student.branch?.name || 'غير محدد'}</TableCell>
+              <TableCell className="text-right">
+                {student.birth_date || "غير محدد"}
+              </TableCell>
+              <TableCell className="text-right">
+                {student.year_of_study || "غير محدد"}
+              </TableCell>
+              <TableCell className="text-right">
+                {student.branch?.name || "غير محدد"}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -183,6 +211,11 @@ export function StudentsTable({ searchQuery = "" }) {
             }
           }}
           onUpdate={() => {
+            // ⚡ Invalidate cache after student update/delete
+            cacheService.invalidateStudents();
+            invalidateDashboardCache(); // Clear dashboard cache too
+            console.log("🔄 Student updated - Cache invalidated");
+            
             // Refresh current page when student is updated
             fetchStudents(currentPage, debouncedSearchQuery);
             setSelectedStudent(null);

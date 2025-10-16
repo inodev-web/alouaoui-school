@@ -1,81 +1,102 @@
-import { useState, useEffect } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, X } from "lucide-react"
-import { teacherService } from "@/services/api/teacher.service"
-import branchesService from "@/services/api/branches.service"
-import { useDebounce } from "@/hooks/useDebounce"
-import { cacheService } from "@/services/cache.service"
+import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, X } from "lucide-react";
+import { teacherService } from "@/services/api/teacher.service";
+import branchesService from "@/services/api/branches.service";
+import { useDebounce } from "@/hooks/useDebounce";
+import { cacheService } from "@/services/cache.service";
 
 export function SessionsFilters({ onFiltersChange }) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedTeacher, setSelectedTeacher] = useState("")
-  const [selectedStatus, setSelectedStatus] = useState("")
-  const [selectedYear, setSelectedYear] = useState("")
-  const [selectedBranch, setSelectedBranch] = useState("")
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]) // Today's date by default
-  const [teachers, setTeachers] = useState([])
-  const [branches, setBranches] = useState([])
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTeacher, setSelectedTeacher] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0],
+  ); // Today's date by default
+  const [teachers, setTeachers] = useState([]);
+  const [branches, setBranches] = useState([]);
 
   // Debounce search term to avoid excessive API calls
-  const debouncedSearchTerm = useDebounce(searchTerm, 500)
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   useEffect(() => {
-    fetchTeachers()
-    fetchBranches()
-  }, [])
+    fetchTeachers();
+    fetchBranches();
+  }, []);
 
   useEffect(() => {
     // Notify parent component of filter changes
     // Use debounced search term instead of direct searchTerm
     const filters = {
       search: debouncedSearchTerm,
-      teacher_uuid: selectedTeacher !== "all" && selectedTeacher ? selectedTeacher : undefined,
-      status: selectedStatus !== "all" && selectedStatus ? selectedStatus : undefined,
-      year_target: selectedYear !== "all" && selectedYear ? selectedYear : undefined,
-      branch_id: selectedBranch !== "all" && selectedBranch ? selectedBranch : undefined,
+      teacher_uuid:
+        selectedTeacher !== "all" && selectedTeacher
+          ? selectedTeacher
+          : undefined,
+      status:
+        selectedStatus !== "all" && selectedStatus ? selectedStatus : undefined,
+      year_target:
+        selectedYear !== "all" && selectedYear ? selectedYear : undefined,
+      branch_id:
+        selectedBranch !== "all" && selectedBranch ? selectedBranch : undefined,
       start_date: selectedDate || undefined,
       end_date: selectedDate || undefined,
-    }
-    onFiltersChange?.(filters)
+    };
+    onFiltersChange?.(filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, selectedTeacher, selectedStatus, selectedYear, selectedBranch, selectedDate])
+  }, [
+    debouncedSearchTerm,
+    selectedTeacher,
+    selectedStatus,
+    selectedYear,
+    selectedBranch,
+    selectedDate,
+  ]);
 
   const fetchTeachers = async () => {
     try {
       // Use cache service instead of direct API call
       const data = await cacheService.getTeachers(async () => {
-        const response = await teacherService.getTeachers()
-        return response.data || []
-      })
-      setTeachers(data)
+        const response = await teacherService.getTeachers();
+        return response.data || [];
+      });
+      setTeachers(data);
     } catch (error) {
-      console.error('Error fetching teachers:', error)
+      console.error("Error fetching teachers:", error);
     }
-  }
+  };
 
   const fetchBranches = async () => {
     try {
       // Use cache service instead of direct API call
       const data = await cacheService.getBranches(async () => {
-        const response = await branchesService.getAllBranches()
-        return response.data || []
-      })
-      setBranches(data)
+        const response = await branchesService.getAllBranches();
+        return response.data || [];
+      });
+      setBranches(data);
     } catch (error) {
-      console.error('Error fetching branches:', error)
+      console.error("Error fetching branches:", error);
     }
-  }
+  };
 
   const clearFilters = () => {
-    setSearchTerm("")
-    setSelectedTeacher("")
-    setSelectedStatus("")
-    setSelectedYear("")
-    setSelectedBranch("")
-    setSelectedDate(new Date().toISOString().split('T')[0])
-  }
+    setSearchTerm("");
+    setSelectedTeacher("");
+    setSelectedStatus("");
+    setSelectedYear("");
+    setSelectedBranch("");
+    setSelectedDate(new Date().toISOString().split("T")[0]);
+  };
 
   return (
     <div className="space-y-4 mb-6" dir="rtl">
@@ -89,7 +110,7 @@ export function SessionsFilters({ onFiltersChange }) {
             className="pr-10"
           />
         </div>
-        
+
         <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
           <SelectTrigger>
             <SelectValue placeholder="تصفية بالمعلم" />
@@ -140,13 +161,13 @@ export function SessionsFilters({ onFiltersChange }) {
             <SelectItem value="all">جميع الفروع</SelectItem>
             {branches.map((branch) => {
               // Format display text with year level
-              let yearText = '';
-              if (branch.year_level === '1AS') yearText = 'الأولى ثانوي';
-              else if (branch.year_level === '2AS') yearText = 'الثانية ثانوي';
-              else if (branch.year_level === '3AS') yearText = 'الثالثة ثانوي';
-              
+              let yearText = "";
+              if (branch.year_level === "1AS") yearText = "الأولى ثانوي";
+              else if (branch.year_level === "2AS") yearText = "الثانية ثانوي";
+              else if (branch.year_level === "3AS") yearText = "الثالثة ثانوي";
+
               const displayText = `${branch.name} - ${yearText}`;
-              
+
               return (
                 <SelectItem key={branch.id} value={branch.id.toString()}>
                   {displayText}
@@ -162,12 +183,16 @@ export function SessionsFilters({ onFiltersChange }) {
           onChange={(e) => setSelectedDate(e.target.value)}
           className="text-right"
         />
-        
-        <Button variant="outline" onClick={clearFilters} className="shrink-0 bg-transparent">
+
+        <Button
+          variant="outline"
+          onClick={clearFilters}
+          className="shrink-0 bg-transparent"
+        >
           <X className="h-4 w-4 ml-2" />
           مسح المرشحات
         </Button>
       </div>
     </div>
-  )
+  );
 }

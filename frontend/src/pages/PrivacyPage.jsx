@@ -1,33 +1,46 @@
-import { Link } from 'react-router-dom';
-import { Shield, ArrowRight, Lock, Eye, Database, UserCheck, AlertCircle } from 'lucide-react';
+import { Link } from "react-router-dom";
+import {
+  Shield,
+  ArrowRight,
+  Lock,
+  Eye,
+  Database,
+  UserCheck,
+  AlertCircle,
+} from "lucide-react";
 
 const PrivacyPage = () => {
   const sections = [
     {
       icon: Database,
-      title: 'المعلومات التي نجمعها',
-      content: 'نقوم بجمع المعلومات الأساسية مثل: الاسم، رقم الهاتف، السنة الدراسية، والشعبة. هذه المعلومات ضرورية لتوفير الخدمة التعليمية وتخصيص المحتوى المناسب لك.'
+      title: "المعلومات التي نجمعها",
+      content:
+        "نقوم بجمع المعلومات الأساسية مثل: الاسم، رقم الهاتف، السنة الدراسية، والشعبة. هذه المعلومات ضرورية لتوفير الخدمة التعليمية وتخصيص المحتوى المناسب لك.",
     },
     {
       icon: Lock,
-      title: 'كيف نحمي معلوماتك',
-      content: 'نستخدم تقنيات التشفير المتقدمة لحماية بياناتك. يتم تخزين جميع المعلومات الحساسة مثل كلمات المرور بشكل مشفر. نستخدم اتصالات آمنة (HTTPS) لحماية البيانات أثناء النقل.'
+      title: "كيف نحمي معلوماتك",
+      content:
+        "نستخدم تقنيات التشفير المتقدمة لحماية بياناتك. يتم تخزين جميع المعلومات الحساسة مثل كلمات المرور بشكل مشفر. نستخدم اتصالات آمنة (HTTPS) لحماية البيانات أثناء النقل.",
     },
     {
       icon: Eye,
-      title: 'استخدام المعلومات',
-      content: 'نستخدم معلوماتك لـ: توفير وتحسين خدماتنا التعليمية، إرسال إشعارات حول الدروس والجلسات، تتبع تقدمك الأكاديمي، والتواصل معك بخصوص حسابك.'
+      title: "استخدام المعلومات",
+      content:
+        "نستخدم معلوماتك لـ: توفير وتحسين خدماتنا التعليمية، إرسال إشعارات حول الدروس والجلسات، تتبع تقدمك الأكاديمي، والتواصل معك بخصوص حسابك.",
     },
     {
       icon: UserCheck,
-      title: 'مشاركة المعلومات',
-      content: 'نحن لا نبيع أو نؤجر معلوماتك الشخصية لأطراف ثالثة. قد نشارك معلومات محدودة مع مقدمي الخدمات الموثوقين الذين يساعدوننا في تشغيل المنصة (مثل خدمات الاستضافة) وذلك تحت اتفاقيات سرية صارمة.'
+      title: "مشاركة المعلومات",
+      content:
+        "نحن لا نبيع أو نؤجر معلوماتك الشخصية لأطراف ثالثة. قد نشارك معلومات محدودة مع مقدمي الخدمات الموثوقين الذين يساعدوننا في تشغيل المنصة (مثل خدمات الاستضافة) وذلك تحت اتفاقيات سرية صارمة.",
     },
     {
       icon: AlertCircle,
-      title: 'حقوقك',
-      content: 'لديك الحق في: الوصول إلى معلوماتك الشخصية، طلب تصحيح أي معلومات غير صحيحة، طلب حذف حسابك وبياناتك، سحب موافقتك على معالجة بياناتك في أي وقت.'
-    }
+      title: "حقوقك",
+      content:
+        "لديك الحق في: الوصول إلى معلوماتك الشخصية، طلب تصحيح أي معلومات غير صحيحة، طلب حذف حسابك وبياناتك، سحب موافقتك على معالجة بياناتك في أي وقت.",
+    },
   ];
 
   return (
@@ -50,7 +63,10 @@ const PrivacyPage = () => {
         <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-8">
           <div className="space-y-8">
             {sections.map((section, index) => (
-              <div key={index} className="border-b border-gray-200 last:border-0 pb-8 last:pb-0">
+              <div
+                key={index}
+                className="border-b border-gray-200 last:border-0 pb-8 last:pb-0"
+              >
                 <div className="flex items-start gap-4 mb-4">
                   <div className="flex-shrink-0 p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
                     <section.icon className="w-6 h-6 text-white" />
@@ -74,7 +90,8 @@ const PrivacyPage = () => {
               ملفات تعريف الارتباط (Cookies)
             </h3>
             <p className="text-gray-700 text-right mb-4">
-              نستخدم ملفات تعريف الارتباط لتحسين تجربتك على المنصة. هذه الملفات تساعدنا على:
+              نستخدم ملفات تعريف الارتباط لتحسين تجربتك على المنصة. هذه الملفات
+              تساعدنا على:
             </p>
             <ul className="space-y-3 text-gray-700 text-right">
               <li className="flex items-start gap-2">
@@ -98,7 +115,8 @@ const PrivacyPage = () => {
               تواصل معنا
             </h3>
             <p className="text-gray-700 text-right mb-2">
-              إذا كان لديك أي أسئلة حول سياسة الخصوصية أو كيفية معالجة بياناتك، يرجى التواصل معنا:
+              إذا كان لديك أي أسئلة حول سياسة الخصوصية أو كيفية معالجة بياناتك،
+              يرجى التواصل معنا:
             </p>
             <p className="text-gray-700 text-right">
               <strong>البريد الإلكتروني:</strong> privacy@alaoui-school.com
@@ -126,7 +144,14 @@ const PrivacyPage = () => {
 
         {/* Last Updated */}
         <div className="text-center mt-8 text-gray-500">
-          <p>آخر تحديث: {new Date().toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p>
+            آخر تحديث:{" "}
+            {new Date().toLocaleDateString("ar-DZ", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
         </div>
       </div>
     </div>

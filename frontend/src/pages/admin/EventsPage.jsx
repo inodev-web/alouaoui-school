@@ -1,23 +1,23 @@
-import ComingSoon from '@/components/common/ComingSoon';
-import { Calendar, Users, Trophy, Sparkles } from 'lucide-react';
+import ComingSoon from "@/components/common/ComingSoon";
+import { Calendar, Users, Trophy, Sparkles } from "lucide-react";
 
 const AdminEventsPage = () => {
   const features = [
     {
       icon: Calendar,
-      title: 'إدارة الفعاليات',
-      description: 'إنشاء وتنظيم الفعاليات المدرسية بسهولة'
+      title: "إدارة الفعاليات",
+      description: "إنشاء وتنظيم الفعاليات المدرسية بسهولة",
     },
     {
       icon: Users,
-      title: 'تتبع الحضور',
-      description: 'مراقبة حضور الطلاب في الفعاليات'
+      title: "تتبع الحضور",
+      description: "مراقبة حضور الطلاب في الفعاليات",
     },
     {
       icon: Trophy,
-      title: 'المسابقات',
-      description: 'تنظيم المسابقات والجوائز'
-    }
+      title: "المسابقات",
+      description: "تنظيم المسابقات والجوائز",
+    },
   ];
 
   return (
@@ -29,6 +29,6 @@ const AdminEventsPage = () => {
       features={features}
     />
   );
-}
+};
 
-export default AdminEventsPage
+export default AdminEventsPage;

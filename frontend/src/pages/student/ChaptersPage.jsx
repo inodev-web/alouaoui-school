@@ -1,23 +1,23 @@
-﻿import ComingSoon from '@/components/common/ComingSoon';
-import { BookOpen, Video, FileText } from 'lucide-react';
+﻿import ComingSoon from "@/components/common/ComingSoon";
+import { BookOpen, Video, FileText } from "lucide-react";
 
 const StudentChaptersPage = () => {
   const features = [
     {
       icon: BookOpen,
-      title: 'دروس شاملة',
-      description: 'محتوى تعليمي منظم ومفصل لجميع المواد'
+      title: "دروس شاملة",
+      description: "محتوى تعليمي منظم ومفصل لجميع المواد",
     },
     {
       icon: Video,
-      title: 'فيديوهات تعليمية',
-      description: 'شروحات مرئية واضحة لجميع الدروس'
+      title: "فيديوهات تعليمية",
+      description: "شروحات مرئية واضحة لجميع الدروس",
     },
     {
       icon: FileText,
-      title: 'تمارين وحلول',
-      description: 'تطبيقات عملية مع حلول مفصلة'
-    }
+      title: "تمارين وحلول",
+      description: "تطبيقات عملية مع حلول مفصلة",
+    },
   ];
 
   return (
@@ -29,6 +29,6 @@ const StudentChaptersPage = () => {
       features={features}
     />
   );
-}
+};
 
 export default StudentChaptersPage;

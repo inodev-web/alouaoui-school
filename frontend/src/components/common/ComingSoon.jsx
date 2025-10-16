@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, Clock, Bell, Rocket } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Sparkles, Clock, Bell, Rocket } from "lucide-react";
 
-const ComingSoon = ({ 
-  title = "قريباً", 
+const ComingSoon = ({
+  title = "قريباً",
   description = "نعمل على شيء رائع",
   icon: Icon = Rocket,
   accentColor = "from-blue-500 to-purple-600",
-  features = []
+  features = [],
 }) => {
   const [timeLeft, setTimeLeft] = useState({
     days: 30,
     hours: 0,
     minutes: 0,
-    seconds: 0
+    seconds: 0,
   });
 
   useEffect(() => {
@@ -32,9 +32,11 @@ const ComingSoon = ({
 
       setTimeLeft({
         days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        hours: Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+        ),
         minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((distance % (1000 * 60)) / 1000)
+        seconds: Math.floor((distance % (1000 * 60)) / 1000),
       });
     }, 1000);
 
@@ -64,7 +66,9 @@ const ComingSoon = ({
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="inline-block mb-4 md:mb-6"
           >
-            <div className={`relative p-4 md:p-6 lg:p-8 bg-gradient-to-br ${accentColor} rounded-2xl md:rounded-3xl shadow-2xl`}>
+            <div
+              className={`relative p-4 md:p-6 lg:p-8 bg-gradient-to-br ${accentColor} rounded-2xl md:rounded-3xl shadow-2xl`}
+            >
               <Icon className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 text-white" />
               <motion.div
                 animate={{ rotate: 360 }}
@@ -112,10 +116,16 @@ const ComingSoon = ({
                   className={`bg-gradient-to-br ${accentColor} rounded-lg md:rounded-xl lg:rounded-2xl p-3 md:p-4 lg:p-6 shadow-2xl backdrop-blur-sm border border-white/10`}
                 >
                   <div className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-1 md:mb-2">
-                    {String(value).padStart(2, '0')}
+                    {String(value).padStart(2, "0")}
                   </div>
                   <div className="text-[10px] md:text-xs lg:text-sm text-gray-200 uppercase tracking-wider">
-                    {unit === 'days' ? 'أيام' : unit === 'hours' ? 'ساعات' : unit === 'minutes' ? 'دقائق' : 'ثواني'}
+                    {unit === "days"
+                      ? "أيام"
+                      : unit === "hours"
+                        ? "ساعات"
+                        : unit === "minutes"
+                          ? "دقائق"
+                          : "ثواني"}
                   </div>
                 </motion.div>
               </div>
@@ -139,8 +149,12 @@ const ComingSoon = ({
                   className="bg-white/5 backdrop-blur-md rounded-lg md:rounded-xl lg:rounded-2xl p-4 md:p-5 lg:p-6 border border-white/10 hover:bg-white/10 transition-all duration-300"
                 >
                   <feature.icon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-purple-400 mb-2 md:mb-3 mx-auto" />
-                  <h3 className="text-white font-semibold mb-1 md:mb-2 text-sm md:text-base">{feature.title}</h3>
-                  <p className="text-gray-400 text-xs md:text-sm">{feature.description}</p>
+                  <h3 className="text-white font-semibold mb-1 md:mb-2 text-sm md:text-base">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-400 text-xs md:text-sm">
+                    {feature.description}
+                  </p>
                 </motion.div>
               ))}
             </motion.div>
@@ -154,7 +168,9 @@ const ComingSoon = ({
             className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-4 md:px-6 py-2 md:py-3 border border-white/20"
           >
             <Bell className="w-4 h-4 md:w-5 md:h-5 text-yellow-300" />
-            <span className="text-white text-xs md:text-sm">سنخبرك عند الإطلاق</span>
+            <span className="text-white text-xs md:text-sm">
+              سنخبرك عند الإطلاق
+            </span>
           </motion.div>
         </motion.div>
       </div>

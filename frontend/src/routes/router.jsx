@@ -1,94 +1,104 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { Suspense, lazy, useState, useEffect } from 'react'
-import PrivateRoute from './PrivateRoute'
-import AdminRoute from './AdminRoute'
-import StudentLayout from '../components/common/Layout/StudentLayout'
-import AdminLayout from '../components/common/Layout/AdminLayout'
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { Suspense, lazy, useState, useEffect } from "react";
+import PrivateRoute from "./PrivateRoute";
+import AdminRoute from "./AdminRoute";
+import StudentLayout from "../components/common/Layout/StudentLayout";
+import AdminLayout from "../components/common/Layout/AdminLayout";
 
 // Lazy load components for better performance
-const HomePage = lazy(() => import('@/pages/public/HomePage.jsx'))
-const LoginPage = lazy(() => import('@/pages/auth/LoginPage.jsx'))
-const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage.jsx'))
-const TermsPage = lazy(() => import('@/pages/TermsPage.jsx'))
-const PrivacyPage = lazy(() => import('@/pages/PrivacyPage.jsx'))
+const HomePage = lazy(() => import("@/pages/public/HomePage.jsx"));
+const LoginPage = lazy(() => import("@/pages/auth/LoginPage.jsx"));
+const RegisterPage = lazy(() => import("@/pages/auth/RegisterPage.jsx"));
+const TermsPage = lazy(() => import("@/pages/TermsPage.jsx"));
+const PrivacyPage = lazy(() => import("@/pages/PrivacyPage.jsx"));
 
 // Student pages
-const StudentProfilePage = lazy(() => import('@/pages/student/ProfilePage.jsx'))
-const StudentChaptersPage = lazy(() => import('@/pages/student/ChaptersPage.jsx'))
-const StudentCoursePage = lazy(() => import('@/pages/student/CoursePage.jsx'))
-const StudentLivesPage = lazy(() => import('@/pages/student/LivesPage.jsx'))
-const StudentSettingsPage = lazy(() => import('@/pages/student/SettingsPage.jsx'))
+const StudentProfilePage = lazy(
+  () => import("@/pages/student/ProfilePage.jsx"),
+);
+const StudentChaptersPage = lazy(
+  () => import("@/pages/student/ChaptersPage.jsx"),
+);
+const StudentCoursePage = lazy(() => import("@/pages/student/CoursePage.jsx"));
+const StudentLivesPage = lazy(() => import("@/pages/student/LivesPage.jsx"));
+const StudentSettingsPage = lazy(
+  () => import("@/pages/student/SettingsPage.jsx"),
+);
 
 // Admin pages
-const AdminDashboardPage = lazy(() => import('@/pages/admin/DashboardPage.jsx'))
-const AdminStudentsPage = lazy(() => import('@/pages/admin/StudentsPage.jsx'))
-const AdminTeachersPage = lazy(() => import('@/pages/admin/TeachersPage.jsx'))
-const AdminSessionsPage = lazy(() => import('@/pages/admin/SessionsPage.jsx'))
-const AdminChaptersPage = lazy(() => import('@/pages/admin/ChaptersAdminPage.jsx'))
-const AdminCheckInPage = lazy(() => import('@/pages/admin/CheckInPage.jsx'))
-const AdminEventsPage = lazy(() => import('@/pages/admin/EventsPage.jsx'))
+const AdminDashboardPage = lazy(
+  () => import("@/pages/admin/DashboardPage.jsx"),
+);
+const AdminStudentsPage = lazy(() => import("@/pages/admin/StudentsPage.jsx"));
+const AdminTeachersPage = lazy(() => import("@/pages/admin/TeachersPage.jsx"));
+const AdminSessionsPage = lazy(() => import("@/pages/admin/SessionsPage.jsx"));
+const AdminChaptersPage = lazy(
+  () => import("@/pages/admin/ChaptersAdminPage.jsx"),
+);
+const AdminCheckInPage = lazy(() => import("@/pages/admin/CheckInPage.jsx"));
+const AdminEventsPage = lazy(() => import("@/pages/admin/EventsPage.jsx"));
 
 // Error pages
-const NotFoundPage = lazy(() => import('@/pages/NotFoundPage.jsx'))
-const UnauthorizedPage = lazy(() => import('@/pages/UnauthorizedPage.jsx'))
+const NotFoundPage = lazy(() => import("@/pages/NotFoundPage.jsx"));
+const UnauthorizedPage = lazy(() => import("@/pages/UnauthorizedPage.jsx"));
 
 // Loading component
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center">
     <img src=".\public\loading.gif" alt="loading" />
   </div>
-)
+);
 
 const router = createBrowserRouter([
   // Public routes
   {
-    path: '/',
+    path: "/",
     element: <HomePage />,
   },
   {
-    path: '/login',
+    path: "/login",
     element: <LoginPage />,
   },
   {
-    path: '/register',
+    path: "/register",
     element: <RegisterPage />,
   },
   {
-    path: '/terms',
+    path: "/terms",
     element: <TermsPage />,
   },
   {
-    path: '/privacy',
+    path: "/privacy",
     element: <PrivacyPage />,
   },
 
   // Student routes (protected)
   {
-    path: '/student',
+    path: "/student",
     element: (
-      <PrivateRoute allowedRoles={['student']}>
+      <PrivateRoute allowedRoles={["student"]}>
         <StudentLayout />
       </PrivateRoute>
     ),
     children: [
       {
-        path: 'profile',
+        path: "profile",
         element: <StudentProfilePage />,
       },
       {
-        path: 'chapters',
+        path: "chapters",
         element: <StudentChaptersPage />,
       },
       {
-        path: 'course',
+        path: "course",
         element: <StudentCoursePage />,
       },
       {
-        path: 'lives',
+        path: "lives",
         element: <StudentLivesPage />,
       },
       {
-        path: 'settings',
+        path: "settings",
         element: <StudentSettingsPage />,
       },
     ],
@@ -96,7 +106,7 @@ const router = createBrowserRouter([
 
   // Admin routes (protected)
   {
-    path: '/admin',
+    path: "/admin",
     element: (
       <AdminRoute>
         <AdminLayout />
@@ -108,58 +118,62 @@ const router = createBrowserRouter([
         element: <AdminDashboardPage />,
       },
       {
-        path: 'students',
+        path: "students",
         element: <AdminStudentsPage />,
       },
       {
-        path: 'teachers',
+        path: "teachers",
         element: <AdminTeachersPage />,
       },
       {
-        path: 'sessions',
+        path: "sessions",
         element: <AdminSessionsPage />,
       },
       {
-        path: 'chapters',
+        path: "chapters",
         element: <AdminChaptersPage />,
       },
       {
-        path: 'check-in',
+        path: "check-in",
         element: <AdminCheckInPage />,
       },
       {
-        path: 'events',
+        path: "events",
         element: <AdminEventsPage />,
       },
       {
-        path: 'settings',
-        element: <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-            <p className="text-muted-foreground">Manage system settings and preferences</p>
+        path: "settings",
+        element: (
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+              <p className="text-muted-foreground">
+                Manage system settings and preferences
+              </p>
+            </div>
           </div>
-        </div>,
+        ),
       },
     ],
   },
 
   // Error routes
   {
-    path: '/unauthorized',
+    path: "/unauthorized",
     element: <UnauthorizedPage />,
   },
   {
-    path: '*',
+    path: "*",
     element: <NotFoundPage />,
   },
-])
+]);
 
 const AppRouter = () => {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <RouterProvider router={router} />
     </Suspense>
-  )
-}
+  );
+};
 
-export default AppRouter
+export default AppRouter;

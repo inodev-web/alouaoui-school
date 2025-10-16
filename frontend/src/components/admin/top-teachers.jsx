@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const teachers = [
   {
@@ -31,7 +31,7 @@ const teachers = [
     students: 26,
     avatar: "/diverse-classroom-interaction.png",
   },
-]
+];
 
 export function TopTeachers() {
   return (
@@ -40,7 +40,10 @@ export function TopTeachers() {
         <div key={teacher.name} className="flex items-center gap-4">
           <div className="flex items-center gap-3 flex-1">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={teacher.avatar || "/placeholder.svg"} alt={teacher.name} />
+              <AvatarImage
+                src={teacher.avatar || "/placeholder.svg"}
+                alt={teacher.name}
+              />
               <AvatarFallback>
                 {teacher.name
                   .split(" ")
@@ -49,13 +52,17 @@ export function TopTeachers() {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{teacher.name}</p>
+              <p className="text-sm font-medium text-foreground truncate">
+                {teacher.name}
+              </p>
               <p className="text-xs text-muted-foreground">{teacher.module}</p>
             </div>
           </div>
-          <div className="text-sm font-medium text-foreground">{teacher.students} students</div>
+          <div className="text-sm font-medium text-foreground">
+            {teacher.students} students
+          </div>
         </div>
       ))}
     </div>
-  )
+  );
 }
