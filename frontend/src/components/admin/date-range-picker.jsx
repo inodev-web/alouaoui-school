@@ -1,46 +1,56 @@
-import * as React from "react"
-import { CalendarIcon } from "lucide-react"
-import { addDays, format } from "date-fns"
+import * as React from "react";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-export function CalendarDateRangePicker({ 
-  className, 
-  onPeriodChange, 
+export function CalendarDateRangePicker({
+  className,
+  onPeriodChange,
   onDateChange,
-  selectedPeriod = 'daily',
-  selectedDate = null 
+  selectedPeriod = "daily",
+  selectedDate = null,
 }) {
   const [date, setDate] = React.useState({
     from: selectedDate || new Date(),
     to: selectedDate || new Date(),
-  })
+  });
 
-  const [period, setPeriod] = React.useState(selectedPeriod)
+  const [period, setPeriod] = React.useState(selectedPeriod);
 
   React.useEffect(() => {
     if (onPeriodChange) {
-      onPeriodChange(period)
+      onPeriodChange(period);
     }
-  }, [period, onPeriodChange])
+  }, [period, onPeriodChange]);
 
   React.useEffect(() => {
     if (onDateChange) {
-      onDateChange(date.from)
+      onDateChange(date.from);
     }
-  }, [date, onDateChange])
+  }, [date, onDateChange]);
 
   const handleDateSelect = (newDate) => {
-    setDate(newDate)
-  }
+    setDate(newDate);
+  };
 
   const handlePeriodChange = (newPeriod) => {
-    setPeriod(newPeriod)
-  }
+    setPeriod(newPeriod);
+  };
 
   return (
     <div className={cn("flex gap-2", className)}>
@@ -62,7 +72,10 @@ export function CalendarDateRangePicker({
           <Button
             id="date"
             variant={"outline"}
-            className={cn("w-[200px] justify-start text-left font-normal", !date && "text-muted-foreground")}
+            className={cn(
+              "w-[200px] justify-start text-left font-normal",
+              !date && "text-muted-foreground",
+            )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
@@ -78,11 +91,13 @@ export function CalendarDateRangePicker({
             mode="single"
             defaultMonth={date?.from}
             selected={date?.from}
-            onSelect={(newDate) => handleDateSelect({ from: newDate, to: newDate })}
+            onSelect={(newDate) =>
+              handleDateSelect({ from: newDate, to: newDate })
+            }
             numberOfMonths={1}
           />
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

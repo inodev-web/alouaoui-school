@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,11 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BookOpen } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { BookOpen } from "lucide-react";
 
 const iconOptions = [
   { value: "📐", label: "📐 مسطرة" },
@@ -25,30 +31,30 @@ const iconOptions = [
   { value: "🎵", label: "🎵 موسيقى" },
   { value: "💻", label: "💻 حاسوب" },
   { value: "🏛️", label: "🏛️ مبنى" },
-]
+];
 
 export function CreateChapterModal({ onAddChapter }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     icon: "",
     year_target: "",
-  })
+  });
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (onAddChapter) {
-      onAddChapter(formData)
+      onAddChapter(formData);
     }
-    setOpen(false)
+    setOpen(false);
     setFormData({
       title: "",
       description: "",
       icon: "",
       year_target: "",
-    })
-  }
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -58,14 +64,17 @@ export function CreateChapterModal({ onAddChapter }) {
           إضافة فصل جديد
         </Button>
       </DialogTrigger>
-      <DialogContent 
-        className="sm:max-w-[500px]" 
+      <DialogContent
+        className="sm:max-w-[500px]"
         dir="rtl"
         aria-describedby="chapter-create-description"
       >
         <DialogHeader>
           <DialogTitle className="text-right">إضافة فصل جديد</DialogTitle>
-          <DialogDescription id="chapter-create-description" className="text-right">
+          <DialogDescription
+            id="chapter-create-description"
+            className="text-right"
+          >
             أضف فصلاً جديداً لتنظيم المحتوى التعليمي.
           </DialogDescription>
         </DialogHeader>
@@ -78,7 +87,9 @@ export function CreateChapterModal({ onAddChapter }) {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 className="col-span-3 text-right"
                 placeholder="أدخل عنوان الفصل"
                 required
@@ -92,7 +103,9 @@ export function CreateChapterModal({ onAddChapter }) {
               <textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 className="col-span-3 min-h-[80px] px-3 py-2 text-right border border-input bg-background rounded-md text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="أدخل وصف الفصل"
                 rows={3}
@@ -104,7 +117,12 @@ export function CreateChapterModal({ onAddChapter }) {
               <Label htmlFor="icon" className="text-right">
                 الأيقونة
               </Label>
-              <Select value={formData.icon} onValueChange={(value) => setFormData({ ...formData, icon: value })}>
+              <Select
+                value={formData.icon}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, icon: value })
+                }
+              >
                 <SelectTrigger className="col-span-3 text-right">
                   <SelectValue placeholder="اختر أيقونة" />
                 </SelectTrigger>
@@ -118,13 +136,16 @@ export function CreateChapterModal({ onAddChapter }) {
               </Select>
             </div>
 
-
-
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="year_target" className="text-right">
                 السنة المستهدفة
               </Label>
-              <Select value={formData.year_target} onValueChange={(value) => setFormData({ ...formData, year_target: value })}>
+              <Select
+                value={formData.year_target}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, year_target: value })
+                }
+              >
                 <SelectTrigger className="col-span-3 text-right">
                   <SelectValue placeholder="اختر السنة المستهدفة" />
                 </SelectTrigger>
@@ -141,7 +162,11 @@ export function CreateChapterModal({ onAddChapter }) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
               إلغاء
             </Button>
             <Button type="submit">إنشاء الفصل</Button>
@@ -149,5 +174,5 @@ export function CreateChapterModal({ onAddChapter }) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

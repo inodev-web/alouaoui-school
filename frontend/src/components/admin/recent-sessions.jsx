@@ -1,5 +1,12 @@
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const sessions = [
   {
@@ -52,7 +59,7 @@ const sessions = [
     students: 22,
     revenue: "$110",
   },
-]
+];
 
 export function RecentSessions() {
   return (
@@ -93,10 +100,12 @@ export function RecentSessions() {
               </Badge>
             </TableCell>
             <TableCell>{session.students}</TableCell>
-            <TableCell className="text-right font-medium">{session.revenue}</TableCell>
+            <TableCell className="text-right font-medium">
+              {session.revenue}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
     </Table>
-  )
+  );
 }

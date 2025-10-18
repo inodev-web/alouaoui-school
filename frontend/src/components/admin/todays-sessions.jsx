@@ -1,72 +1,78 @@
-import { useState, useEffect, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Clock, Users, Play, Pause, Loader2 } from "lucide-react"
-import { sessionService } from "@/services/api/session.service"
+import { useState, useEffect, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Clock, Users, Play, Pause, Loader2 } from "lucide-react";
+import { sessionService } from "@/services/api/session.service";
 
 export function TodaysSessions() {
-  const [sessions, setSessions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const isMountedRef = useRef(true)
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    fetchTodaysSessions()
-    
+    fetchTodaysSessions();
+
     return () => {
-      isMountedRef.current = false
-    }
-  }, [])
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const fetchTodaysSessions = async () => {
     try {
       if (isMountedRef.current) {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
+        setError(null);
       }
-      const response = await sessionService.getTodaysSessions()
+      const response = await sessionService.getTodaysSessions();
       if (isMountedRef.current) {
-        setSessions(response.data || [])
+        setSessions(response.data || []);
       }
     } catch (err) {
-      console.error('Error fetching today\'s sessions:', err)
+      console.error("Error fetching today's sessions:", err);
       if (isMountedRef.current) {
-        setError('فشل في تحميل جلسات اليوم')
+        setError("فشل في تحميل جلسات اليوم");
       }
     } finally {
       if (isMountedRef.current) {
-        setLoading(false)
+        setLoading(false);
       }
     }
-  }
+  };
   const getStatusColor = (status) => {
     switch (status) {
       case "جارية":
-        return "default"
+        return "default";
       case "قادمة":
-        return "secondary"
+        return "secondary";
       case "مكتملة":
-        return "outline"
+        return "outline";
       default:
-        return "outline"
+        return "outline";
     }
-  }
+  };
 
   const getTypeColor = (type) => {
     switch (type) {
       case "اشتراك":
-        return "default"
+        return "default";
       case "مدفوعة":
-        return "secondary"
+        return "secondary";
       case "مجانية":
-        return "outline"
+        return "outline";
       case "معفي":
-        return "destructive"
+        return "destructive";
       default:
-        return "outline"
+        return "outline";
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -76,7 +82,9 @@ export function TodaysSessions() {
             <Clock className="h-5 w-5" />
             جلسات اليوم
           </CardTitle>
-          <CardDescription className="text-right">وصول سريع للجلسات المجدولة لليوم</CardDescription>
+          <CardDescription className="text-right">
+            وصول سريع للجلسات المجدولة لليوم
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
@@ -85,7 +93,7 @@ export function TodaysSessions() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -96,7 +104,9 @@ export function TodaysSessions() {
             <Clock className="h-5 w-5" />
             جلسات اليوم
           </CardTitle>
-          <CardDescription className="text-right">وصول سريع للجلسات المجدولة لليوم</CardDescription>
+          <CardDescription className="text-right">
+            وصول سريع للجلسات المجدولة لليوم
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-red-500">
@@ -107,7 +117,7 @@ export function TodaysSessions() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -117,7 +127,9 @@ export function TodaysSessions() {
           <Clock className="h-5 w-5" />
           جلسات اليوم
         </CardTitle>
-        <CardDescription className="text-right">وصول سريع للجلسات المجدولة لليوم</CardDescription>
+        <CardDescription className="text-right">
+          وصول سريع للجلسات المجدولة لليوم
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {sessions.length === 0 ? (
@@ -127,52 +139,60 @@ export function TodaysSessions() {
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
             {sessions.map((session) => (
-            <Card key={session.id} className="border-2" dir="rtl">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg text-right">{session.teacher}</CardTitle>
-                  <Badge variant={getStatusColor(session.status)}>{session.status}</Badge>
-                </div>
-                <CardDescription className="text-right">{session.module}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">الوقت:</span>
-                  <span className="font-medium">{session.time}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">القاعة:</span>
-                  <span className="font-medium">{session.room}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">الطلاب:</span>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    <span className="font-medium">{session.students}</span>
+              <Card key={session.id} className="border-2" dir="rtl">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg text-right">
+                      {session.teacher}
+                    </CardTitle>
+                    <Badge variant={getStatusColor(session.status)}>
+                      {session.status}
+                    </Badge>
                   </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant={getTypeColor(session.type)}>{session.type}</Badge>
-                  <Button size="sm" variant="outline">
-                    {session.status === "جارية" ? (
-                      <>
-                        <Pause className="h-3 w-3 ml-1" />
-                        إدارة
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-3 w-3 ml-1" />
-                        بدء
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <CardDescription className="text-right">
+                    {session.module}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">الوقت:</span>
+                    <span className="font-medium">{session.time}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">القاعة:</span>
+                    <span className="font-medium">{session.room}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">الطلاب:</span>
+                    <div className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      <span className="font-medium">{session.students}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Badge variant={getTypeColor(session.type)}>
+                      {session.type}
+                    </Badge>
+                    <Button size="sm" variant="outline">
+                      {session.status === "جارية" ? (
+                        <>
+                          <Pause className="h-3 w-3 ml-1" />
+                          إدارة
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-3 w-3 ml-1" />
+                          بدء
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

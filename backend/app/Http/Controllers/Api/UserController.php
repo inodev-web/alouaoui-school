@@ -21,8 +21,8 @@ class UserController extends Controller
     {
         try {
             // Start with optimized query - select only needed fields
-            $query = User::select(['uuid', 'firstname', 'lastname', 'phone', 'birth_date', 'year_of_study', 'branch_id', 'created_at'])
-                ->with('branch')
+            $query = User::select(['uuid', 'firstname', 'lastname', 'phone', 'birth_date', 'year_of_study', 'branch_id', 'picture', 'created_at'])
+                ->with('branch:id,name,code,year_level')  // Specify only needed columns
                 ->where('role', 'student');
 
             // General search filter with optimized OR conditions
@@ -65,6 +65,7 @@ class UserController extends Controller
                     'phone' => $student->phone,
                     'birth_date' => $student->birth_date ? $student->birth_date->format('Y-m-d') : null,
                     'year_of_study' => $student->year_of_study,
+                    'picture' => $student->picture ? asset('storage/' . ltrim($student->picture, '/')) : null,
                     'branch' => $student->branch ? [
                         'id' => $student->branch->id,
                         'name' => $student->branch->name,
@@ -232,7 +233,7 @@ class UserController extends Controller
         ]);
 
         // Validate branch_id based on year_of_study
-        if ($validated['branch_id'] && $validated['year_of_study']) {
+        if (isset($validated['branch_id']) && isset($validated['year_of_study'])) {
             $branch = Branch::find($validated['branch_id']);
             if ($branch && $branch->year_level !== $validated['year_of_study']) {
                 return response()->json([
@@ -243,7 +244,7 @@ class UserController extends Controller
         }
 
         // Clear branch_id for middle school students
-        if ($validated['year_of_study'] && in_array($validated['year_of_study'], ['1AM', '2AM', '3AM', '4AM'])) {
+        if (isset($validated['year_of_study']) && in_array($validated['year_of_study'], ['1AM', '2AM', '3AM', '4AM'])) {
             $validated['branch_id'] = null;
         }
 
@@ -289,7 +290,7 @@ class UserController extends Controller
         ]);
 
         // Validate branch_id based on year_of_study
-        if ($validated['branch_id'] && $validated['year_of_study']) {
+        if (isset($validated['branch_id']) && isset($validated['year_of_study'])) {
             $branch = Branch::find($validated['branch_id']);
             if ($branch && $branch->year_level !== $validated['year_of_study']) {
                 return response()->json([
@@ -300,7 +301,7 @@ class UserController extends Controller
         }
 
         // Clear branch_id for middle school students
-        if ($validated['year_of_study'] && in_array($validated['year_of_study'], ['1AM', '2AM', '3AM', '4AM'])) {
+        if (isset($validated['year_of_study']) && in_array($validated['year_of_study'], ['1AM', '2AM', '3AM', '4AM'])) {
             $validated['branch_id'] = null;
         }
 

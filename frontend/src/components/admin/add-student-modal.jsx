@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,19 +8,27 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { UserPlus } from "lucide-react"
-import studentsService from "../../services/api/students.service"
-import branchesService from "../../services/api/branches.service"
-import { useToast } from "../../hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserPlus } from "lucide-react";
+import studentsService from "../../services/api/students.service";
+import branchesService from "../../services/api/branches.service";
+import { useToast } from "../../hooks/use-toast";
+import { cacheService } from "@/services/cache.service";
+import { invalidateDashboardCache } from "@/hooks/useDashboardData"; // ⚡ Invalidate dashboard
 
 export function AddStudentModal({ onStudentAdded }) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -30,33 +38,46 @@ export function AddStudentModal({ onStudentAdded }) {
     school_name: "",
     year_of_study: "",
     branch_id: "",
-    password: "00000000"
-  })
-  const [availableBranches, setAvailableBranches] = useState([])
-  const [loadingBranches, setLoadingBranches] = useState(false)
+    password: "00000000",
+  });
+  const [availableBranches, setAvailableBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   // Load branches when year changes
   useEffect(() => {
     const loadBranches = async () => {
-      if (formData.year_of_study && ['1AS', '2AS', '3AS'].includes(formData.year_of_study)) {
-        setLoadingBranches(true)
+      if (
+        formData.year_of_study &&
+        ["1AS", "2AS", "3AS"].includes(formData.year_of_study)
+      ) {
+        setLoadingBranches(true);
         try {
-          const response = await branchesService.getBranchesForYear(formData.year_of_study)
-          setAvailableBranches(response.data || [])
+          // Use cache for branches - they rarely change
+          const allBranches = await cacheService.getBranches(async () => {
+            const response = await branchesService.getAllBranches();
+            return response.data || [];
+          });
+
+          // Filter branches for the selected year
+          const branches = allBranches.filter(
+            (branch) => branch.year_level === formData.year_of_study,
+          );
+
+          setAvailableBranches(branches);
         } catch (error) {
-          console.error('Error loading branches:', error)
-          setAvailableBranches([])
+          console.error("Error loading branches:", error);
+          setAvailableBranches([]);
         } finally {
-          setLoadingBranches(false)
+          setLoadingBranches(false);
         }
       } else {
-        setAvailableBranches([])
-        setFormData(prev => ({ ...prev, branch_id: "" }))
+        setAvailableBranches([]);
+        setFormData((prev) => ({ ...prev, branch_id: "" }));
       }
-    }
+    };
 
-    loadBranches()
-  }, [formData.year_of_study])
+    loadBranches();
+  }, [formData.year_of_study]);
 
   const yearOptions = [
     { value: "1AM", label: "السنة الأولى متوسط" },
@@ -65,13 +86,13 @@ export function AddStudentModal({ onStudentAdded }) {
     { value: "4AM", label: "السنة الرابعة متوسط" },
     { value: "1AS", label: "السنة الأولى ثانوي" },
     { value: "2AS", label: "السنة الثانية ثانوي" },
-    { value: "3AS", label: "السنة الثالثة ثانوي" }
-  ]
+    { value: "3AS", label: "السنة الثالثة ثانوي" },
+  ];
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    
+    e.preventDefault();
+    setLoading(true);
+
     try {
       // Prepare data according to user model
       const userData = {
@@ -84,17 +105,22 @@ export function AddStudentModal({ onStudentAdded }) {
         year_of_study: formData.year_of_study,
         branch_id: formData.branch_id || null,
         password: "00000000", // Default password
-        role: "student"
-      }
+        role: "student",
+      };
 
-      await studentsService.createStudent(userData)
-      
+      await studentsService.createStudent(userData);
+
+      // ⚡ Invalidate cache after creating student
+      cacheService.invalidateStudents();
+      invalidateDashboardCache();
+      console.log("🔄 Student created - Cache invalidated");
+
       // Show success message
       toast({
         title: "تم إضافة الطالب بنجاح",
         description: `تم إنشاء حساب للطالب ${userData.firstname} ${userData.lastname}. كلمة المرور الافتراضية: 00000000`,
-      })
-      
+      });
+
       // Reset form
       setFormData({
         firstname: "",
@@ -104,28 +130,28 @@ export function AddStudentModal({ onStudentAdded }) {
         address: "",
         school_name: "",
         year_of_study: "",
-        password: "00000000"
-      })
-      
-      setOpen(false)
-      
+        password: "00000000",
+      });
+
+      setOpen(false);
+
       // Refresh parent component
       if (onStudentAdded) {
-        onStudentAdded()
+        onStudentAdded();
       }
-      
     } catch (error) {
-      console.error('Error adding student:', error)
-      const errorMessage = error.response?.data?.message || 'فشل في إضافة الطالب'
+      console.error("Error adding student:", error);
+      const errorMessage =
+        error.response?.data?.message || "فشل في إضافة الطالب";
       toast({
         title: "خطأ في إضافة الطالب",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -137,9 +163,9 @@ export function AddStudentModal({ onStudentAdded }) {
       school_name: "",
       year_of_study: "",
       branch_id: "",
-      password: "00000000"
-    })
-  }
+      password: "00000000",
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -149,7 +175,10 @@ export function AddStudentModal({ onStudentAdded }) {
           إضافة طالب جديد
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent
+        className="sm:max-w-[500px] h-[90vh] overflow-y-auto"
+        dir="rtl"
+      >
         <DialogHeader>
           <DialogTitle className="text-right">إضافة طالب جديد</DialogTitle>
           <DialogDescription className="text-right">
@@ -158,7 +187,6 @@ export function AddStudentModal({ onStudentAdded }) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            
             {/* الاسم الأول */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="firstname" className="text-right">
@@ -167,7 +195,9 @@ export function AddStudentModal({ onStudentAdded }) {
               <Input
                 id="firstname"
                 value={formData.firstname}
-                onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, firstname: e.target.value })
+                }
                 className="col-span-3 text-right"
                 placeholder="أدخل الاسم الأول"
                 required
@@ -182,7 +212,9 @@ export function AddStudentModal({ onStudentAdded }) {
               <Input
                 id="lastname"
                 value={formData.lastname}
-                onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastname: e.target.value })
+                }
                 className="col-span-3 text-right"
                 placeholder="أدخل اسم العائلة"
                 required
@@ -198,7 +230,9 @@ export function AddStudentModal({ onStudentAdded }) {
                 id="phone"
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
                 className="col-span-3 text-right"
                 placeholder="0555123456"
                 required
@@ -214,7 +248,9 @@ export function AddStudentModal({ onStudentAdded }) {
                 id="birth_date"
                 type="date"
                 value={formData.birth_date}
-                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, birth_date: e.target.value })
+                }
                 className="col-span-3"
               />
             </div>
@@ -227,7 +263,9 @@ export function AddStudentModal({ onStudentAdded }) {
               <Input
                 id="address"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
                 className="col-span-3 text-right"
                 placeholder="أدخل العنوان"
               />
@@ -241,7 +279,9 @@ export function AddStudentModal({ onStudentAdded }) {
               <Input
                 id="school_name"
                 value={formData.school_name}
-                onChange={(e) => setFormData({ ...formData, school_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, school_name: e.target.value })
+                }
                 className="col-span-3 text-right"
                 placeholder="أدخل اسم المدرسة"
               />
@@ -252,16 +292,22 @@ export function AddStudentModal({ onStudentAdded }) {
               <Label htmlFor="year_of_study" className="text-right">
                 السنة الدراسية *
               </Label>
-              <Select 
-                value={formData.year_of_study} 
-                onValueChange={(value) => setFormData({ ...formData, year_of_study: value })}
+              <Select
+                value={formData.year_of_study}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, year_of_study: value })
+                }
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="اختر السنة الدراسية" />
                 </SelectTrigger>
                 <SelectContent>
                   {yearOptions.map((year, index) => (
-                    <SelectItem key={index} value={year.value} className="text-right">
+                    <SelectItem
+                      key={index}
+                      value={year.value}
+                      className="text-right"
+                    >
                       {year.label}
                     </SelectItem>
                   ))}
@@ -270,22 +316,34 @@ export function AddStudentModal({ onStudentAdded }) {
             </div>
 
             {/* الفرع الدراسي - للثانوي فقط */}
-            {['1AS', '2AS', '3AS'].includes(formData.year_of_study) && (
+            {["1AS", "2AS", "3AS"].includes(formData.year_of_study) && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="branch_id" className="text-right">
                   الفرع الدراسي *
                 </Label>
-                <Select 
-                  value={formData.branch_id} 
-                  onValueChange={(value) => setFormData({ ...formData, branch_id: value })}
+                <Select
+                  value={formData.branch_id}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, branch_id: value })
+                  }
                   disabled={loadingBranches}
                 >
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder={loadingBranches ? "جاري تحميل الفروع..." : "اختر الفرع الدراسي"} />
+                    <SelectValue
+                      placeholder={
+                        loadingBranches
+                          ? "جاري تحميل الفروع..."
+                          : "اختر الفرع الدراسي"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {availableBranches.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id.toString()} className="text-right">
+                      <SelectItem
+                        key={branch.id}
+                        value={branch.id.toString()}
+                        className="text-right"
+                      >
                         {branch.name}
                       </SelectItem>
                     ))}
@@ -311,19 +369,19 @@ export function AddStudentModal({ onStudentAdded }) {
             {/* ملاحظة */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-700 text-right">
-                💡 ملاحظة: سيتم تعيين كلمة المرور الافتراضية "00000000" للطالب الجديد
+                💡 ملاحظة: سيتم تعيين كلمة المرور الافتراضية "00000000" للطالب
+                الجديد
               </p>
             </div>
-
           </div>
-          
+
           <DialogFooter className="gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => {
-                setOpen(false)
-                resetForm()
+                setOpen(false);
+                resetForm();
               }}
               disabled={loading}
             >
@@ -336,5 +394,5 @@ export function AddStudentModal({ onStudentAdded }) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

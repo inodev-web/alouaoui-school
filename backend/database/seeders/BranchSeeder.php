@@ -30,7 +30,7 @@ class BranchSeeder extends Seeder
                 'sort_order' => 2,
             ],
 
-            // Second year high school (2AS)
+            // second year high school (2AS)
             [
                 'name' => 'علوم تجريبية',
                 'name_en' => 'Experimental Sciences',
@@ -67,7 +67,71 @@ class BranchSeeder extends Seeder
                 'sort_order' => 5,
             ],
 
-            // Third year high school (3AS)
+            [
+                'name' => 'هندسة كهربائية',
+                'name_en' => 'Electrical Engineering',
+                'code' => '2AS_ELECTRICAL',
+                'year_level' => '2AS',
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'هندسة مدنية',
+                'name_en' => 'Civil Engineering',
+                'code' => '2AS_CIVIL',
+                'year_level' => '2AS',
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'هندسة ميكانيكية',
+                'name_en' => 'Mechanical Engineering',
+                'code' => '2AS_MECHANICAL',
+                'year_level' => '2AS',
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'هندسة الطرائق',
+                'name_en' => 'Process Engineering',
+                'code' => '2AS_PROCESS',
+                'year_level' => '2AS',
+                'sort_order' => 4,
+            ],
+            // third year high school (3AS)
+            [
+                'name' => 'علوم تجريبية',
+                'name_en' => 'Experimental Sciences',
+                'code' => '3AS_EXPERIMENTAL',
+                'year_level' => '3AS',
+                'sort_order' => 1,
+            ],
+            [
+                'name' => 'رياضيات',
+                'name_en' => 'Mathematics',
+                'code' => '3AS_MATHEMATICS',
+                'year_level' => '3AS',
+                'sort_order' => 2,
+            ],
+            [
+                'name' => 'تسيير و اقتصاد',
+                'name_en' => 'Management and Economics',
+                'code' => '3AS_MANAGEMENT',
+                'year_level' => '3AS',
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'آداب و فلسفة',
+                'name_en' => 'Literature and Philosophy',
+                'code' => '3AS_LITERATURE',
+                'year_level' => '3AS',
+                'sort_order' => 4,
+            ],
+            [
+                'name' => 'لغات أجنبية',
+                'name_en' => 'Foreign Languages',
+                'code' => '3AS_FOREIGN_LANGUAGES',
+                'year_level' => '3AS',
+                'sort_order' => 5,
+            ],
+
             [
                 'name' => 'هندسة كهربائية',
                 'name_en' => 'Electrical Engineering',

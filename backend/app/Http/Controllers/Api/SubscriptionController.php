@@ -84,11 +84,13 @@ class SubscriptionController extends Controller
 
     /**
      * Active subscriptions for user (optionally filtered by teacher_uuid)
+     * Optimized with eager loading to prevent N+1 queries
      */
     public function active(Request $request): JsonResponse
     {
         $user = $request->user();
         $query = $user->subscriptions()
+            ->with(['teacher:uuid,name,picture,module']) // Eager load teacher with specific columns
             ->where('starts_at', '<=', now())
             ->where('ends_at', '>=', now());
         if ($request->filled('teacher_uuid')) {
@@ -101,6 +103,7 @@ class SubscriptionController extends Controller
                 'id' => $sub->id,
                 'teacher_uuid' => $sub->teacher_uuid,
                 'teacher_name' => $teacher?->name,
+                'teacher_picture' => $teacher?->picture,
                 'starts_at' => $sub->starts_at,
                 'ends_at' => $sub->ends_at,
                 'days_remaining' => $sub->daysRemaining(),
@@ -118,6 +121,7 @@ class SubscriptionController extends Controller
 
     /**
      * Show subscription (must belong to user unless admin)
+     * Optimized with eager loading
      */
     public function show(Request $request, Subscription $subscription): JsonResponse
     {
@@ -125,6 +129,10 @@ class SubscriptionController extends Controller
         if (!$user->isAdmin() && $subscription->user_uuid !== $user->uuid) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
+
+        // Eager load relationships
+        $subscription->load(['teacher:uuid,name,picture,module', 'user:uuid,name,email']);
+
         return response()->json([
             'data' => $subscription
         ]);

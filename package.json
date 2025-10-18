@@ -1,0 +1,17 @@
+{
+  "name": "alouaoui-school-tests",
+  "version": "1.0.0",
+  "description": "Scripts de test automatisés pour Alouaoui School Platform",
+  "scripts": {
+    "test:auth": "node test-phase7-1-auth.js",
+    "test:auth:watch": "nodemon test-phase7-1-auth.js",
+    "test:phase7": "node test-phase7-complete.js",
+    "test:phase7:watch": "nodemon test-phase7-complete.js",
+    "test:all": "node test-phase7-1-auth.js && node test-phase7-complete.js"
+  },
+  "devDependencies": {
+    "axios": "^1.12.2",
+    "nodemon": "^3.0.1",
+    "puppeteer": "^21.11.0"
+  }
+}

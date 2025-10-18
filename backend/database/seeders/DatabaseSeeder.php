@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             StudentsSeeder::class,
             SubscriptionSeeder::class,
             SessionSeeder::class,
+            BranchSeeder::class,
         ]);
     }
 }

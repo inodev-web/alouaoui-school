@@ -3,7 +3,6 @@
 import { Bell, Search, User, Menu } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { useSidebar } from "../../contexts/SidebarContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +13,11 @@ import {
 } from "../../components/ui/dropdown-menu";
 
 export function AdminHeader() {
-  const { toggleSidebar } = useSidebar();
-
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6" dir="rtl">
+    <header
+      className="flex h-16 items-center justify-between border-b border-pink-200 bg-white px-6"
+      dir="rtl"
+    >
       {/* <div className="flex items-center gap-4 flex-1">
         <div className="relative max-w-md flex-1">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -29,16 +29,20 @@ export function AdminHeader() {
       </div> */}
 
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative hover:bg-pink-100"
+        >
           <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -left-1 h-3 w-3 bg-primary rounded-full text-xs flex items-center justify-center text-primary-foreground">
+          <span className="absolute -top-1 -left-1 h-3 w-3 bg-gradient-to-r from-red-400 to-pink-500 rounded-full text-xs flex items-center justify-center text-white">
             3
           </span>
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="hover:bg-pink-100">
               <User className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>

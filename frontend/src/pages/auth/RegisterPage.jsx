@@ -1,117 +1,134 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
-import { BookOpen, Eye, EyeOff, Phone, Lock, User, GraduationCap, Key } from 'lucide-react'
-import authService from '../../services/api/auth.service'
-import branchesService from '../../services/api/branches.service'
-import { loginSuccess } from '../../store/slices/authSlice'
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import {
+  BookOpen,
+  Eye,
+  EyeOff,
+  Phone,
+  Lock,
+  User,
+  GraduationCap,
+  Key,
+} from "lucide-react";
+import authService from "../../services/api/auth.service";
+import branchesService from "../../services/api/branches.service";
+import { loginSuccess } from "../../store/slices/authSlice";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
-    birth_date: '',
-    address: '',
-    school_name: '',
-    year_of_study: '1AM',
-    branch_id: '',
-    phone: '',
-    password: '',
-    password_confirmation: ''
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState({})
-  const [availableBranches, setAvailableBranches] = useState([])
-  const [loadingBranches, setLoadingBranches] = useState(false)
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
+    firstname: "",
+    lastname: "",
+    birth_date: "",
+    address: "",
+    school_name: "",
+    year_of_study: "1AM",
+    branch_id: "",
+    phone: "",
+    password: "",
+    password_confirmation: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [availableBranches, setAvailableBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Load branches when year changes
   useEffect(() => {
     const loadBranches = async () => {
-      if (formData.year_of_study && ['1AS', '2AS', '3AS'].includes(formData.year_of_study)) {
-        setLoadingBranches(true)
+      if (
+        formData.year_of_study &&
+        ["1AS", "2AS", "3AS"].includes(formData.year_of_study)
+      ) {
+        setLoadingBranches(true);
         try {
-          const response = await branchesService.getBranchesForYear(formData.year_of_study)
-          setAvailableBranches(response.data || [])
+          const response = await branchesService.getBranchesForYear(
+            formData.year_of_study,
+          );
+          setAvailableBranches(response.data || []);
         } catch (error) {
-          console.error('Error loading branches:', error)
-          setAvailableBranches([])
+          console.error("Error loading branches:", error);
+          setAvailableBranches([]);
         } finally {
-          setLoadingBranches(false)
+          setLoadingBranches(false);
         }
       } else {
-        setAvailableBranches([])
-        setFormData(prev => ({ ...prev, branch_id: '' }))
+        setAvailableBranches([]);
+        setFormData((prev) => ({ ...prev, branch_id: "" }));
       }
-    }
+    };
 
-    loadBranches()
-  }, [formData.year_of_study])
+    loadBranches();
+  }, [formData.year_of_study]);
 
   const validateForm = () => {
-    const newErrors = {}
-    
+    const newErrors = {};
+
     if (!formData.firstname.trim()) {
-      newErrors.firstname = 'الاسم الأول مطلوب'
+      newErrors.firstname = "الاسم الأول مطلوب";
     }
-    
+
     if (!formData.lastname.trim()) {
-      newErrors.lastname = 'الاسم الأخير مطلوب'
+      newErrors.lastname = "الاسم الأخير مطلوب";
     }
 
     if (!formData.birth_date) {
-      newErrors.birth_date = 'تاريخ الميلاد مطلوب'
+      newErrors.birth_date = "تاريخ الميلاد مطلوب";
     }
 
     if (!formData.address.trim()) {
-      newErrors.address = 'العنوان مطلوب'
+      newErrors.address = "العنوان مطلوب";
     }
 
     if (!formData.school_name.trim()) {
-      newErrors.school_name = 'اسم المدرسة مطلوب'
+      newErrors.school_name = "اسم المدرسة مطلوب";
     }
 
     if (!formData.year_of_study) {
-      newErrors.year_of_study = 'السنة الدراسية مطلوبة'
+      newErrors.year_of_study = "السنة الدراسية مطلوبة";
     }
 
     // Validate branch for high school students
-    if (['1AS', '2AS', '3AS'].includes(formData.year_of_study) && !formData.branch_id) {
-      newErrors.branch_id = 'الفرع مطلوب للطلاب الثانويين'
+    if (
+      ["1AS", "2AS", "3AS"].includes(formData.year_of_study) &&
+      !formData.branch_id
+    ) {
+      newErrors.branch_id = "الفرع مطلوب للطلاب الثانويين";
     }
-    
+
     if (!formData.phone?.trim()) {
-      newErrors.phone = 'رقم الهاتف مطلوب'
+      newErrors.phone = "رقم الهاتف مطلوب";
     } else if (!/^[0-9]{10}$/.test(formData.phone)) {
-      newErrors.phone = 'رقم الهاتف يجب أن يتكون من 10 أرقام'
+      newErrors.phone = "رقم الهاتف يجب أن يتكون من 10 أرقام";
     }
-    
+
     if (!formData.password) {
-      newErrors.password = 'كلمة المرور مطلوبة'
+      newErrors.password = "كلمة المرور مطلوبة";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'
+      newErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
     }
-    
+
     if (formData.password !== formData.password_confirmation) {
-      newErrors.password_confirmation = 'كلمات المرور غير متطابقة'
+      newErrors.password_confirmation = "كلمات المرور غير متطابقة";
     }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!validateForm()) {
-      return
+      return;
     }
-    
-    setIsLoading(true)
-    
+
+    setIsLoading(true);
+
     try {
       const userData = {
         firstname: formData.firstname.trim(),
@@ -123,66 +140,74 @@ const RegisterPage = () => {
         phone: formData.phone,
         password: formData.password,
         password_confirmation: formData.password_confirmation,
+      };
+
+      // Add branch_id only for high school students
+      if (
+        ["1AS", "2AS", "3AS"].includes(formData.year_of_study) &&
+        formData.branch_id
+      ) {
+        userData.branch_id = formData.branch_id;
       }
-      
-      console.log('Sending registration request with data:', userData)
-      
-      const response = await authService.register(userData)
-      console.log('Registration response:', response)
-      
-      const { token, user } = response
-      
+
+      const response = await authService.register(userData);
+
+      const { token, user } = response;
+
       if (token && user) {
         // Update Redux store
-        dispatch(loginSuccess({ token, user }))
-        
+        dispatch(loginSuccess({ token, user }));
+
         // Redirection en fonction du rôle
-        navigate('/student/profile')
+        navigate("/student/profile");
       }
     } catch (error) {
-      console.error('Registration error details:', {
+      console.error("Registration error details:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-        config: error.config
-      })
-      
+        config: error.config,
+      });
+
       // Handle validation errors from backend
       if (error.response?.data?.errors) {
-        const backendErrors = error.response.data.errors
-        const formattedErrors = {}
-        Object.keys(backendErrors).forEach(key => {
-          formattedErrors[key] = Array.isArray(backendErrors[key]) 
-            ? backendErrors[key][0] 
-            : backendErrors[key]
-        })
-        setErrors(formattedErrors)
+        const backendErrors = error.response.data.errors;
+        const formattedErrors = {};
+        Object.keys(backendErrors).forEach((key) => {
+          formattedErrors[key] = Array.isArray(backendErrors[key])
+            ? backendErrors[key][0]
+            : backendErrors[key];
+        });
+        setErrors(formattedErrors);
       } else {
-        const errorMessage = error.response?.data?.message || error.message || 'حدث خطأ أثناء إنشاء الحساب'
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "حدث خطأ أثناء إنشاء الحساب";
         setErrors({
-          submit: errorMessage
-        })
+          submit: errorMessage,
+        });
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
-    
+    });
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: ''
-      })
+        [name]: "",
+      });
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -197,9 +222,7 @@ const RegisterPage = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             انضم إلينا اليوم
           </h2>
-          <p className="text-gray-600">
-            ابدأ رحلتك التعليمية معنا
-          </p>
+          <p className="text-gray-600">ابدأ رحلتك التعليمية معنا</p>
         </div>
 
         {/* Register Form */}
@@ -208,16 +231,21 @@ const RegisterPage = () => {
             {/* Error Message */}
             {errors.submit && (
               <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-700 text-right">{errors.submit}</div>
+                <div className="text-sm text-red-700 text-right">
+                  {errors.submit}
+                </div>
               </div>
             )}
-            
+
             {/* Name Fields */}
             <div className="space-y-6">
               {/* Nom et Prénom */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstname" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label
+                    htmlFor="firstname"
+                    className="block text-sm font-medium text-gray-700 mb-2 text-right"
+                  >
                     الاسم الأول
                   </label>
                   <div className="relative">
@@ -230,20 +258,25 @@ const RegisterPage = () => {
                       type="text"
                       required
                       className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                        errors.firstname ? 'border-red-500' : 'border-gray-300'
+                        errors.firstname ? "border-red-500" : "border-gray-300"
                       }`}
                       placeholder="الاسم الأول"
-                      value={formData.firstname || ''}
+                      value={formData.firstname || ""}
                       onChange={handleChange}
                     />
                   </div>
                   {errors.firstname && (
-                    <p className="mt-1 text-sm text-red-600 text-right">{errors.firstname}</p>
+                    <p className="mt-1 text-sm text-red-600 text-right">
+                      {errors.firstname}
+                    </p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="lastname" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label
+                    htmlFor="lastname"
+                    className="block text-sm font-medium text-gray-700 mb-2 text-right"
+                  >
                     الاسم الأخير
                   </label>
                   <div className="relative">
@@ -256,22 +289,27 @@ const RegisterPage = () => {
                       type="text"
                       required
                       className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                        errors.lastname ? 'border-red-500' : 'border-gray-300'
+                        errors.lastname ? "border-red-500" : "border-gray-300"
                       }`}
                       placeholder="الاسم الأخير"
-                      value={formData.lastname || ''}
+                      value={formData.lastname || ""}
                       onChange={handleChange}
                     />
                   </div>
                   {errors.lastname && (
-                    <p className="mt-1 text-sm text-red-600 text-right">{errors.lastname}</p>
+                    <p className="mt-1 text-sm text-red-600 text-right">
+                      {errors.lastname}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Date de naissance */}
               <div>
-                <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                <label
+                  htmlFor="birth_date"
+                  className="block text-sm font-medium text-gray-700 mb-2 text-right"
+                >
                   تاريخ الميلاد
                 </label>
                 <div className="relative">
@@ -284,20 +322,25 @@ const RegisterPage = () => {
                     type="date"
                     required
                     className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                      errors.birth_date ? 'border-red-500' : 'border-gray-300'
+                      errors.birth_date ? "border-red-500" : "border-gray-300"
                     }`}
-                    value={formData.birth_date || ''}
+                    value={formData.birth_date || ""}
                     onChange={handleChange}
                   />
                 </div>
                 {errors.birth_date && (
-                  <p className="mt-1 text-sm text-red-600 text-right">{errors.birth_date}</p>
+                  <p className="mt-1 text-sm text-red-600 text-right">
+                    {errors.birth_date}
+                  </p>
                 )}
               </div>
 
               {/* Adresse */}
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                <label
+                  htmlFor="address"
+                  className="block text-sm font-medium text-gray-700 mb-2 text-right"
+                >
                   العنوان
                 </label>
                 <div className="relative">
@@ -310,21 +353,26 @@ const RegisterPage = () => {
                     type="text"
                     required
                     className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                      errors.address ? 'border-red-500' : 'border-gray-300'
+                      errors.address ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="أدخل عنوانك"
-                    value={formData.address || ''}
+                    value={formData.address || ""}
                     onChange={handleChange}
                   />
                 </div>
                 {errors.address && (
-                  <p className="mt-1 text-sm text-red-600 text-right">{errors.address}</p>
+                  <p className="mt-1 text-sm text-red-600 text-right">
+                    {errors.address}
+                  </p>
                 )}
               </div>
 
               {/* École */}
               <div>
-                <label htmlFor="school_name" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                <label
+                  htmlFor="school_name"
+                  className="block text-sm font-medium text-gray-700 mb-2 text-right"
+                >
                   المدرسة
                 </label>
                 <div className="relative">
@@ -337,21 +385,26 @@ const RegisterPage = () => {
                     type="text"
                     required
                     className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                      errors.school_name ? 'border-red-500' : 'border-gray-300'
+                      errors.school_name ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="اسم المدرسة"
-                    value={formData.school_name || ''}
+                    value={formData.school_name || ""}
                     onChange={handleChange}
                   />
                 </div>
                 {errors.school_name && (
-                  <p className="mt-1 text-sm text-red-600 text-right">{errors.school_name}</p>
+                  <p className="mt-1 text-sm text-red-600 text-right">
+                    {errors.school_name}
+                  </p>
                 )}
               </div>
 
               {/* Année d'étude */}
               <div>
-                <label htmlFor="year_of_study" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                <label
+                  htmlFor="year_of_study"
+                  className="block text-sm font-medium text-gray-700 mb-2 text-right"
+                >
                   السنة الدراسية
                 </label>
                 <div className="relative">
@@ -363,7 +416,9 @@ const RegisterPage = () => {
                     name="year_of_study"
                     required
                     className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right text-gray-900 transition-all duration-200 ${
-                      errors.year_of_study ? 'border-red-500' : 'border-gray-300'
+                      errors.year_of_study
+                        ? "border-red-500"
+                        : "border-gray-300"
                     }`}
                     value={formData.year_of_study}
                     onChange={handleChange}
@@ -378,14 +433,19 @@ const RegisterPage = () => {
                   </select>
                 </div>
                 {errors.year_of_study && (
-                  <p className="mt-1 text-sm text-red-600 text-right">{errors.year_of_study}</p>
+                  <p className="mt-1 text-sm text-red-600 text-right">
+                    {errors.year_of_study}
+                  </p>
                 )}
               </div>
 
               {/* Branch Selection - Only for High School */}
-              {['1AS', '2AS', '3AS'].includes(formData.year_of_study) && (
+              {["1AS", "2AS", "3AS"].includes(formData.year_of_study) && (
                 <div>
-                  <label htmlFor="branch_id" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label
+                    htmlFor="branch_id"
+                    className="block text-sm font-medium text-gray-700 mb-2 text-right"
+                  >
                     الفرع الدراسي
                   </label>
                   <div className="relative">
@@ -397,14 +457,16 @@ const RegisterPage = () => {
                       name="branch_id"
                       required
                       className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right text-gray-900 transition-all duration-200 ${
-                        errors.branch_id ? 'border-red-500' : 'border-gray-300'
+                        errors.branch_id ? "border-red-500" : "border-gray-300"
                       }`}
                       value={formData.branch_id}
                       onChange={handleChange}
                       disabled={loadingBranches}
                     >
                       <option value="">
-                        {loadingBranches ? 'جاري تحميل الفروع...' : 'اختر الفرع الدراسي'}
+                        {loadingBranches
+                          ? "جاري تحميل الفروع..."
+                          : "اختر الفرع الدراسي"}
                       </option>
                       {availableBranches.map((branch) => (
                         <option key={branch.id} value={branch.id}>
@@ -414,7 +476,9 @@ const RegisterPage = () => {
                     </select>
                   </div>
                   {errors.branch_id && (
-                    <p className="mt-1 text-sm text-red-600 text-right">{errors.branch_id}</p>
+                    <p className="mt-1 text-sm text-red-600 text-right">
+                      {errors.branch_id}
+                    </p>
                   )}
                 </div>
               )}
@@ -422,7 +486,10 @@ const RegisterPage = () => {
 
             {/* Phone Field */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-2 text-right"
+              >
                 رقم الهاتف
               </label>
               <div className="relative">
@@ -436,21 +503,26 @@ const RegisterPage = () => {
                   required
                   pattern="[0-9]{10}"
                   className={`block w-full pr-10 pl-3 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                    errors.phone ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="أدخل رقم هاتفك (10 أرقام)"
-                  value={formData.phone || ''}
+                  value={formData.phone || ""}
                   onChange={handleChange}
                 />
               </div>
               {errors.phone && (
-                <p className="mt-1 text-sm text-red-600 text-right">{errors.phone}</p>
+                <p className="mt-1 text-sm text-red-600 text-right">
+                  {errors.phone}
+                </p>
               )}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2 text-right"
+              >
                 كلمة المرور
               </label>
               <div className="relative">
@@ -460,14 +532,14 @@ const RegisterPage = () => {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   minLength="6"
                   className={`block w-full pr-10 pl-12 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
+                    errors.password ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="أدخل كلمة المرور (6 أحرف على الأقل)"
-                  value={formData.password || ''}
+                  value={formData.password || ""}
                   onChange={handleChange}
                 />
                 <button
@@ -483,13 +555,18 @@ const RegisterPage = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600 text-right">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-600 text-right">
+                  {errors.password}
+                </p>
               )}
             </div>
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700 mb-2 text-right">
+              <label
+                htmlFor="password_confirmation"
+                className="block text-sm font-medium text-gray-700 mb-2 text-right"
+              >
                 تأكيد كلمة المرور
               </label>
               <div className="relative">
@@ -499,13 +576,15 @@ const RegisterPage = () => {
                 <input
                   id="password_confirmation"
                   name="password_confirmation"
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? "text" : "password"}
                   required
                   className={`block w-full pr-10 pl-12 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-right placeholder-gray-400 text-gray-900 transition-all duration-200 ${
-                    errors.password_confirmation ? 'border-red-500' : 'border-gray-300'
+                    errors.password_confirmation
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                   placeholder="أعد إدخال كلمة المرور"
-                  value={formData.password_confirmation || ''}
+                  value={formData.password_confirmation || ""}
                   onChange={handleChange}
                 />
                 <button
@@ -521,7 +600,9 @@ const RegisterPage = () => {
                 </button>
               </div>
               {errors.password_confirmation && (
-                <p className="mt-1 text-sm text-red-600 text-right">{errors.password_confirmation}</p>
+                <p className="mt-1 text-sm text-red-600 text-right">
+                  {errors.password_confirmation}
+                </p>
               )}
             </div>
 
@@ -538,12 +619,18 @@ const RegisterPage = () => {
               </div>
               <div className="mr-3 text-sm">
                 <label htmlFor="terms" className="text-gray-700">
-                  أوافق على{' '}
-                  <Link to="/terms" className="text-red-600 hover:text-red-500 font-medium">
+                  أوافق على{" "}
+                  <Link
+                    to="/terms"
+                    className="text-red-600 hover:text-red-500 font-medium"
+                  >
                     الشروط والأحكام
-                  </Link>{' '}
-                  و{' '}
-                  <Link to="/privacy" className="text-red-600 hover:text-red-500 font-medium">
+                  </Link>{" "}
+                  و{" "}
+                  <Link
+                    to="/privacy"
+                    className="text-red-600 hover:text-red-500 font-medium"
+                  >
                     سياسة الخصوصية
                   </Link>
                 </label>
@@ -563,7 +650,7 @@ const RegisterPage = () => {
                     جاري إنشاء الحساب...
                   </div>
                 ) : (
-                  'إنشاء الحساب'
+                  "إنشاء الحساب"
                 )}
               </button>
             </div>
@@ -581,7 +668,7 @@ const RegisterPage = () => {
             {/* Login Link */}
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                لديك حساب بالفعل؟{' '}
+                لديك حساب بالفعل؟{" "}
                 <Link
                   to="/login"
                   className="font-medium text-red-600 hover:text-red-500 transition-colors duration-200"
@@ -601,7 +688,7 @@ const RegisterPage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default RegisterPage
+export default RegisterPage;

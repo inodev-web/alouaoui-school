@@ -13,26 +13,33 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     /**
      * Get comprehensive dashboard statistics
+     * Optimized with caching (2 minutes TTL)
      */
     public function index(): JsonResponse
     {
         try {
-            return response()->json([
-                'kpis' => $this->getKPIs(),
-                'realtime' => $this->getRealTimeMetrics(),
-                'revenue' => $this->getRevenueAnalytics(),
-                'students' => $this->getStudentAnalytics(),
-                'teachers' => $this->getTeacherPerformance(),
-                'attendance' => $this->getAttendanceMetrics(),
-                'courses' => $this->getCoursePopularity(),
-                'predictions' => $this->getPredictiveAnalytics(),
-            ]);
+            // Cache the entire dashboard for 2 minutes
+            $data = Cache::remember('dashboard_comprehensive', 120, function () {
+                return [
+                    'kpis' => $this->getKPIs(),
+                    'realtime' => $this->getRealTimeMetrics(),
+                    'revenue' => $this->getRevenueAnalytics(),
+                    'students' => $this->getStudentAnalytics(),
+                    'teachers' => $this->getTeacherPerformance(),
+                    'attendance' => $this->getAttendanceMetrics(),
+                    'courses' => $this->getCoursePopularity(),
+                    'predictions' => $this->getPredictiveAnalytics(),
+                ];
+            });
+
+            return response()->json($data);
         } catch (\Exception $e) {
             Log::error('Dashboard error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to fetch dashboard data'], 500);
@@ -124,34 +131,39 @@ class DashboardController extends Controller
 
     /**
      * Get teacher performance
+     * Optimized with caching and eager loading
      */
     private function getTeacherPerformance(): array
     {
-        return Teacher::with(['subscriptions' => function($query) {
-                $query->where('starts_at', '<=', now())
-                      ->where('ends_at', '>=', now());
-            }])
-            ->get()
-            ->map(function($teacher) {
-                $studentCount = $teacher->subscriptions->count();
-                $revenue = 0; // Payment system removed
+        return Cache::remember('dashboard_teachers_performance', 120, function () {
+            return Teacher::with(['subscriptions' => function($query) {
+                    $query->select('id', 'teacher_uuid', 'user_uuid', 'starts_at', 'ends_at')
+                          ->where('starts_at', '<=', now())
+                          ->where('ends_at', '>=', now());
+                }])
+                ->select('uuid', 'name', 'module', 'is_online_publisher')
+                ->get()
+                ->map(function($teacher) {
+                    $studentCount = $teacher->subscriptions->count();
+                    $revenue = 0; // Payment system removed
 
-                return [
-                    'id' => $teacher->uuid,
-                    'name' => $teacher->name,
-                    'subject' => $teacher->module,
-                    'students' => $studentCount,
-                    'revenue' => $revenue,
-                    'rating' => round(rand(42, 50) / 10, 1), // Would come from actual ratings
-                    'growth' => rand(5, 25),
-                    'engagement' => rand(80, 95),
-                    'retention' => rand(85, 98),
-                    'is_online' => $teacher->is_online_publisher,
-                ];
-            })
-            ->sortByDesc('students')
-            ->values()
-            ->toArray();
+                    return [
+                        'id' => $teacher->uuid,
+                        'name' => $teacher->name,
+                        'subject' => $teacher->module,
+                        'students' => $studentCount,
+                        'revenue' => $revenue,
+                        'rating' => round(rand(42, 50) / 10, 1), // Would come from actual ratings
+                        'growth' => rand(5, 25),
+                        'engagement' => rand(80, 95),
+                        'retention' => rand(85, 98),
+                        'is_online' => $teacher->is_online_publisher,
+                    ];
+                })
+                ->sortByDesc('students')
+                ->values()
+                ->toArray();
+        });
     }
 
     /**
@@ -161,7 +173,7 @@ class DashboardController extends Controller
     {
         $heatmapData = [];
         $days = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        
+
         foreach ($days as $dayIndex => $day) {
             $hourlyData = [];
             for ($hour = 8; $hour <= 19; $hour++) {
@@ -198,7 +210,7 @@ class DashboardController extends Controller
             ->map(function($course) {
                 // Assigner une matière aléatoire basée sur le titre ou utiliser une valeur par défaut
                 $subjects = ['رياضيات', 'فيزياء', 'علوم طبيعية', 'لغة عربية', 'لغة فرنسية', 'إنجليزية', 'تاريخ', 'جغرافيا'];
-                
+
                 return [
                     'name' => $course->title,
                     'subject' => $subjects[array_rand($subjects)],

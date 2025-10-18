@@ -72,6 +72,30 @@ class TeacherController extends Controller
         ]);
     }
 
+    /**
+     * Get active teachers (for students)
+     */
+    public function active(Request $request): JsonResponse
+    {
+        $query = Teacher::with('teacherYears')
+            ->where('is_online_publisher', true);
+
+        $year = $request->get('year');
+        $module = $request->get('module');
+
+        if ($year) {
+            $query->teachingYear($year);
+        }
+        if ($module) {
+            $query->where('module', $module);
+        }
+
+        $teachers = $query->orderBy('name')->get();
+        $data = $teachers->map(fn($t) => $this->formatTeacher($t))->values();
+
+        return response()->json(['data' => $data]);
+    }
+
     /** Store a new teacher */
     public function store(Request $request): JsonResponse
     {
@@ -189,7 +213,7 @@ class TeacherController extends Controller
         // Calculate school and teacher cuts
         $schoolCut = 0;
         $teacherCut = 0;
-        
+
         if ($teacher->percent_school && $totalRevenue > 0) {
             $schoolCut = ($totalRevenue * $teacher->percent_school) / 100;
             $teacherCut = $totalRevenue - $schoolCut;
@@ -204,6 +228,12 @@ class TeacherController extends Controller
                       ->where('starts_at', '<=', now())
                       ->where('ends_at', '>=', now());
             })
+            ->count();
+
+        // Get active subscriptions count
+        $activeSubscriptionsCount = Subscription::where('teacher_uuid', $teacher->uuid)
+            ->where('starts_at', '<=', now())
+            ->where('ends_at', '>=', now())
             ->count();
 
         return response()->json([
@@ -221,6 +251,7 @@ class TeacherController extends Controller
             ],
             'subscriptions' => [
                 'total' => $subscriptions->count(),
+                'active' => $activeSubscriptionsCount,
                 'monthly' => $monthlySubscriptions,
                 'sessions' => $sessionSubscriptions
             ],
@@ -232,6 +263,37 @@ class TeacherController extends Controller
                 'subscription_price' => $teacher->price_subscription ?? 0,
                 'session_price' => $teacher->price_session ?? 0
             ]
+        ]);
+    }
+
+    /**
+     * Get teacher statistics (alias for getRevenueDetails)
+     */
+    public function stats(Teacher $teacher): JsonResponse
+    {
+        return $this->getRevenueDetails($teacher);
+    }
+
+    /**
+     * Get teacher statistics (another alias)
+     */
+    public function statistics(Teacher $teacher): JsonResponse
+    {
+        return $this->getRevenueDetails($teacher);
+    }
+
+    /**
+     * Toggle teacher active status
+     */
+    public function toggleStatus(Teacher $teacher): JsonResponse
+    {
+        // Toggle is_online_publisher status
+        $teacher->is_online_publisher = !$teacher->is_online_publisher;
+        $teacher->save();
+
+        return response()->json([
+            'message' => 'Teacher status updated',
+            'data' => $this->formatTeacher($teacher)
         ]);
     }
 

@@ -1,9 +1,9 @@
-import api from './axios.config'
+import api from "./axios.config";
 
 const CHAPTER_ENDPOINTS = {
-  CHAPTERS: '/chapters',
-  BY_TEACHER: '/chapters/teacher',
-}
+  CHAPTERS: "/chapters",
+  BY_TEACHER: "/chapters/teacher",
+};
 
 export const chapterService = {
   /**
@@ -11,18 +11,21 @@ export const chapterService = {
    */
   async getChapters(filters = {}) {
     try {
-      const params = new URLSearchParams()
-      
-      if (filters.search) params.append('search', filters.search)
-      if (filters.year_of_study) params.append('year_of_study', filters.year_of_study)
-      if (filters.per_page) params.append('per_page', filters.per_page)
-      if (filters.page) params.append('page', filters.page)
+      const params = new URLSearchParams();
 
-      const response = await api.get(`${CHAPTER_ENDPOINTS.CHAPTERS}?${params.toString()}`)
-      return response.data
+      if (filters.search) params.append("search", filters.search);
+      if (filters.year_of_study)
+        params.append("year_of_study", filters.year_of_study);
+      if (filters.per_page) params.append("per_page", filters.per_page);
+      if (filters.page) params.append("page", filters.page);
+
+      const response = await api.get(
+        `${CHAPTER_ENDPOINTS.CHAPTERS}?${params.toString()}`,
+      );
+      return response.data;
     } catch (error) {
-      console.error('Error fetching chapters:', error)
-      throw error
+      console.error("Error fetching chapters:", error);
+      throw error;
     }
   },
 
@@ -31,11 +34,13 @@ export const chapterService = {
    */
   async getChapter(chapterId) {
     try {
-      const response = await api.get(`${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}`)
-      return response.data
+      const response = await api.get(
+        `${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}`,
+      );
+      return response.data;
     } catch (error) {
-      console.error('Error fetching chapter:', error)
-      throw error
+      console.error("Error fetching chapter:", error);
+      throw error;
     }
   },
 
@@ -44,11 +49,11 @@ export const chapterService = {
    */
   async createChapter(chapterData) {
     try {
-      const response = await api.post(CHAPTER_ENDPOINTS.CHAPTERS, chapterData)
-      return response.data
+      const response = await api.post(CHAPTER_ENDPOINTS.CHAPTERS, chapterData);
+      return response.data;
     } catch (error) {
-      console.error('Error creating chapter:', error)
-      throw error
+      console.error("Error creating chapter:", error);
+      throw error;
     }
   },
 
@@ -57,11 +62,14 @@ export const chapterService = {
    */
   async updateChapter(chapterId, chapterData) {
     try {
-      const response = await api.put(`${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}`, chapterData)
-      return response.data
+      const response = await api.put(
+        `${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}`,
+        chapterData,
+      );
+      return response.data;
     } catch (error) {
-      console.error('Error updating chapter:', error)
-      throw error
+      console.error("Error updating chapter:", error);
+      throw error;
     }
   },
 
@@ -70,11 +78,13 @@ export const chapterService = {
    */
   async deleteChapter(chapterId) {
     try {
-      const response = await api.delete(`${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}`)
-      return response.data
+      const response = await api.delete(
+        `${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}`,
+      );
+      return response.data;
     } catch (error) {
-      console.error('Error deleting chapter:', error)
-      throw error
+      console.error("Error deleting chapter:", error);
+      throw error;
     }
   },
 
@@ -83,11 +93,13 @@ export const chapterService = {
    */
   async getChaptersByTeacher(teacherId) {
     try {
-      const response = await api.get(`${CHAPTER_ENDPOINTS.BY_TEACHER}/${teacherId}`)
-      return response.data
+      const response = await api.get(
+        `${CHAPTER_ENDPOINTS.BY_TEACHER}/${teacherId}`,
+      );
+      return response.data;
     } catch (error) {
-      console.error('Error fetching chapters by teacher:', error)
-      throw error
+      console.error("Error fetching chapters by teacher:", error);
+      throw error;
     }
   },
 
@@ -96,11 +108,13 @@ export const chapterService = {
    */
   async toggleChapterStatus(chapterId) {
     try {
-      const response = await api.patch(`${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}/toggle-status`)
-      return response.data
+      const response = await api.patch(
+        `${CHAPTER_ENDPOINTS.CHAPTERS}/${chapterId}/toggle-status`,
+      );
+      return response.data;
     } catch (error) {
-      console.error('Error toggling chapter status:', error)
-      throw error
+      console.error("Error toggling chapter status:", error);
+      throw error;
     }
   },
 
@@ -110,12 +124,12 @@ export const chapterService = {
   async reorderChapters(chapterIds) {
     try {
       const response = await api.post(`${CHAPTER_ENDPOINTS.CHAPTERS}/reorder`, {
-        chapter_ids: chapterIds
-      })
-      return response.data
+        chapter_ids: chapterIds,
+      });
+      return response.data;
     } catch (error) {
-      console.error('Error reordering chapters:', error)
-      throw error
+      console.error("Error reordering chapters:", error);
+      throw error;
     }
-  }
-}
+  },
+};

@@ -1,12 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useTopTeachers } from "@/hooks/useDashboardData"
-import dashboardService from "@/services/dashboardService"
-import { GraduationCap, Users, DollarSign, Clock } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTopTeachers } from "@/hooks/useDashboardData";
+import dashboardService from "@/services/dashboardService";
+import { GraduationCap, Users, DollarSign, Clock } from "lucide-react";
 
-const TopTeachersReal = ({ limit = 5, period = 'daily', date = null }) => {
-  const { data, loading, error } = useTopTeachers(limit, period, date)
+const TopTeachersReal = ({ limit = 5, period = "daily", date = null }) => {
+  const { data, loading, error } = useTopTeachers(limit, period, date);
 
   if (loading) {
     return (
@@ -29,7 +29,7 @@ const TopTeachersReal = ({ limit = 5, period = 'daily', date = null }) => {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -44,7 +44,7 @@ const TopTeachersReal = ({ limit = 5, period = 'daily', date = null }) => {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!data || data.length === 0) {
@@ -59,7 +59,7 @@ const TopTeachersReal = ({ limit = 5, period = 'daily', date = null }) => {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -73,7 +73,10 @@ const TopTeachersReal = ({ limit = 5, period = 'daily', date = null }) => {
       <CardContent>
         <div className="space-y-4">
           {data.map((teacher, index) => (
-            <div key={teacher.teacher_uuid} className="flex items-center justify-between">
+            <div
+              key={teacher.teacher_uuid}
+              className="flex items-center justify-between"
+            >
               <div className="flex items-center space-x-3 space-x-reverse">
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold">
                   {index + 1}
@@ -107,7 +110,7 @@ const TopTeachersReal = ({ limit = 5, period = 'daily', date = null }) => {
         </div>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default TopTeachersReal
+export default TopTeachersReal;

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,109 +8,189 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { CalendarPlus, Loader2 } from "lucide-react"
-import { sessionService } from "@/services/api/session.service"
-import { teacherService } from "@/services/api/teacher.service"
-import branchesService from "../../services/api/branches.service"
-import { useToast } from "../../hooks/use-toast"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CalendarPlus, Loader2 } from "lucide-react";
+import { sessionService } from "@/services/api/session.service";
+import { teacherService } from "@/services/api/teacher.service";
+import branchesService from "@/services/api/branches.service";
+import { useToast } from "@/hooks/use-toast";
+import { cacheService } from "@/services/cache.service";
+import { invalidateDashboardCache } from "@/hooks/useDashboardData"; // ⚡ Invalidate dashboard
+
+const HIGH_SCHOOL_YEARS = ["1AS", "2AS", "3AS"];
 
 export function AddSessionModal({ onSessionAdded }) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [teachers, setTeachers] = useState([])
-  const { toast } = useToast()
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [teachers, setTeachers] = useState([]);
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     teacher: "",
     year_target: "1AM",
-    branch_id: "",
+    branch_ids: [],
     date: "",
     time: "",
     duration: "",
-  })
-  const [availableBranches, setAvailableBranches] = useState([])
-  const [loadingBranches, setLoadingBranches] = useState(false)
+  });
+  const [availableBranches, setAvailableBranches] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(false);
 
   useEffect(() => {
     if (open) {
-      fetchTeachers()
+      fetchTeachers();
     }
-  }, [open])
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      setFormData({
+        teacher: "",
+        year_target: "1AM",
+        branch_ids: [],
+        date: "",
+        time: "",
+        duration: "",
+      });
+      setAvailableBranches([]);
+      setLoadingBranches(false);
+    }
+  }, [open]);
 
   // Load branches when year changes
   useEffect(() => {
     const loadBranches = async () => {
-      if (formData.year_target && ['1AS', '2AS', '3AS'].includes(formData.year_target)) {
-        setLoadingBranches(true)
+      if (
+        formData.year_target &&
+        HIGH_SCHOOL_YEARS.includes(formData.year_target)
+      ) {
+        setLoadingBranches(true);
         try {
-          const response = await branchesService.getBranchesForYear(formData.year_target)
-          setAvailableBranches(response.data || [])
+          // Use cache for branches - they rarely change
+          const allBranches = await cacheService.getBranches(async () => {
+            const response = await branchesService.getAllBranches();
+            return response.data || [];
+          });
+
+          // Filter branches for the selected year
+          const branches = allBranches.filter(
+            (branch) => branch.year_level === formData.year_target,
+          );
+
+          setAvailableBranches(branches);
+          setFormData((prev) => {
+            const validSelection = prev.branch_ids.filter((id) =>
+              branches.some((branch) => branch.id.toString() === id),
+            );
+            return { ...prev, branch_ids: validSelection };
+          });
         } catch (error) {
-          console.error('Error loading branches:', error)
-          setAvailableBranches([])
+          console.error("Error loading branches:", error);
+          setAvailableBranches([]);
         } finally {
-          setLoadingBranches(false)
+          setLoadingBranches(false);
         }
       } else {
-        setAvailableBranches([])
-        setFormData(prev => ({ ...prev, branch_id: "" }))
+        setAvailableBranches([]);
+        setFormData((prev) => ({ ...prev, branch_ids: [] }));
       }
-    }
+    };
 
-    loadBranches()
-  }, [formData.year_target])
+    loadBranches();
+  }, [formData.year_target]);
 
   const fetchTeachers = async () => {
     try {
-      const response = await teacherService.getTeachers()
-      setTeachers(response.data || [])
+      // Use cache service to avoid repeated API calls
+      const data = await cacheService.getTeachers(async () => {
+        const response = await teacherService.getTeachers();
+        return response.data || [];
+      });
+      setTeachers(data);
     } catch (error) {
-      console.error('Error fetching teachers:', error)
+      console.error("Error fetching teachers:", error);
     }
-  }
+  };
+
+  const handleBranchToggle = (branchId, checked) => {
+    setFormData((prev) => {
+      const current = new Set(prev.branch_ids);
+      if (checked) {
+        current.add(branchId);
+      } else {
+        current.delete(branchId);
+      }
+      return { ...prev, branch_ids: Array.from(current) };
+    });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    
+    e.preventDefault();
+    const isHighSchoolYear = HIGH_SCHOOL_YEARS.includes(formData.year_target);
+
+    if (isHighSchoolYear && formData.branch_ids.length === 0) {
+      toast({
+        title: "برجاء اختيار فرع",
+        description:
+          "يجب اختيار فرع واحد على الأقل للجلسات الخاصة بالطور الثانوي.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const sessionData = sessionService.transformSessionForSubmission(formData)
-      await sessionService.createSession(sessionData)
-      
+      const sessionData =
+        sessionService.transformSessionForSubmission(formData);
+      await sessionService.createSession(sessionData);
+
+      // ⚡ Invalidate cache after session creation
+      cacheService.invalidateSessions();
+      invalidateDashboardCache();
+      console.log("🔄 Session created - Cache invalidated");
+
       // Show success message
-      const selectedTeacher = teachers.find(t => t.uuid === formData.teacher)
+      const selectedTeacher = teachers.find((t) => t.uuid === formData.teacher);
       toast({
         title: "تم إضافة الجلسة بنجاح",
-        description: `تم جدولة جلسة جديدة مع ${selectedTeacher?.name || 'المعلم'} في ${formData.date}`,
-      })
-      
-      setOpen(false)
+        description: `تم جدولة جلسة جديدة مع ${selectedTeacher?.name || "المعلم"} في ${formData.date}`,
+      });
+
+      setOpen(false);
       setFormData({
         teacher: "",
         year_target: "1AM",
-        branch_id: "",
+        branch_ids: [],
         date: "",
         time: "",
         duration: "",
-      })
-      
-      onSessionAdded?.()
+      });
+      setAvailableBranches([]);
+
+      onSessionAdded?.();
     } catch (error) {
-      console.error('Error creating session:', error)
-      const errorMessage = error.response?.data?.message || 'فشل في إنشاء الجلسة'
+      console.error("Error creating session:", error);
+      const errorMessage =
+        error.response?.data?.message || "فشل في إنشاء الجلسة";
       toast({
         title: "خطأ في إضافة الجلسة",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -120,10 +200,15 @@ export function AddSessionModal({ onSessionAdded }) {
           إضافة جلسة
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto" dir="rtl">
+      <DialogContent
+        className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto"
+        dir="rtl"
+      >
         <DialogHeader>
           <DialogTitle className="text-right">جدولة جلسة جديدة</DialogTitle>
-          <DialogDescription className="text-right">إنشاء جلسة تدريس جديدة مع جميع التفاصيل اللازمة.</DialogDescription>
+          <DialogDescription className="text-right">
+            إنشاء جلسة تدريس جديدة مع جميع التفاصيل اللازمة.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -131,7 +216,12 @@ export function AddSessionModal({ onSessionAdded }) {
               <Label htmlFor="teacher" className="text-right">
                 المعلم
               </Label>
-              <Select value={formData.teacher} onValueChange={(value) => setFormData({ ...formData, teacher: value })}>
+              <Select
+                value={formData.teacher}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, teacher: value })
+                }
+              >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="اختر المعلم" />
                 </SelectTrigger>
@@ -149,7 +239,12 @@ export function AddSessionModal({ onSessionAdded }) {
               <Label htmlFor="year_target" className="text-right">
                 السنة المستهدفة
               </Label>
-              <Select value={formData.year_target} onValueChange={(value) => setFormData({ ...formData, year_target: value })}>
+              <Select
+                value={formData.year_target}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, year_target: value })
+                }
+              >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="اختر السنة" />
                 </SelectTrigger>
@@ -166,27 +261,61 @@ export function AddSessionModal({ onSessionAdded }) {
             </div>
 
             {/* Branch Selection - Only for High School */}
-            {['1AS', '2AS', '3AS'].includes(formData.year_target) && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="branch_id" className="text-right">
-                  الفرع المستهدف
-                </Label>
-                <Select 
-                  value={formData.branch_id} 
-                  onValueChange={(value) => setFormData({ ...formData, branch_id: value })}
-                  disabled={loadingBranches}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder={loadingBranches ? "جاري تحميل الفروع..." : "اختر الفرع المستهدف"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableBranches.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id.toString()}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {HIGH_SCHOOL_YEARS.includes(formData.year_target) && (
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label className="text-right mt-2">الفروع المستهدفة</Label>
+                <div className="col-span-3 flex flex-col gap-2">
+                  {loadingBranches && (
+                    <p className="text-sm text-muted-foreground">
+                      جاري تحميل الفروع...
+                    </p>
+                  )}
+
+                  {!loadingBranches && availableBranches.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      لا توجد فروع متاحة لهذه السنة.
+                    </p>
+                  )}
+
+                  {!loadingBranches && availableBranches.length > 0 && (
+                    <div className="space-y-2">
+                      {availableBranches.map((branch) => {
+                        const branchId = branch.id.toString();
+                        const checkboxId = `branch-${branch.id}`;
+                        const checked = formData.branch_ids.includes(branchId);
+
+                        return (
+                          <div
+                            key={branch.id}
+                            className="flex items-center justify-between rounded-md border p-2"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                id={checkboxId}
+                                checked={checked}
+                                onCheckedChange={(value) =>
+                                  handleBranchToggle(branchId, value === true)
+                                }
+                                disabled={loadingBranches}
+                              />
+                              <Label
+                                htmlFor={checkboxId}
+                                className="cursor-pointer text-sm font-normal"
+                              >
+                                {branch.name}
+                              </Label>
+                            </div>
+                            {branch.code && (
+                              <span className="text-xs text-muted-foreground">
+                                {branch.code}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -198,7 +327,9 @@ export function AddSessionModal({ onSessionAdded }) {
                 id="date"
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
                 className="col-span-3"
                 required
               />
@@ -212,7 +343,9 @@ export function AddSessionModal({ onSessionAdded }) {
                 id="time"
                 type="time"
                 value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, time: e.target.value })
+                }
                 className="col-span-3"
                 required
               />
@@ -224,7 +357,9 @@ export function AddSessionModal({ onSessionAdded }) {
               </Label>
               <Select
                 value={formData.duration}
-                onValueChange={(value) => setFormData({ ...formData, duration: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, duration: value })
+                }
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="اختر المدة" />
@@ -238,10 +373,13 @@ export function AddSessionModal({ onSessionAdded }) {
                 </SelectContent>
               </Select>
             </div>
-
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
               إلغاء
             </Button>
             <Button type="submit" disabled={loading}>
@@ -251,12 +389,12 @@ export function AddSessionModal({ onSessionAdded }) {
                   جاري الإنشاء...
                 </>
               ) : (
-                'جدولة الجلسة'
+                "جدولة الجلسة"
               )}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

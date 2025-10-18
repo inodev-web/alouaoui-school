@@ -46,8 +46,8 @@ class CheckinController extends Controller
             ], 422);
         }
 
-    $targetUuid = $request->get('user_uuid') ?? $request->get('uuid');
-    $student = User::where('uuid', $targetUuid)->firstOrFail();
+        $targetUuid = $request->get('user_uuid') ?? $request->get('uuid');
+        $student = User::where('uuid', $targetUuid)->firstOrFail();
         $teacher = Teacher::where('uuid', $request->teacher_uuid)->firstOrFail();
         $mode = $request->mode; // optional (monthly|session_pass)
 
@@ -67,7 +67,7 @@ class CheckinController extends Controller
                 $activeSubscription = $student->activeSubscriptions()
                     ->where('teacher_uuid', $teacher->uuid)
                     ->first();
-                
+
                 if ($activeSubscription) {
                     // Subscription active trouvée, pas besoin d'en créer une nouvelle
                     $createdSubscription = null;
@@ -110,6 +110,7 @@ class CheckinController extends Controller
                         'uuid' => $student->uuid,
                         'firstname' => $student->firstname,
                         'lastname' => $student->lastname,
+                        'picture' => $student->picture ? asset('storage/' . ltrim($student->picture, '/')) : null,
                         'free_subscriber' => $student->isFree(),
                     ],
                     'teacher' => [
@@ -139,6 +140,7 @@ class CheckinController extends Controller
                     'uuid' => $student->uuid,
                     'firstname' => $student->firstname,
                     'lastname' => $student->lastname,
+                    'picture' => $student->picture ? asset('storage/' . ltrim($student->picture, '/')) : null,
                     'free_subscriber' => $student->isFree(),
                 ],
                 'teacher' => [
@@ -232,50 +234,115 @@ class CheckinController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $fromDate = $request->get('from_date', now()->startOfMonth());
-        $toDate = $request->get('to_date', now()->endOfMonth());
-    $teacherId = $request->get('teacher_uuid');
+        try {
+            $fromDate = $request->get('from_date', now()->startOfMonth());
+            $toDate = $request->get('to_date', now()->endOfMonth());
+            $teacherId = $request->get('teacher_uuid');
 
-    $query = Session::whereBetween('start_time', [$fromDate, $toDate]);
+            // Build the base query
+            $query = Session::whereBetween('start_time', [$fromDate, $toDate]);
 
-        if ($teacherId) {
-            $query->where('teacher_uuid', $teacherId);
+            if ($teacherId) {
+                $query->where('teacher_uuid', $teacherId);
+            }
+
+            // Get sessions with attendance count (simplified to avoid relation issues)
+            $sessions = $query->withCount('attendances')->get();
+
+            // Calculate basic stats
+            $totalSessions = $sessions->count();
+            $totalAttendances = $sessions->sum('attendances_count');
+            $avgAttendance = $totalSessions > 0 ? round($totalAttendances / $totalSessions, 2) : 0;
+
+            // Group by teacher (with null safety)
+            $sessionsByTeacher = [];
+            foreach ($sessions as $session) {
+                $teacherName = 'Unknown Teacher';
+                if ($session->teacher_uuid) {
+                    $teacher = Teacher::where('uuid', $session->teacher_uuid)->first();
+                    if ($teacher) {
+                        $teacherName = $teacher->name;
+                    }
+                }
+
+                if (!isset($sessionsByTeacher[$teacherName])) {
+                    $sessionsByTeacher[$teacherName] = [
+                        'sessions_count' => 0,
+                        'total_attendances' => 0,
+                        'average_attendance' => 0,
+                    ];
+                }
+
+                $sessionsByTeacher[$teacherName]['sessions_count']++;
+                $sessionsByTeacher[$teacherName]['total_attendances'] += $session->attendances_count;
+            }
+
+            // Calculate averages for each teacher
+            foreach ($sessionsByTeacher as $teacherName => &$stats) {
+                $stats['average_attendance'] = $stats['sessions_count'] > 0
+                    ? round($stats['total_attendances'] / $stats['sessions_count'], 2)
+                    : 0;
+            }
+
+            // Group by day
+            $dailyStats = [];
+            foreach ($sessions as $session) {
+                $date = optional($session->start_time)->toDateString() ?? 'unknown';
+
+                if (!isset($dailyStats[$date])) {
+                    $dailyStats[$date] = [
+                        'sessions_count' => 0,
+                        'total_attendances' => 0,
+                    ];
+                }
+
+                $dailyStats[$date]['sessions_count']++;
+                $dailyStats[$date]['total_attendances'] += $session->attendances_count;
+            }
+
+            // Sort daily stats by date
+            ksort($dailyStats);
+
+            $stats = [
+                'total_sessions' => $totalSessions,
+                'total_attendances' => $totalAttendances,
+                'average_attendance_per_session' => $avgAttendance,
+                'sessions_by_teacher' => $sessionsByTeacher,
+                'daily_stats' => $dailyStats,
+            ];
+
+            return response()->json([
+                'data' => $stats,
+                'period' => [
+                    'from' => $fromDate,
+                    'to' => $toDate,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Error in attendanceStats: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+
+            // Return a safe fallback response
+            return response()->json([
+                'data' => [
+                    'total_sessions' => 0,
+                    'total_attendances' => 0,
+                    'average_attendance_per_session' => 0,
+                    'sessions_by_teacher' => [],
+                    'daily_stats' => [],
+                ],
+                'period' => [
+                    'from' => $request->get('from_date', now()->startOfMonth()),
+                    'to' => $request->get('to_date', now()->endOfMonth()),
+                ],
+                'error' => 'Failed to load statistics',
+                'message' => 'Statistics unavailable - showing default values'
+            ]);
         }
-
-        $sessions = $query->with(['teacher:id,name', 'attendances.user:id,name'])
-            ->withCount('attendances')
-            ->get();
-
-        $stats = [
-            'total_sessions' => $sessions->count(),
-            'total_attendances' => $sessions->sum('attendances_count'),
-            'average_attendance_per_session' => $sessions->count() > 0
-                ? round($sessions->sum('attendances_count') / $sessions->count(), 2)
-                : 0,
-            'sessions_by_teacher' => $sessions->groupBy('teacher.name')->map(function ($teacherSessions) {
-                return [
-                    'sessions_count' => $teacherSessions->count(),
-                    'total_attendances' => $teacherSessions->sum('attendances_count'),
-                    'average_attendance' => $teacherSessions->count() > 0
-                        ? round($teacherSessions->sum('attendances_count') / $teacherSessions->count(), 2)
-                        : 0,
-                ];
-            }),
-            'daily_stats' => $sessions->groupBy(function($s){ return optional($s->start_time)->toDateString(); })->map(function ($daySessions) {
-                return [
-                    'sessions_count' => $daySessions->count(),
-                    'total_attendances' => $daySessions->sum('attendances_count'),
-                ];
-            })->sortKeys(),
-        ];
-
-        return response()->json([
-            'data' => $stats,
-            'period' => [
-                'from' => $fromDate,
-                'to' => $toDate,
-            ]
-        ]);
     }
 
     /**
@@ -364,7 +431,7 @@ class CheckinController extends Controller
         }
 
         $student = User::where('uuid', $request->user_uuid)->firstOrFail();
-    $teacher = Teacher::where('uuid', $request->teacher_uuid)->firstOrFail();
+        $teacher = Teacher::where('uuid', $request->teacher_uuid)->firstOrFail();
 
         if ($student->role !== 'student') {
             return response()->json([
@@ -427,6 +494,7 @@ class CheckinController extends Controller
 
         $student = User::where('uuid', $uuid)
             ->where('role', 'student')
+            ->with('branch:id,name,code,year_level')
             ->first();
 
         if (!$student) {
@@ -445,7 +513,15 @@ class CheckinController extends Controller
             'firstname' => $student->firstname,
             'lastname' => $student->lastname,
             'phone' => $student->phone,
+            'picture' => $student->picture ? asset('storage/' . ltrim($student->picture, '/')) : null,
             'year_of_study' => $student->year_of_study,
+            'branch_id' => $student->branch_id,
+            'branch' => $student->branch ? [
+                'id' => $student->branch->id,
+                'name' => $student->branch->name,
+                'code' => $student->branch->code,
+                'year_level' => $student->branch->year_level,
+            ] : null,
             'free_subscriber' => $student->isFree(),
             'subscriptions' => $subscriptions->map(function ($sub) {
                 return [
@@ -462,6 +538,48 @@ class CheckinController extends Controller
     }
 
     /**
+     * Get today's summary (total scans, unique students, active sessions)
+     */
+    public function todaySummary(Request $request): JsonResponse
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $today = today();
+        $now = now();
+
+        $totalScans = Attendance::whereDate('created_at', $today)->count();
+        $uniqueStudents = Attendance::whereDate('created_at', $today)
+            ->distinct()
+            ->count('student_uuid');
+
+        $baseSessionQuery = Session::whereDate('start_time', $today)
+            ->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 'cancelled');
+            });
+
+        $sessionsToday = (clone $baseSessionQuery)->count();
+
+        $sessionsInProgress = (clone $baseSessionQuery)
+            ->where('start_time', '<=', $now)
+            ->where(function ($query) use ($now) {
+                $query->whereNull('end_time')->orWhere('end_time', '>=', $now);
+            })
+            ->count();
+
+        return response()->json([
+            'data' => [
+                'total_scans' => $totalScans,
+                'unique_students' => $uniqueStudents,
+                'sessions_today' => $sessionsToday,
+                'sessions_in_progress' => $sessionsInProgress,
+                'generated_at' => $now,
+            ]
+        ]);
+    }
+
+    /**
      * Get today's sessions with student subscription status
      */
     public function getTodaysSessionsWithStudent(Request $request, $studentUuid): JsonResponse
@@ -472,6 +590,7 @@ class CheckinController extends Controller
 
         $student = User::where('uuid', $studentUuid)
             ->where('role', 'student')
+            ->with('branch:id,name,code,year_level')
             ->first();
 
         if (!$student) {
@@ -480,11 +599,43 @@ class CheckinController extends Controller
             ], 404);
         }
 
-        // Get today's sessions
-        $todaysSessions = Session::with(['teacher:uuid,name,module'])
+        // Get today's sessions with pricing details, filtered by student year/branch when applicable
+        $todaysSessions = Session::with([
+                'teacher:uuid,name,module,price_subscription,price_session',
+                'branches:id,name,code'
+            ])
             ->whereDate('start_time', today())
+            ->whereNull('status')  // Only sessions with null status (pending/available for check-in)
+            ->when($student->year_of_study, function ($query, $year) {
+                // Filter by student's year (only show sessions matching student's year or sessions for all years)
+                $query->where(function ($inner) use ($year) {
+                    $inner->where('year_target', $year)
+                        ->orWhereNull('year_target'); // Include sessions with no specific year target
+                });
+            })
+            ->when($student->branch_id, function ($query, $branchId) {
+                // Filter by student's branch (for high school students with specific branches)
+                $query->where(function ($inner) use ($branchId) {
+                    $inner->where('branch_id', $branchId)
+                        ->orWhereHas('branches', function ($branchQuery) use ($branchId) {
+                            $branchQuery->where('branches.id', $branchId);
+                        })
+                        ->orWhere(function ($nullBranch) {
+                            // Include sessions with no specific branch target
+                            $nullBranch->whereNull('branch_id')
+                                ->whereDoesntHave('branches');
+                        });
+                });
+            })
             ->orderBy('start_time')
             ->get();
+
+        $sessionIds = $todaysSessions->pluck('id')->filter()->values();
+
+        $attendancesBySession = Attendance::whereIn('session_id', $sessionIds)
+            ->where('student_uuid', $student->uuid)
+            ->get()
+            ->keyBy('session_id');
 
         // Get active subscriptions
         $subscriptions = $student->activeSubscriptions()
@@ -492,9 +643,9 @@ class CheckinController extends Controller
             ->get();
 
         // Check subscription status for each session
-        $sessionsWithStatus = $todaysSessions->map(function ($session) use ($student, $subscriptions) {
+        $sessionsWithStatus = $todaysSessions->map(function ($session) use ($subscriptions) {
             $hasActiveSubscription = $subscriptions->where('teacher_uuid', $session->teacher_uuid)->isNotEmpty();
-            
+
             return [
                 'id' => $session->id,
                 'start_time' => $session->start_time,
@@ -503,10 +654,34 @@ class CheckinController extends Controller
                 'teacher' => [
                     'uuid' => $session->teacher->uuid,
                     'name' => $session->teacher->name,
-                    'module' => $session->teacher->module
+                    'module' => $session->teacher->module,
+                    'price_subscription' => $session->teacher->price_subscription,
+                    'price_session' => $session->teacher->price_session,
                 ],
-                'has_subscription' => $hasActiveSubscription
+                'pricing' => [
+                    'subscription' => $session->teacher->price_subscription,
+                    'session' => $session->teacher->price_session,
+                ],
+                'session_date' => optional($session->start_time)?->toDateString(),
+                'has_subscription' => $hasActiveSubscription,
+                'has_attendance' => false,
+                'attendance_time' => null,
             ];
+        });
+
+        $sessionsWithStatus = $sessionsWithStatus->map(function ($sessionData) use ($attendancesBySession) {
+            if (!$sessionData['id']) {
+                return $sessionData;
+            }
+
+            $attendance = $attendancesBySession->get($sessionData['id']);
+
+            if ($attendance) {
+                $sessionData['has_attendance'] = true;
+                $sessionData['attendance_time'] = optional($attendance->validated_at ?? $attendance->created_at)?->toIso8601String();
+            }
+
+            return $sessionData;
         });
 
         return response()->json([
@@ -515,7 +690,15 @@ class CheckinController extends Controller
                 'firstname' => $student->firstname,
                 'lastname' => $student->lastname,
                 'phone' => $student->phone,
+                'picture' => $student->picture ? asset('storage/' . ltrim($student->picture, '/')) : null,
                 'year_of_study' => $student->year_of_study,
+                'branch_id' => $student->branch_id,
+                'branch' => $student->branch ? [
+                    'id' => $student->branch->id,
+                    'name' => $student->branch->name,
+                    'code' => $student->branch->code,
+                    'year_level' => $student->branch->year_level,
+                ] : null,
                 'free_subscriber' => $student->isFree(),
             ],
             'subscriptions' => $subscriptions->map(function ($sub) {

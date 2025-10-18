@@ -14,10 +14,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Refresh dashboard views daily at 2 AM
-        $schedule->job(new RefreshDashboardViewsJob('daily'))
-            ->dailyAt('02:00')
-            ->name('refresh-dashboard-daily')
+        // Refresh dashboard views every 4 hours
+        $schedule->command('dashboard:refresh --all')
+            ->cron('0 */4 * * *')
+            ->name('refresh-dashboard-every-4h')
             ->withoutOverlapping()
             ->runInBackground();
 

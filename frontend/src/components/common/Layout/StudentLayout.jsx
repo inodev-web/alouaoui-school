@@ -1,7 +1,7 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import HeaderStudent from './HeaderStudent';
-import Footer from './Footer';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import HeaderStudent from "./HeaderStudent";
+import Footer from "./Footer";
 
 const StudentLayout = () => {
   return (

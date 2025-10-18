@@ -55,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profile routes (moved here for testing)
     Route::get('/auth/profile', [AuthController::class, 'profile'])->name('profile');
     Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('update-profile');
+    // POST pour gérer les uploads de fichiers avec FormData (qui utilise _method=PUT)
+    Route::post('/auth/profile', [AuthController::class, 'updateProfile'])->name('update-profile-post');
 
     // Get current user
     Route::get('/user', function (Request $request) {
@@ -63,6 +65,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User/Student management (Admin only, no device check needed)
     Route::prefix('users')->name('users.')->middleware('abilities:admin')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/stats', [UserController::class, 'stats'])->name('stats');
+        Route::post('/', [UserController::class, 'store'])->name('store');
+        Route::get('/{user}', [UserController::class, 'show'])->name('show');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        Route::post('/{user}/toggle-free-subscriber', [UserController::class, 'toggleFreeSubscriber'])->name('toggle-free-subscriber');
+    });
+
+    // Students alias for /users (Admin only)
+    Route::prefix('students')->name('students.')->middleware('abilities:admin')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/stats', [UserController::class, 'stats'])->name('stats');
         Route::post('/', [UserController::class, 'store'])->name('store');
@@ -90,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{teacher}/revenue-details', [TeacherController::class, 'getRevenueDetails'])->name('revenue-details');
             Route::patch('/{teacher}/toggle-status', [TeacherController::class, 'toggleStatus'])->name('toggle-status');
             Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics'])->name('statistics');
+            Route::get('/{teacher}/stats', [TeacherController::class, 'stats'])->name('stats');
         });
     });
 
@@ -115,17 +129,23 @@ Route::middleware('auth:sanctum')->group(function () {
     // Subscription management (needs device check for students)
     Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
         Route::post('/', [SubscriptionController::class, 'store'])->name('store')->middleware('ensure.single.device');
-        Route::get('/active', [SubscriptionController::class, 'active'])->name('active')->middleware('ensure.single.device'); // Restored device check
+        Route::get('/active', [SubscriptionController::class, 'active'])->name('active')->middleware('ensure.single.device'); // Also serves as my-subscriptions
         Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show')->middleware('ensure.single.device');
     });
 
     // Admin check-in management (no device check needed for admin)
-    Route::prefix('admin/checkin')->name('admin.checkin.')->middleware(['abilities:admin', 'scanner.lock'])->group(function () {
-        Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
+    Route::prefix('admin/checkin')->name('admin.checkin.')->middleware(['abilities:admin'])->group(function () {
+        // Routes that need scanner lock (scanning operations)
+        Route::middleware('scanner.lock')->group(function () {
+            Route::post('/scan-qr', [CheckinController::class, 'scanQr'])->name('scan-qr');
+            Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
+        });
+
+        // Routes that don't need scanner lock (read-only operations)
         Route::get('/session-attendance', [CheckinController::class, 'sessionAttendance'])->name('session-attendance');
         Route::get('/attendance-stats', [CheckinController::class, 'attendanceStats'])->name('attendance-stats');
+        Route::get('/summary-today', [CheckinController::class, 'todaySummary'])->name('today-summary');
         Route::get('/student/{student}/history', [CheckinController::class, 'studentHistory'])->name('student-history');
-        Route::post('/manual-checkin', [CheckinController::class, 'manualCheckin'])->name('manual-checkin');
         Route::get('/student/{uuid}/info', [CheckinController::class, 'getStudentInfo'])->name('student-info');
         Route::get('/student/{uuid}/sessions', [CheckinController::class, 'getTodaysSessionsWithStudent'])->name('student-sessions');
     });
@@ -183,13 +203,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard analytics (admin only, no device check needed)
     Route::middleware('abilities:admin')->group(function () {
         Route::get('/dashboard/analytics', [DashboardController::class, 'index'])->name('dashboard.analytics');
-        
+
         // Dashboard data endpoints
         Route::prefix('dashboard/data')->name('dashboard.data.')->group(function () {
             Route::get('/summary', [DashboardDataController::class, 'getSummary'])->name('summary');
             Route::get('/cards', [DashboardDataController::class, 'getDashboardCards'])->name('cards');
             Route::get('/top-teachers', [DashboardDataController::class, 'getTopTeachers'])->name('top-teachers');
             Route::get('/revenue-time-series', [DashboardDataController::class, 'getRevenueTimeSeries'])->name('revenue-time-series');
+            Route::get('/revenue-series', [DashboardDataController::class, 'getRevenueTimeSeries'])->name('revenue-series'); // Alias
             Route::get('/teacher-performance', [DashboardDataController::class, 'getTeacherPerformance'])->name('teacher-performance');
             Route::get('/refresh-status', [DashboardDataController::class, 'getRefreshStatus'])->name('refresh-status');
         });
